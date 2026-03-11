@@ -988,3 +988,48 @@ if (avatarInput && cropContainer && cropCanvas) {
         });
     }
 })();
+
+// ── Theme swatch selection ────────────────────────────────────────────────────
+
+(function () {
+    const swatches = document.querySelectorAll('.theme-swatch');
+    const input    = document.getElementById('site-theme-input');
+    const form     = document.getElementById('theme-form');
+
+    if (!swatches.length || !input || !form) return;
+
+    const ACTIVE_BORDER   = '#e94560';
+    const ACTIVE_SHADOW   = '0 0 0 3px rgba(233,69,96,.35)';
+    const INACTIVE_BORDER = 'rgba(255,255,255,.15)';
+
+    /* Hide the manual save button – selection now auto-saves */
+    const saveBtn = form.querySelector('button[type="submit"]');
+    if (saveBtn) { saveBtn.style.display = 'none'; }
+
+    function selectSwatch(sw) {
+        /* Skip if this swatch is already the active theme */
+        if (sw.classList.contains('theme-swatch--active')) { return; }
+
+        swatches.forEach((s) => {
+            const isActive = s === sw;
+            s.setAttribute('aria-checked', isActive ? 'true' : 'false');
+            s.style.borderColor = isActive ? ACTIVE_BORDER : INACTIVE_BORDER;
+            s.style.boxShadow   = isActive ? ACTIVE_SHADOW : '';
+            s.classList.toggle('theme-swatch--active', isActive);
+            const label = s.querySelector('div:last-child');
+            if (label) { label.textContent = isActive ? '\u2713 Active' : '\u00A0'; }
+        });
+        input.value = sw.dataset.themeSlug;
+        form.submit();
+    }
+
+    swatches.forEach((sw) => {
+        sw.addEventListener('click', () => selectSwatch(sw));
+        sw.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                selectSwatch(sw);
+            }
+        });
+    });
+}());

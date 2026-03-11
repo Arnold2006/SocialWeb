@@ -433,48 +433,6 @@ include SITE_ROOT . '/includes/header.php';
             }
             </style>
 
-            <script>
-            (function () {
-                var ACTIVE_BORDER   = '#e94560';
-                var ACTIVE_SHADOW   = '0 0 0 3px rgba(233,69,96,.35)';
-                var INACTIVE_BORDER = 'rgba(255,255,255,.15)';
-
-                var swatches = document.querySelectorAll('.theme-swatch');
-                var input    = document.getElementById('site-theme-input');
-                var form     = document.getElementById('theme-form');
-
-                /* Hide the manual save button – selection now auto-saves */
-                var saveBtn = form ? form.querySelector('button[type="submit"]') : null;
-                if (saveBtn) { saveBtn.style.display = 'none'; }
-
-                function selectSwatch(sw) {
-                    /* Skip if this swatch is already the active theme */
-                    if (sw.classList.contains('theme-swatch--active')) { return; }
-
-                    swatches.forEach(function (s) {
-                        var isActive = s === sw;
-                        s.setAttribute('aria-checked', isActive ? 'true' : 'false');
-                        s.style.borderColor = isActive ? ACTIVE_BORDER : INACTIVE_BORDER;
-                        s.style.boxShadow   = isActive ? ACTIVE_SHADOW : '';
-                        s.classList.toggle('theme-swatch--active', isActive);
-                        var label = s.querySelector('div:last-child');
-                        if (label) { label.innerHTML = isActive ? '&#10003; Active' : '&nbsp;'; }
-                    });
-                    input.value = sw.dataset.themeSlug;
-                    form.submit();
-                }
-
-                swatches.forEach(function (sw) {
-                    sw.addEventListener('click', function () { selectSwatch(sw); });
-                    sw.addEventListener('keydown', function (e) {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            selectSwatch(sw);
-                        }
-                    });
-                });
-            }());
-            </script>
         </section>
     </main>
 </div>
