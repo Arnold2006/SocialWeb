@@ -994,6 +994,68 @@ textarea { resize: vertical; min-height: 80px; }
     border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
 }
+
+/* Step indicators */
+.upload-progress-steps {
+    display: flex;
+    align-items: flex-end;
+    margin-bottom: 0.65rem;
+}
+.upload-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.3rem;
+    flex-shrink: 0;
+}
+.upload-step-icon {
+    width: 26px;
+    height: 26px;
+    border-radius: var(--radius-full);
+    background: var(--color-surface2);
+    border: 2px solid var(--color-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    line-height: 1;
+    transition: background 0.3s ease, border-color 0.3s ease;
+}
+.upload-step.active .upload-step-icon {
+    background: var(--color-accent);
+    border-color: var(--color-accent);
+    color: #fff;
+}
+.upload-step.done .upload-step-icon {
+    background: var(--color-success);
+    border-color: var(--color-success);
+    color: #fff;
+}
+.upload-step-label {
+    font-size: 0.72rem;
+    color: var(--color-text-muted);
+    white-space: nowrap;
+    transition: color 0.3s ease;
+}
+.upload-step.active .upload-step-label {
+    color: var(--color-text);
+    font-weight: 600;
+}
+.upload-step.done .upload-step-label {
+    color: var(--color-success);
+}
+.upload-step-line {
+    flex: 1;
+    height: 2px;
+    background: var(--color-border);
+    margin: 0 0.4rem;
+    margin-bottom: 1rem;
+    transition: background 0.3s ease;
+}
+.upload-step-line.done {
+    background: var(--color-success);
+}
+
 .upload-progress-track {
     height: 8px;
     background: var(--color-surface2, var(--color-border));
@@ -1006,7 +1068,7 @@ textarea { resize: vertical; min-height: 80px; }
     width: 0%;
     background: var(--color-accent);
     border-radius: var(--radius-full);
-    transition: width 0.25s ease;
+    transition: width 0.3s ease;
 }
 .upload-progress-info {
     font-size: 0.82rem;
