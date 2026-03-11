@@ -190,7 +190,7 @@ function site_setting(string $key, string $default = ''): string
  */
 function valid_themes(): array
 {
-    return ['blue-red', 'gray-orange', 'purple-red', 'green-teal', 'dark-gold', 'navy-cyan'];
+    return ['blue-red', 'gray-orange', 'purple-red'];
 }
 
 /**
