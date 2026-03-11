@@ -377,39 +377,43 @@ include SITE_ROOT . '/includes/header.php';
         <section class="admin-section" style="margin-top:2rem">
             <h2>Colour Theme</h2>
             <p class="muted" style="margin-bottom:1rem">
-                Choose a global colour scheme for the entire site.
+                Choose a global colour scheme for the entire site by clicking a swatch below.
                 The change takes effect immediately for all visitors.
             </p>
 
-            <form method="POST" class="settings-form">
+            <form method="POST" class="settings-form" id="theme-form">
                 <?= csrf_field() ?>
                 <input type="hidden" name="action" value="save_theme">
+                <input type="hidden" name="site_theme" id="site-theme-input" value="<?= e($currentTheme) ?>">
 
-                <div class="form-group" style="max-width:420px">
-                    <label class="form-label" for="site-theme-select">Active Theme</label>
-                    <select id="site-theme-select" name="site_theme" class="form-control">
-                        <option value="blue-red"<?= $currentTheme === 'blue-red'     ? ' selected' : '' ?>>Blue &amp; Red (default)</option>
-                        <option value="gray-orange"<?= $currentTheme === 'gray-orange' ? ' selected' : '' ?>>Gray &amp; Orange</option>
-                        <option value="purple-red"<?= $currentTheme === 'purple-red'  ? ' selected' : '' ?>>Purple &amp; Red</option>
-                    </select>
-                </div>
-
-                <!-- Swatches preview -->
-                <div style="display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:1.25rem">
+                <!-- Clickable swatch previews -->
+                <div role="radiogroup" aria-label="Theme selection"
+                     style="display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:1.5rem">
                     <?php
                     $themePreviews = [
                         'blue-red'    => ['bg' => '#1a1a2e', 'surface' => '#16213e', 'accent' => '#e94560', 'label' => 'Blue &amp; Red'],
                         'gray-orange' => ['bg' => '#1c1c1c', 'surface' => '#252525', 'accent' => '#e87c2a', 'label' => 'Gray &amp; Orange'],
                         'purple-red'  => ['bg' => '#1a0a2e', 'surface' => '#230e3c', 'accent' => '#e94560', 'label' => 'Purple &amp; Red'],
+                        'green-teal'  => ['bg' => '#0a1a0f', 'surface' => '#0f2418', 'accent' => '#00bfa5', 'label' => 'Green &amp; Teal'],
+                        'dark-gold'   => ['bg' => '#111111', 'surface' => '#1c1c1c', 'accent' => '#f0a500', 'label' => 'Dark &amp; Gold'],
+                        'navy-cyan'   => ['bg' => '#050d1f', 'surface' => '#0a1530', 'accent' => '#00bcd4', 'label' => 'Navy &amp; Cyan'],
                     ];
                     foreach ($themePreviews as $slug => $tp):
                         $active = $currentTheme === $slug;
                     ?>
-                    <div style="border:2px solid <?= $active ? 'var(--color-accent)' : 'var(--color-border)' ?>;border-radius:var(--radius-md);overflow:hidden;width:140px;cursor:pointer"
-                         title="<?= $tp['label'] ?>">
+                    <div class="theme-swatch<?= $active ? ' theme-swatch--active' : '' ?>"
+                         data-theme-slug="<?= e($slug) ?>"
+                         title="<?= $tp['label'] ?>"
+                         role="radio"
+                         aria-checked="<?= $active ? 'true' : 'false' ?>"
+                         tabindex="0"
+                         style="border:2px solid <?= $active ? '#e94560' : 'rgba(255,255,255,.15)' ?>;border-radius:var(--radius-md);overflow:hidden;width:140px;cursor:pointer;transition:border-color .2s,box-shadow .2s;<?= $active ? 'box-shadow:0 0 0 3px rgba(233,69,96,.35)' : '' ?>">
                         <div style="background:<?= $tp['bg'] ?>;padding:.6rem .75rem">
                             <div style="background:<?= $tp['surface'] ?>;border-radius:var(--radius-sm);padding:.4rem .5rem;margin-bottom:.4rem;font-size:.75rem;color:#e0e0e0">Surface</div>
                             <div style="background:<?= $tp['accent'] ?>;border-radius:var(--radius-sm);padding:.3rem .5rem;font-size:.75rem;color:#fff;font-weight:600"><?= $tp['label'] ?></div>
+                        </div>
+                        <div style="background:<?= $tp['bg'] ?>;padding:.35rem .75rem;font-size:.7rem;color:rgba(255,255,255,.5);text-align:center">
+                            <?= $active ? '&#10003; Active' : '&nbsp;' ?>
                         </div>
                     </div>
                     <?php endforeach; ?>
@@ -417,6 +421,47 @@ include SITE_ROOT . '/includes/header.php';
 
                 <button type="submit" class="btn btn-primary">Save Theme</button>
             </form>
+
+            <style>
+            .theme-swatch:focus-visible {
+                outline: 2px solid var(--color-accent);
+                outline-offset: 2px;
+            }
+            </style>
+
+            <script>
+            (function () {
+                var ACTIVE_BORDER  = '#e94560';
+                var ACTIVE_SHADOW  = '0 0 0 3px rgba(233,69,96,.35)';
+                var INACTIVE_BORDER = 'rgba(255,255,255,.15)';
+
+                var swatches = document.querySelectorAll('.theme-swatch');
+                var input    = document.getElementById('site-theme-input');
+
+                function selectSwatch(sw) {
+                    swatches.forEach(function (s) {
+                        var isActive = s === sw;
+                        s.setAttribute('aria-checked', isActive ? 'true' : 'false');
+                        s.style.borderColor = isActive ? ACTIVE_BORDER : INACTIVE_BORDER;
+                        s.style.boxShadow   = isActive ? ACTIVE_SHADOW : '';
+                        s.classList.toggle('theme-swatch--active', isActive);
+                        var label = s.querySelector('div:last-child');
+                        if (label) { label.innerHTML = isActive ? '&#10003; Active' : '&nbsp;'; }
+                    });
+                    input.value = sw.dataset.themeSlug;
+                }
+
+                swatches.forEach(function (sw) {
+                    sw.addEventListener('click', function () { selectSwatch(sw); });
+                    sw.addEventListener('keydown', function (e) {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            selectSwatch(sw);
+                        }
+                    });
+                });
+            }());
+            </script>
         </section>
     </main>
 </div>
