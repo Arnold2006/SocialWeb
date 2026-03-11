@@ -5,15 +5,17 @@
  * GET /chat/get_messages.php
  *
  * Query params:
- *   conversation_id  (required) — the conversation to fetch
+ *   conversation_id  (required unless receiver_id given) — the conversation to fetch
+ *   receiver_id      (alternative) — look up conversation by the other user's ID
  *   after_id         (optional) — only return messages with id > after_id  (for polling)
  *   before_id        (optional) — only return messages with id < before_id (load older)
  *
  * Loads the latest 50 messages by default. Older messages are fetched via before_id.
  *
  * Response:
- *   { ok: true, messages: [ { id, sender_id, is_mine, message_text, image_url,
- *                              created_at, time_ago, sender_username, sender_avatar_url } ] }
+ *   { ok: true, conversation_id: N|null, messages: [ { id, sender_id, is_mine,
+ *     message_text, image_url, created_at, time_ago, sender_username,
+ *     sender_avatar_url } ] }
  */
 
 declare(strict_types=1);
@@ -26,9 +28,27 @@ if (!is_logged_in()) {
     exit;
 }
 
-$user   = current_user();
-$uid    = (int) $user['id'];
-$convId = sanitise_int($_GET['conversation_id'] ?? 0);
+$user       = current_user();
+$uid        = (int) $user['id'];
+$convId     = sanitise_int($_GET['conversation_id'] ?? 0);
+$receiverId = sanitise_int($_GET['receiver_id']      ?? 0);
+
+// Resolve conversation by receiver_id when conversation_id is not given
+if ($convId < 1 && $receiverId > 0 && $receiverId !== $uid) {
+    $u1 = min($uid, $receiverId);
+    $u2 = max($uid, $receiverId);
+    $convRow = db_row(
+        'SELECT id FROM conversations WHERE user1_id = ? AND user2_id = ?',
+        [$u1, $u2]
+    );
+    if ($convRow) {
+        $convId = (int) $convRow['id'];
+    } else {
+        // No conversation yet — return empty response with null conversation_id
+        echo json_encode(['ok' => true, 'conversation_id' => null, 'messages' => []]);
+        exit;
+    }
+}
 
 if ($convId < 1) {
     echo json_encode(['ok' => false, 'error' => 'Invalid conversation_id']);
@@ -105,4 +125,4 @@ foreach ($messages as $msg) {
     ];
 }
 
-echo json_encode(['ok' => true, 'messages' => $result]);
+echo json_encode(['ok' => true, 'conversation_id' => $convId, 'messages' => $result]);
