@@ -41,6 +41,16 @@ $members = db_query(
 include SITE_ROOT . '/includes/header.php';
 ?>
 
+<div class="two-col-layout">
+
+    <!-- ── Left Column ─────────────────────────────────────────── -->
+    <aside class="col-left">
+        <?php include SITE_ROOT . '/includes/sidebar_widgets.php'; ?>
+    </aside>
+
+    <!-- ── Right Column ────────────────────────────────────────── -->
+    <main class="col-right">
+
 <div class="page-header">
     <h1>Members</h1>
     <form method="GET" class="search-form">
@@ -81,5 +91,9 @@ include SITE_ROOT . '/includes/header.php';
 
 <?= pagination_links($page, $pages, SITE_URL . '/pages/members.php' . ($search ? '?search=' . urlencode($search) : '')) ?>
 <?php endif; ?>
+
+    </main>
+
+</div><!-- /.two-col-layout -->
 
 <?php include SITE_ROOT . '/includes/footer.php'; ?>
