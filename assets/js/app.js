@@ -512,7 +512,8 @@ if (avatarInput && cropContainer && cropCanvas) {
     if (!modal || !canvas) return;
 
     let coverImage = null;
-    let imgScale   = 1;
+    let imgScale          = 1;
+    let canvasToOrigScale = 1; // converts canvas px → original image px
     let cropState  = { startX: 0, startY: 0, endX: 0, endY: 0, isDragging: false,
                        mode: 'draw', moveOX: 0, moveOY: 0 };
     let currentCrop = { x: 0, y: 0, w: 0, h: 0 };
@@ -522,9 +523,11 @@ if (avatarInput && cropContainer && cropCanvas) {
         const btn = e.target.closest('.set-cover-btn');
         if (!btn) return;
 
-        const mediaSrc = btn.dataset.mediaSrc;
-        const mediaId  = btn.dataset.mediaId;
-        const albumId  = btn.dataset.albumId;
+        const mediaSrc  = btn.dataset.mediaSrc;
+        const mediaId   = btn.dataset.mediaId;
+        const albumId   = btn.dataset.albumId;
+        const origWidth  = parseInt(btn.dataset.origWidth,  10) || 0;
+        const origHeight = parseInt(btn.dataset.origHeight, 10) || 0;
 
         albumIdEl.value = albumId;
         mediaIdEl.value = mediaId;
@@ -538,6 +541,11 @@ if (avatarInput && cropContainer && cropCanvas) {
             canvas.width  = Math.round(img.width  * imgScale);
             canvas.height = Math.round(img.height * imgScale);
 
+            // canvasToOrigScale converts canvas coordinates to original-image coordinates.
+            // The mediaSrc is a scaled-down version of the original; use the stored
+            // original dimensions so crop coordinates sent to the server are correct.
+            canvasToOrigScale = (origWidth > 0 ? origWidth : img.width) / canvas.width;
+
             const ctx = canvas.getContext('2d');
             ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
@@ -548,10 +556,10 @@ if (avatarInput && cropContainer && cropCanvas) {
             currentCrop = { x: cx, y: cy, w: side, h: side };
             drawCoverOverlay(cx, cy, side, side);
             setCoverCropInputs(
-                Math.round(cx / imgScale),
-                Math.round(cy / imgScale),
-                Math.round(side / imgScale),
-                Math.round(side / imgScale)
+                Math.round(cx   * canvasToOrigScale),
+                Math.round(cy   * canvasToOrigScale),
+                Math.round(side * canvasToOrigScale),
+                Math.round(side * canvasToOrigScale)
             );
 
             modal.style.display = 'flex';
@@ -622,10 +630,10 @@ if (avatarInput && cropContainer && cropCanvas) {
             currentCrop.y = ny;
             drawCoverOverlay(nx, ny, currentCrop.w, currentCrop.h);
             setCoverCropInputs(
-                Math.round(nx / imgScale),
-                Math.round(ny / imgScale),
-                Math.round(currentCrop.w / imgScale),
-                Math.round(currentCrop.h / imgScale)
+                Math.round(nx             * canvasToOrigScale),
+                Math.round(ny             * canvasToOrigScale),
+                Math.round(currentCrop.w  * canvasToOrigScale),
+                Math.round(currentCrop.h  * canvasToOrigScale)
             );
         } else {
             // Draw a new crop selection (square-constrained)
@@ -641,10 +649,10 @@ if (avatarInput && cropContainer && cropCanvas) {
             currentCrop = { x, y, w: side, h: side };
             drawCoverOverlay(x, y, side, side);
             setCoverCropInputs(
-                Math.round(x / imgScale),
-                Math.round(y / imgScale),
-                Math.round(side / imgScale),
-                Math.round(side / imgScale)
+                Math.round(x    * canvasToOrigScale),
+                Math.round(y    * canvasToOrigScale),
+                Math.round(side * canvasToOrigScale),
+                Math.round(side * canvasToOrigScale)
             );
         }
     }
