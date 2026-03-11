@@ -1341,6 +1341,16 @@ textarea { resize: vertical; min-height: 80px; }
     margin-left: auto;
 }
 
+.notif-delete-btn {
+    margin-left: 0.5rem;
+    flex-shrink: 0;
+    opacity: 0.5;
+    transition: opacity var(--transition);
+}
+.notif-item:hover .notif-delete-btn {
+    opacity: 1;
+}
+
 /* ── Settings ────────────────────────────────────────────────── */
 .settings-layout {
     max-width: 640px;
