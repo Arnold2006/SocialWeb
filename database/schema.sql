@@ -1,4 +1,4 @@
--- Tor-Social Database Schema
+-- SocialWeb Database Schema
 -- PHP 8.3 / MySQL / MariaDB
 -- Invite-only social network platform
 
@@ -254,7 +254,7 @@ CREATE TABLE IF NOT EXISTS `site_settings` (
 -- Default site settings
 -- --------------------------------------------------------
 INSERT IGNORE INTO `site_settings` (`key`, `value`) VALUES
-  ('site_name', 'Tor-Social'),
+  ('site_name', 'SocialWeb'),
   ('site_description', 'An invite-only social network'),
   ('allow_registration', '1'),
   ('posts_per_page', '20'),

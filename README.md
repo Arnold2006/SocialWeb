@@ -1,4 +1,4 @@
-# Tor-Social
+# SocialWeb
 
 An invite-only social network platform built with PHP 8.3, MySQL/MariaDB, and vanilla JavaScript. Self-hosted, no external dependencies.
 
@@ -71,13 +71,13 @@ sudo systemctl restart php-fpm
 
 ## Installation
 
-1. **Clone / extract** the project into your web server's document root (e.g. `/var/www/html/Tor-Social`)
+1. **Clone / extract** the project into your web server's document root (e.g. `/var/www/html/SocialWeb`)
 
 2. **Create the database**:
    ```sql
-   CREATE DATABASE tor_social CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-   CREATE USER 'tor_social_user'@'localhost' IDENTIFIED BY 'your_password';
-   GRANT ALL PRIVILEGES ON tor_social.* TO 'tor_social_user'@'localhost';
+   CREATE DATABASE socialweb CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+   CREATE USER 'socialweb_user'@'localhost' IDENTIFIED BY 'your_password';
+   GRANT ALL PRIVILEGES ON socialweb.* TO 'socialweb_user'@'localhost';
    ```
 
 3. **Configure the application** — copy and edit:

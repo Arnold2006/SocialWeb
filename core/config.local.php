@@ -15,7 +15,7 @@ if (file_exists($localConfig)) {
 }
 
 // ── Site ────────────────────────────────────────────────────────────────────
-if (!defined('SITE_NAME'))  define('SITE_NAME',  'Tor-Social');
+if (!defined('SITE_NAME'))  define('SITE_NAME',  'SocialWeb');
 if (!defined('SITE_URL'))   define('SITE_URL',   'http://224juube732bzbbhtwhvx5xzo67pg2txbnuioc6zjhnz2actpc2pziyd.onion');  // no trailing slash
 if (!defined('SITE_ROOT'))  define('SITE_ROOT',  dirname(__DIR__));               // /path/to/social-network
 if (!defined('SITE_DEBUG')) define('SITE_DEBUG', false);                          // set true only in dev
