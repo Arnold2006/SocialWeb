@@ -263,6 +263,7 @@ INSERT IGNORE INTO `site_settings` (`key`, `value`) VALUES
   ('cache_ttl', '30'),
   ('banner_overlay_x',    '50'),
   ('banner_overlay_y',    '50'),
-  ('banner_overlay_size', '2.4');
+  ('banner_overlay_size', '2.4'),
+  ('site_theme',          'blue-red');
 
 SET FOREIGN_KEY_CHECKS = 1;

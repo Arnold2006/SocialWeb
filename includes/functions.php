@@ -184,3 +184,20 @@ function site_setting(string $key, string $default = ''): string
     }
     return $cache[$key];
 }
+
+/**
+ * Return the list of valid colour theme slugs.
+ */
+function valid_themes(): array
+{
+    return ['blue-red', 'gray-orange', 'purple-red'];
+}
+
+/**
+ * Return the active site theme slug, falling back to 'blue-red'.
+ */
+function active_theme(): string
+{
+    $theme = site_setting('site_theme', 'blue-red');
+    return in_array($theme, valid_themes(), true) ? $theme : 'blue-red';
+}

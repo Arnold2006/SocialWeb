@@ -147,6 +147,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         flash_set('success', 'Banner image removed.');
         redirect(SITE_URL . '/admin/settings.php');
+    } elseif ($action === 'save_theme') {
+        // ── Save site colour theme ───────────────────────────────────────────
+        $theme = in_array($_POST['site_theme'] ?? '', valid_themes(), true)
+            ? $_POST['site_theme'] : 'blue-red';
+
+        db_exec(
+            "INSERT INTO site_settings (`key`, value) VALUES ('site_theme', ?)
+             ON DUPLICATE KEY UPDATE value = ?",
+            [$theme, $theme]
+        );
+
+        flash_set('success', 'Colour theme updated.');
+        redirect(SITE_URL . '/admin/settings.php');
     } elseif ($action === 'save_overlay') {
         // ── Save site-name overlay position, size, colour, font & shadow ───
         $ox   = max(0, min(100, (float)($_POST['overlay_x']    ?? 50)));
@@ -193,6 +206,8 @@ $overlaySize    = site_setting('banner_overlay_size',   '2.4');
 $overlayColor   = site_setting('banner_overlay_color',  '#ffffff');
 $overlayFont    = site_setting('banner_overlay_font',   'system');
 $overlayShadow  = site_setting('banner_overlay_shadow', 'medium');
+
+$currentTheme = active_theme();
 
 // CSS maps (shared via includes/overlay_maps.php; also mirrored in assets/js/app.js)
 require_once SITE_ROOT . '/includes/overlay_maps.php';
@@ -355,6 +370,52 @@ include SITE_ROOT . '/includes/header.php';
                 </div>
 
                 <button type="submit" class="btn btn-primary">Save Overlay</button>
+            </form>
+        </section>
+
+        <!-- ── Colour Theme ──────────────────────────────────────── -->
+        <section class="admin-section" style="margin-top:2rem">
+            <h2>Colour Theme</h2>
+            <p class="muted" style="margin-bottom:1rem">
+                Choose a global colour scheme for the entire site.
+                The change takes effect immediately for all visitors.
+            </p>
+
+            <form method="POST" class="settings-form">
+                <?= csrf_field() ?>
+                <input type="hidden" name="action" value="save_theme">
+
+                <div class="form-group" style="max-width:420px">
+                    <label class="form-label" for="site-theme-select">Active Theme</label>
+                    <select id="site-theme-select" name="site_theme" class="form-control">
+                        <option value="blue-red"<?= $currentTheme === 'blue-red'     ? ' selected' : '' ?>>Blue &amp; Red (default)</option>
+                        <option value="gray-orange"<?= $currentTheme === 'gray-orange' ? ' selected' : '' ?>>Gray &amp; Orange</option>
+                        <option value="purple-red"<?= $currentTheme === 'purple-red'  ? ' selected' : '' ?>>Purple &amp; Red</option>
+                    </select>
+                </div>
+
+                <!-- Swatches preview -->
+                <div style="display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:1.25rem">
+                    <?php
+                    $themePreviews = [
+                        'blue-red'    => ['bg' => '#1a1a2e', 'surface' => '#16213e', 'accent' => '#e94560', 'label' => 'Blue &amp; Red'],
+                        'gray-orange' => ['bg' => '#1c1c1c', 'surface' => '#252525', 'accent' => '#e87c2a', 'label' => 'Gray &amp; Orange'],
+                        'purple-red'  => ['bg' => '#1a0a2e', 'surface' => '#230e3c', 'accent' => '#e94560', 'label' => 'Purple &amp; Red'],
+                    ];
+                    foreach ($themePreviews as $slug => $tp):
+                        $active = $currentTheme === $slug;
+                    ?>
+                    <div style="border:2px solid <?= $active ? 'var(--color-accent)' : 'var(--color-border)' ?>;border-radius:var(--radius-md);overflow:hidden;width:140px;cursor:pointer"
+                         title="<?= $tp['label'] ?>">
+                        <div style="background:<?= $tp['bg'] ?>;padding:.6rem .75rem">
+                            <div style="background:<?= $tp['surface'] ?>;border-radius:var(--radius-sm);padding:.4rem .5rem;margin-bottom:.4rem;font-size:.75rem;color:#e0e0e0">Surface</div>
+                            <div style="background:<?= $tp['accent'] ?>;border-radius:var(--radius-sm);padding:.3rem .5rem;font-size:.75rem;color:#fff;font-weight:600"><?= $tp['label'] ?></div>
+                        </div>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Save Theme</button>
             </form>
         </section>
     </main>
