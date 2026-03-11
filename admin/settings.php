@@ -427,18 +427,30 @@ include SITE_ROOT . '/includes/header.php';
                 outline: 2px solid var(--color-accent);
                 outline-offset: 2px;
             }
+            .theme-swatch:not(.theme-swatch--active):hover {
+                border-color: #2ecc71 !important;
+                box-shadow: 0 0 0 3px rgba(46,204,113,.25) !important;
+            }
             </style>
 
             <script>
             (function () {
-                var ACTIVE_BORDER  = '#e94560';
-                var ACTIVE_SHADOW  = '0 0 0 3px rgba(233,69,96,.35)';
+                var ACTIVE_BORDER   = '#e94560';
+                var ACTIVE_SHADOW   = '0 0 0 3px rgba(233,69,96,.35)';
                 var INACTIVE_BORDER = 'rgba(255,255,255,.15)';
 
                 var swatches = document.querySelectorAll('.theme-swatch');
                 var input    = document.getElementById('site-theme-input');
+                var form     = document.getElementById('theme-form');
+
+                /* Hide the manual save button – selection now auto-saves */
+                var saveBtn = form ? form.querySelector('button[type="submit"]') : null;
+                if (saveBtn) { saveBtn.style.display = 'none'; }
 
                 function selectSwatch(sw) {
+                    /* Skip if this swatch is already the active theme */
+                    if (sw.classList.contains('theme-swatch--active')) { return; }
+
                     swatches.forEach(function (s) {
                         var isActive = s === sw;
                         s.setAttribute('aria-checked', isActive ? 'true' : 'false');
@@ -449,6 +461,7 @@ include SITE_ROOT . '/includes/header.php';
                         if (label) { label.innerHTML = isActive ? '&#10003; Active' : '&nbsp;'; }
                     });
                     input.value = sw.dataset.themeSlug;
+                    form.submit();
                 }
 
                 swatches.forEach(function (sw) {
