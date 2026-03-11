@@ -541,3 +541,178 @@ function cover_delete_file(string $relPath): void
         @unlink($absPath);
     }
 }
+
+// ── Album upload wall post ────────────────────────────────────────────────────
+
+/**
+ * Generate a mosaic composite image from up to 4 image media items.
+ *
+ * Creates a 600×600 JPEG with a 2×2 grid; each cell is filled by centre-cropping
+ * the corresponding thumbnail.  Empty cells are left as a neutral background.
+ *
+ * @param array $mediaItems  Rows from the media table (type=image).
+ * @return array{ok: bool, error: string, mosaic_path: string}
+ */
+function generate_album_mosaic(array $mediaItems): array
+{
+    $mosaicDir = UPLOADS_DIR . '/images/mosaics';
+    if (!is_dir($mosaicDir)) {
+        mkdir($mosaicDir, 0755, true);
+    }
+
+    $items = array_slice($mediaItems, 0, 4);
+    if (empty($items)) {
+        return ['ok' => false, 'error' => 'No images provided.', 'mosaic_path' => ''];
+    }
+
+    // 600×600 canvas with a dark neutral background
+    $canvas  = imagecreatetruecolor(600, 600);
+    $bgColor = imagecolorallocate($canvas, 40, 40, 40);
+    imagefill($canvas, 0, 0, $bgColor);
+
+    // Cell positions [dst_x, dst_y, dst_w, dst_h] in a 2×2 grid
+    $positions = [
+        [0,   0,   300, 300],
+        [300, 0,   300, 300],
+        [0,   300, 300, 300],
+        [300, 300, 300, 300],
+    ];
+
+    $finfo = new finfo(FILEINFO_MIME_TYPE);
+
+    foreach ($items as $i => $item) {
+        $thumbPath = $item['thumb_path'] ?? '';
+        if (empty($thumbPath) || !file_exists($thumbPath)) {
+            continue;
+        }
+
+        $mime = $finfo->file($thumbPath);
+        $src  = image_create_from_upload($thumbPath, $mime);
+        if ($src === false) {
+            continue;
+        }
+
+        $srcW = imagesx($src);
+        $srcH = imagesy($src);
+
+        if ($srcW <= 0 || $srcH <= 0) {
+            imagedestroy($src);
+            continue;
+        }
+
+        [$dx, $dy, $dw, $dh] = $positions[$i];
+
+        // Centre-crop: scale so the shorter dimension fills the cell
+        $scale = max($dw / max(1, $srcW), $dh / max(1, $srcH));
+        $srcCW = (int) round($dw / $scale);
+        $srcCH = (int) round($dh / $scale);
+        $srcX  = (int) round(($srcW - $srcCW) / 2);
+        $srcY  = (int) round(($srcH - $srcCH) / 2);
+
+        imagecopyresampled($canvas, $src, $dx, $dy, $srcX, $srcY, $dw, $dh, $srcCW, $srcCH);
+        imagedestroy($src);
+    }
+
+    $baseName = 'mosaic_' . bin2hex(random_bytes(8));
+    $destPath = $mosaicDir . '/' . $baseName . '.jpg';
+
+    $saved = imagejpeg($canvas, $destPath, 85);
+    imagedestroy($canvas);
+
+    if (!$saved) {
+        return ['ok' => false, 'error' => 'Could not save mosaic image.', 'mosaic_path' => ''];
+    }
+
+    return ['ok' => true, 'error' => '', 'mosaic_path' => $destPath];
+}
+
+/**
+ * Create a system wall post announcing an album upload.
+ *
+ * Generates a mosaic thumbnail from up to 4 of the uploaded images and inserts
+ * a post of type 'album_upload' into the posts table.
+ *
+ * @param int    $userId       ID of the uploading user.
+ * @param int    $albumId      ID of the target album.
+ * @param string $albumTitle   Human-readable album title.
+ * @param int    $uploadCount  Total number of files uploaded (images + videos).
+ * @param int[]  $mediaIds     IDs of the newly-inserted media records.
+ */
+function create_album_upload_post(
+    int    $userId,
+    int    $albumId,
+    string $albumTitle,
+    int    $uploadCount,
+    array  $mediaIds
+): void {
+    if (empty($mediaIds)) {
+        return;
+    }
+
+    // Fetch up to 4 image records from the batch for mosaic generation
+    $placeholders = implode(',', array_fill(0, count($mediaIds), '?'));
+    $imageMedia   = db_query(
+        "SELECT * FROM media
+         WHERE id IN ($placeholders) AND type = 'image' AND is_deleted = 0
+         LIMIT 4",
+        $mediaIds
+    );
+
+    $mosaicMediaId = null;
+    if (!empty($imageMedia)) {
+        $mosaicResult = generate_album_mosaic($imageMedia);
+        if ($mosaicResult['ok']) {
+            $mosaicPath    = $mosaicResult['mosaic_path'];
+            $mosaicMediaId = (int) db_insert(
+                'INSERT INTO media
+                    (user_id, album_id, type, file_hash, storage_path,
+                     large_path, medium_path, thumb_path, size, mime_type)
+                 VALUES (?, ?, "image", ?, ?, ?, ?, ?, ?, "image/jpeg")',
+                [
+                    $userId,
+                    $albumId,
+                    hash_file('sha256', $mosaicPath),
+                    $mosaicPath,
+                    $mosaicPath,
+                    $mosaicPath,
+                    $mosaicPath,
+                    filesize($mosaicPath),
+                ]
+            );
+        }
+    }
+
+    $imageCount = count($imageMedia);
+    $videoCount = $uploadCount - $imageCount;
+
+    if ($imageCount > 0 && $videoCount > 0) {
+        $content = sprintf(
+            '📷 Added %d file%s to album "%s"',
+            $uploadCount,
+            $uploadCount !== 1 ? 's' : '',
+            $albumTitle
+        );
+    } elseif ($videoCount > 0) {
+        $content = sprintf(
+            '🎬 Added %d video%s to album "%s"',
+            $videoCount,
+            $videoCount !== 1 ? 's' : '',
+            $albumTitle
+        );
+    } else {
+        $content = sprintf(
+            '📷 Added %d photo%s to album "%s"',
+            $imageCount,
+            $imageCount !== 1 ? 's' : '',
+            $albumTitle
+        );
+    }
+
+    db_insert(
+        'INSERT INTO posts (user_id, content, media_id, post_type, album_id)
+         VALUES (?, ?, ?, "album_upload", ?)',
+        [$userId, $content, $mosaicMediaId, $albumId]
+    );
+
+    cache_invalidate_wall();
+}

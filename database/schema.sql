@@ -70,6 +70,8 @@ CREATE TABLE IF NOT EXISTS `posts` (
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   `is_deleted` TINYINT(1) NOT NULL DEFAULT 0,
+  `post_type`  ENUM('user','album_upload') NOT NULL DEFAULT 'user',
+  `album_id`   INT UNSIGNED DEFAULT NULL,             -- set for album_upload system posts
   PRIMARY KEY (`id`),
   KEY `idx_user_id` (`user_id`),
   KEY `idx_created_at` (`created_at`),
