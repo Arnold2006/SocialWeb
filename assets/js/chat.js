@@ -1,45 +1,55 @@
 /**
- * chat.js — Real-time chat widget
+ * chat.js — Oxwall-style real-time chat widget
  *
  * Features:
- *  - Floating toggle button (bottom-right corner)
- *  - Conversation list with unread counts
- *  - Real-time message polling every 3 seconds
+ *  - Fixed contact sidebar (bottom-right) listing ALL site members
+ *  - "Find Contact" search to filter the contact list
+ *  - Multiple simultaneous floating chat windows stacked to the left
+ *  - Per-window message polling (3 s) and global unread-badge poll (15 s)
  *  - Text messaging and drag-and-drop / click-to-upload image sharing
+ *  - Load older messages on scroll-up (50 at a time)
  *  - Auto-scroll to newest message
- *  - Load older messages on scroll-up (50 messages at a time)
- *  - Dark-theme bubbles: sent messages align right, received align left
  */
 
 'use strict';
 
 (function () {
 
-    /* ── State ─────────────────────────────────────────────────────────────── */
+    /* ── Constants ───────────────────────────────────────────────────────── */
 
-    const state = {
-        isOpen:                false,
-        activeConversationId:  null,    // null = no open conversation
-        activeReceiverId:      null,
-        activeReceiverName:    '',
-        activeReceiverAvatar:  '',
-        newestMessageId:       0,
-        oldestMessageId:       null,
-        isLoadingOlder:        false,
-        msgPollTimer:          null,
-        convPollTimer:         null,
-    };
+    const POLL_MSG_MS   = 3000;   // per-window message poll interval
+    const POLL_BADGE_MS = 15000;  // background badge-refresh interval
 
-    /* ── DOM references (resolved once on init) ─────────────────────────────── */
+    /* ── Module state ────────────────────────────────────────────────────── */
 
-    let elWidget, elToggle, elBadge, elPanel;
-    let elConvsPanel, elConvsList;
-    let elChatWindow, elChatWindowAvatar, elChatWindowName;
-    let elMessages, elInput, elSendBtn, elImageInput;
-    let elBackBtn, elCloseBtn;
-    let csrfToken, siteUrl;
+    /** Map<userId:number, WindowState> */
+    const openWindows = new Map();
 
-    /* ── Helpers ────────────────────────────────────────────────────────────── */
+    let csrfToken     = '';
+    let siteUrl       = '';
+    let sidebarOpen   = false;
+    let badgePollTimer = null;
+    let searchTimer    = null;
+
+    /**
+     * WindowState shape:
+     * {
+     *   userId        : number,
+     *   username      : string,
+     *   avatarUrl     : string,
+     *   convId        : number|null,
+     *   newestMsgId   : number,
+     *   oldestMsgId   : number|null,
+     *   isLoadingOlder: boolean,
+     *   pollTimer     : number|null,
+     *   el            : Element,
+     *   elMessages    : Element,
+     *   elInput       : Element,
+     *   elImageInput  : Element,
+     * }
+     */
+
+    /* ── DOM helpers ─────────────────────────────────────────────────────── */
 
     /** Escape a string for safe insertion into HTML */
     function esc(str) {
@@ -52,38 +62,35 @@
     async function apiPost(url, fields) {
         const fd = new FormData();
         fd.append('csrf_token', csrfToken);
-        for (const [k, v] of Object.entries(fields)) {
-            fd.append(k, v);
-        }
-        const resp = await fetch(url, {
-            method: 'POST',
-            body: fd,
-            credentials: 'same-origin',
-        });
+        for (const [k, v] of Object.entries(fields)) fd.append(k, v);
+        const resp = await fetch(url, { method: 'POST', body: fd, credentials: 'same-origin' });
         return resp.json();
     }
 
-    /** Build the DOM element for a single message bubble */
+    function scrollToBottom(elMessages) {
+        elMessages.scrollTop = elMessages.scrollHeight;
+    }
+
+    /* ── Message bubble builder ──────────────────────────────────────────── */
+
     function buildMessageEl(msg) {
         const div = document.createElement('div');
         div.className = 'chat-msg ' + (msg.is_mine ? 'chat-msg--mine' : 'chat-msg--theirs');
         div.dataset.id = msg.id;
 
-        let bubbleContent = '';
+        let bubble = '';
 
         if (msg.message_text) {
-            bubbleContent += '<p class="chat-bubble-text">'
+            bubble += '<p class="chat-bubble-text">'
                 + esc(msg.message_text).replace(/\n/g, '<br>')
                 + '</p>';
         }
 
         if (msg.image_url) {
-            bubbleContent += '<a href="' + esc(msg.image_url) + '" target="_blank"'
-                + ' rel="noopener noreferrer" class="chat-img-link"'
-                + ' download>'
+            bubble += '<a href="' + esc(msg.image_url) + '" target="_blank"'
+                + ' rel="noopener noreferrer" class="chat-img-link" download>'
                 + '<img src="' + esc(msg.image_url) + '" alt="Shared image"'
-                + ' class="chat-img-preview" loading="lazy">'
-                + '</a>';
+                + ' class="chat-img-preview" loading="lazy"></a>';
         }
 
         const avatarHtml = '<img src="' + esc(msg.sender_avatar_url) + '" alt=""'
@@ -91,7 +98,7 @@
 
         div.innerHTML = (msg.is_mine ? '' : avatarHtml)
             + '<div class="chat-bubble">'
-            +   bubbleContent
+            +   bubble
             +   '<time class="chat-msg-time">' + esc(msg.time_ago) + '</time>'
             + '</div>'
             + (msg.is_mine ? avatarHtml : '');
@@ -99,262 +106,271 @@
         return div;
     }
 
-    /* ── Conversation list rendering ───────────────────────────────────────── */
+    /* ── Window creation ─────────────────────────────────────────────────── */
 
-    function renderConversations(convs) {
-        if (!convs.length) {
-            elConvsList.innerHTML = '<p class="chat-empty">No conversations yet.<br>'
-                + 'Visit a member\'s profile to start one.</p>';
+    function createWindowEl(ws) {
+        const div = document.createElement('div');
+        div.className = 'chat-window';
+        div.dataset.userId = ws.userId;
+
+        div.innerHTML =
+            '<div class="chat-window-header">'
+            + '<img src="' + esc(ws.avatarUrl) + '" alt="" class="chat-window-avatar"'
+            + ' width="26" height="26" loading="lazy">'
+            + '<span class="chat-window-name">' + esc(ws.username) + '</span>'
+            + '<button class="chat-win-close-btn" aria-label="Close">&#x2715;</button>'
+            + '</div>'
+            + '<div class="chat-messages" role="log" aria-live="polite"'
+            + ' aria-label="Messages"></div>'
+            + '<div class="chat-compose">'
+            + '<input type="text" class="chat-input" placeholder="Text Message"'
+            + ' maxlength="5000" autocomplete="off" aria-label="Message text">'
+            + '<label class="chat-upload-label"'
+            + ' title="Attach image (JPG, PNG, WEBP, GIF — max 10 MB)"'
+            + ' aria-label="Attach image">'
+            + '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21.44 11.05l-9.19'
+            + ' 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66L9.41 17.41a2 2'
+            + ' 0 0 1-2.83-2.83l8.49-8.48"/></svg>'
+            + '<input type="file" class="chat-image-input"'
+            + ' accept="image/jpeg,image/png,image/webp,image/gif"'
+            + ' style="display:none" aria-hidden="true">'
+            + '</label>'
+            + '</div>';
+
+        ws.el           = div;
+        ws.elMessages   = div.querySelector('.chat-messages');
+        ws.elInput      = div.querySelector('.chat-input');
+        ws.elImageInput = div.querySelector('.chat-image-input');
+
+        /* Close button */
+        div.querySelector('.chat-win-close-btn').addEventListener('click', e => {
+            e.stopPropagation();
+            closeWindow(ws.userId);
+        });
+
+        /* Send on Enter */
+        ws.elInput.addEventListener('keydown', e => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage(ws);
+            }
+        });
+
+        /* Image file input */
+        ws.elImageInput.addEventListener('change', e => {
+            if (e.target.files[0]) {
+                uploadImage(ws, e.target.files[0]);
+                e.target.value = '';
+            }
+        });
+
+        /* Drag and drop */
+        ws.elMessages.addEventListener('dragover', e => {
+            e.preventDefault();
+            ws.elMessages.classList.add('chat-drop-active');
+        });
+        ws.elMessages.addEventListener('dragleave', e => {
+            if (!ws.elMessages.contains(e.relatedTarget)) {
+                ws.elMessages.classList.remove('chat-drop-active');
+            }
+        });
+        ws.elMessages.addEventListener('drop', e => {
+            e.preventDefault();
+            ws.elMessages.classList.remove('chat-drop-active');
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.startsWith('image/')) uploadImage(ws, file);
+        });
+
+        /* Scroll-up: load older messages */
+        ws.elMessages.addEventListener('scroll', () => {
+            if (ws.elMessages.scrollTop === 0) loadOlderMessages(ws);
+        });
+
+        return div;
+    }
+
+    /* ── Open / close window ─────────────────────────────────────────────── */
+
+    async function openWindow(userId, username, avatarUrl) {
+        userId = parseInt(userId, 10);
+
+        if (openWindows.has(userId)) {
+            // Window already open — just focus the input
+            openWindows.get(userId).elInput.focus();
             return;
         }
 
-        elConvsList.innerHTML = '';
-        convs.forEach(c => {
-            const item = document.createElement('div');
-            item.className = 'chat-conv-item'
-                + (c.id === state.activeConversationId ? ' chat-conv-item--active' : '');
-            item.dataset.convId   = c.id;
-            item.dataset.userId   = c.other_user.id;
-            item.dataset.username = c.other_user.username;
-            item.dataset.avatar   = c.other_user.avatar_url;
+        const ws = {
+            userId,
+            username,
+            avatarUrl,
+            convId:         null,
+            newestMsgId:    0,
+            oldestMsgId:    null,
+            isLoadingOlder: false,
+            pollTimer:      null,
+            el:             null,
+            elMessages:     null,
+            elInput:        null,
+            elImageInput:   null,
+        };
 
-            item.innerHTML = '<img src="' + esc(c.other_user.avatar_url) + '" alt=""'
-                + ' class="chat-conv-avatar" width="40" height="40" loading="lazy">'
-                + '<div class="chat-conv-body">'
-                +   '<span class="chat-conv-name">' + esc(c.other_user.username) + '</span>'
-                +   '<span class="chat-conv-preview">' + esc(c.last_message) + '</span>'
-                + '</div>'
-                + '<div class="chat-conv-meta">'
-                +   '<span class="chat-conv-time">' + esc(c.last_time) + '</span>'
-                +   (c.unread_count > 0 ? '<span class="badge">' + c.unread_count + '</span>' : '')
-                + '</div>';
+        openWindows.set(userId, ws);
 
-            item.addEventListener('click', () => openConversation(
-                c.id,
-                c.other_user.id,
-                c.other_user.username,
-                c.other_user.avatar_url
-            ));
+        const container = document.getElementById('chat-windows-container');
+        container.appendChild(createWindowEl(ws));
 
-            elConvsList.appendChild(item);
-        });
+        // Load initial messages (if a conversation already exists)
+        await loadMessages(ws);
+
+        // Start per-window polling
+        ws.pollTimer = setInterval(() => pollMessages(ws), POLL_MSG_MS);
+
+        ws.elInput.focus();
     }
 
-    /* ── Conversation fetching ─────────────────────────────────────────────── */
+    function closeWindow(userId) {
+        const ws = openWindows.get(parseInt(userId, 10));
+        if (!ws) return;
+        if (ws.pollTimer) clearInterval(ws.pollTimer);
+        ws.el.remove();
+        openWindows.delete(parseInt(userId, 10));
+    }
 
-    async function loadConversations() {
+    /* ── Message loading ─────────────────────────────────────────────────── */
+
+    async function loadMessages(ws) {
         try {
-            const resp = await fetch(siteUrl + '/chat/get_conversations.php', {
-                credentials: 'same-origin',
-            });
-            const data = await resp.json();
-            if (!data.ok) return;
+            // If we already know the conversation ID, use it; otherwise resolve by receiver_id
+            const param = ws.convId
+                ? 'conversation_id=' + ws.convId
+                : 'receiver_id='     + ws.userId;
 
-            renderConversations(data.conversations);
-            updateToggleBadge(
-                data.conversations.reduce((sum, c) => sum + c.unread_count, 0)
-            );
-        } catch (_) { /* silent */ }
-    }
-
-    /* ── Open a conversation ───────────────────────────────────────────────── */
-
-    async function openConversation(convId, userId, username, avatarUrl) {
-        state.activeConversationId = convId;
-        state.activeReceiverId     = userId;
-        state.activeReceiverName   = username;
-        state.activeReceiverAvatar = avatarUrl;
-        state.newestMessageId      = 0;
-        state.oldestMessageId      = null;
-        state.isLoadingOlder       = false;
-
-        // Update window header
-        elChatWindowAvatar.src = avatarUrl;
-        elChatWindowAvatar.alt = username;
-        elChatWindowName.textContent = username;
-
-        // Switch panels
-        elConvsPanel.style.display  = 'none';
-        elChatWindow.style.display  = 'flex';
-
-        // Clear old messages
-        elMessages.innerHTML = '';
-
-        // Load initial messages
-        await loadMessages();
-
-        // Mark as read
-        if (convId) markRead(convId);
-
-        // Start per-message polling
-        startMsgPolling();
-    }
-
-    /* ── Message loading ───────────────────────────────────────────────────── */
-
-    async function loadMessages() {
-        if (!state.activeConversationId) return;
-
-        try {
             const resp = await fetch(
-                siteUrl + '/chat/get_messages.php?conversation_id=' + state.activeConversationId,
+                siteUrl + '/chat/get_messages.php?' + param,
                 { credentials: 'same-origin' }
             );
             const data = await resp.json();
-            if (!data.ok || !data.messages.length) return;
 
-            data.messages.forEach(msg => {
-                elMessages.appendChild(buildMessageEl(msg));
-            });
+            if (!data.ok) return;
 
-            state.newestMessageId = data.messages[data.messages.length - 1].id;
-            state.oldestMessageId = data.messages[0].id;
+            // Store conversation ID if the server resolved it
+            if (data.conversation_id) ws.convId = data.conversation_id;
 
-            scrollToBottom();
+            if (!data.messages.length) return;
+
+            data.messages.forEach(msg => ws.elMessages.appendChild(buildMessageEl(msg)));
+            ws.newestMsgId = data.messages[data.messages.length - 1].id;
+            ws.oldestMsgId = data.messages[0].id;
+            scrollToBottom(ws.elMessages);
+
+            if (ws.convId) markRead(ws.convId);
         } catch (_) { /* silent */ }
     }
 
-    async function loadOlderMessages() {
-        if (!state.activeConversationId || !state.oldestMessageId || state.isLoadingOlder) return;
+    async function loadOlderMessages(ws) {
+        if (!ws.convId || !ws.oldestMsgId || ws.isLoadingOlder) return;
 
-        state.isLoadingOlder = true;
-
-        // Remember scroll position so we can restore it after prepending
-        const prevHeight = elMessages.scrollHeight;
+        ws.isLoadingOlder = true;
+        const prevHeight  = ws.elMessages.scrollHeight;
 
         try {
             const resp = await fetch(
                 siteUrl + '/chat/get_messages.php'
-                + '?conversation_id=' + state.activeConversationId
-                + '&before_id=' + state.oldestMessageId,
+                + '?conversation_id=' + ws.convId
+                + '&before_id='       + ws.oldestMsgId,
                 { credentials: 'same-origin' }
             );
             const data = await resp.json();
-            if (!data.ok || !data.messages.length) {
-                state.isLoadingOlder = false;
+            if (!data.ok || !data.messages.length) { ws.isLoadingOlder = false; return; }
+
+            for (let i = data.messages.length - 1; i >= 0; i--) {
+                ws.elMessages.insertBefore(buildMessageEl(data.messages[i]), ws.elMessages.firstChild);
+            }
+            ws.oldestMsgId = data.messages[0].id;
+            ws.elMessages.scrollTop = ws.elMessages.scrollHeight - prevHeight;
+        } catch (_) { /* silent */ }
+
+        ws.isLoadingOlder = false;
+    }
+
+    async function pollMessages(ws) {
+        try {
+            // If no conversation yet, try to discover one that may have been created
+            if (!ws.convId) {
+                const resp = await fetch(
+                    siteUrl + '/chat/get_messages.php?receiver_id=' + ws.userId,
+                    { credentials: 'same-origin' }
+                );
+                const data = await resp.json();
+                if (data.ok && data.conversation_id) {
+                    ws.convId = data.conversation_id;
+                    if (data.messages.length) {
+                        data.messages.forEach(msg => ws.elMessages.appendChild(buildMessageEl(msg)));
+                        ws.newestMsgId = data.messages[data.messages.length - 1].id;
+                        ws.oldestMsgId = data.messages[0].id;
+                        scrollToBottom(ws.elMessages);
+                        markRead(ws.convId);
+                    }
+                }
                 return;
             }
 
-            // Prepend in reverse order so first message ends up on top
-            for (let i = data.messages.length - 1; i >= 0; i--) {
-                elMessages.insertBefore(buildMessageEl(data.messages[i]), elMessages.firstChild);
-            }
-
-            state.oldestMessageId = data.messages[0].id;
-
-            // Restore scroll so the user stays at the same visual position
-            elMessages.scrollTop = elMessages.scrollHeight - prevHeight;
-        } catch (_) { /* silent */ }
-
-        state.isLoadingOlder = false;
-    }
-
-    /* ── Polling ───────────────────────────────────────────────────────────── */
-
-    function startMsgPolling() {
-        if (state.msgPollTimer) clearInterval(state.msgPollTimer);
-        state.msgPollTimer = setInterval(pollNewMessages, 3000);
-    }
-
-    function stopMsgPolling() {
-        if (state.msgPollTimer) {
-            clearInterval(state.msgPollTimer);
-            state.msgPollTimer = null;
-        }
-    }
-
-    async function pollNewMessages() {
-        if (!state.activeConversationId) return;
-
-        try {
             const resp = await fetch(
                 siteUrl + '/chat/get_messages.php'
-                + '?conversation_id=' + state.activeConversationId
-                + '&after_id=' + state.newestMessageId,
+                + '?conversation_id=' + ws.convId
+                + '&after_id='        + ws.newestMsgId,
                 { credentials: 'same-origin' }
             );
             const data = await resp.json();
             if (!data.ok || !data.messages.length) return;
 
-            // Are we already at the bottom? (within 80 px)
             const atBottom =
-                elMessages.scrollHeight - elMessages.scrollTop - elMessages.clientHeight < 80;
+                ws.elMessages.scrollHeight - ws.elMessages.scrollTop - ws.elMessages.clientHeight < 80;
 
             data.messages.forEach(msg => {
-                elMessages.appendChild(buildMessageEl(msg));
-                state.newestMessageId = msg.id;
+                ws.elMessages.appendChild(buildMessageEl(msg));
+                ws.newestMsgId = msg.id;
             });
 
-            if (atBottom) scrollToBottom();
-
-            // Keep the unread badge current
-            if (state.isOpen) markRead(state.activeConversationId);
+            if (atBottom) scrollToBottom(ws.elMessages);
+            markRead(ws.convId);
         } catch (_) { /* silent */ }
     }
 
-    async function pollConversations() {
-        try {
-            const resp = await fetch(siteUrl + '/chat/get_conversations.php', {
-                credentials: 'same-origin',
-            });
-            const data = await resp.json();
-            if (!data.ok) return;
+    /* ── Send message ────────────────────────────────────────────────────── */
 
-            const total = data.conversations.reduce((s, c) => s + c.unread_count, 0);
-            updateToggleBadge(total);
+    async function sendMessage(ws) {
+        const text = ws.elInput.value.trim();
+        if (!text) return;
 
-            // Refresh the list only when the conversations panel is visible
-            if (state.isOpen && !state.activeConversationId) {
-                renderConversations(data.conversations);
-            }
-        } catch (_) { /* silent */ }
-    }
-
-    /* ── Send & upload ──────────────────────────────────────────────────────── */
-
-    async function sendMessage() {
-        const text = elInput.value.trim();
-        if (!text || !state.activeReceiverId) return;
-
-        elInput.value = '';
-        elSendBtn.disabled = true;
+        ws.elInput.value = '';
 
         try {
             const data = await apiPost(siteUrl + '/chat/send_message.php', {
-                receiver_id:  state.activeReceiverId,
+                receiver_id:  ws.userId,
                 message_text: text,
             });
 
             if (data.ok) {
-                // If this was a new conversation, store its ID and start polling
-                if (!state.activeConversationId) {
-                    state.activeConversationId = data.conversation_id;
-                    startMsgPolling();
-                }
-                elMessages.appendChild(buildMessageEl(data.message));
-                state.newestMessageId = data.message.id;
-                if (!state.oldestMessageId) state.oldestMessageId = data.message.id;
-                scrollToBottom();
+                if (!ws.convId) ws.convId = data.conversation_id;
+                ws.elMessages.appendChild(buildMessageEl(data.message));
+                ws.newestMsgId = data.message.id;
+                if (!ws.oldestMsgId) ws.oldestMsgId = data.message.id;
+                scrollToBottom(ws.elMessages);
             } else {
-                elInput.value = text;
-                alert('Could not send message: ' + (data.error || 'Unknown error'));
+                ws.elInput.value = text;
+                console.error('Chat send error:', data.error);
             }
         } catch (err) {
-            elInput.value = text;
-            console.error('Chat sendMessage failed:', err);
-        } finally {
-            elSendBtn.disabled = false;
-            elInput.focus();
+            ws.elInput.value = text;
+            console.error('sendMessage failed:', err);
         }
+
+        ws.elInput.focus();
     }
 
-    async function uploadImage(file) {
-        if (!state.activeReceiverId) {
-            alert('Open a conversation first.');
-            return;
-        }
-
-        // Client-side type check (the server validates as well)
+    async function uploadImage(ws, file) {
         const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
         if (!allowed.includes(file.type)) {
             alert('Only JPG, PNG, WEBP and GIF images are allowed.');
@@ -365,40 +381,29 @@
             return;
         }
 
-        elSendBtn.disabled = true;
-        elSendBtn.textContent = '⏳';
-
         try {
             const fd = new FormData();
             fd.append('csrf_token',  csrfToken);
-            fd.append('receiver_id', state.activeReceiverId);
+            fd.append('receiver_id', ws.userId);
             fd.append('image',       file);
 
             const resp = await fetch(siteUrl + '/chat/upload_image.php', {
-                method: 'POST',
-                body: fd,
-                credentials: 'same-origin',
+                method: 'POST', body: fd, credentials: 'same-origin',
             });
             const data = await resp.json();
 
             if (data.ok) {
-                if (!state.activeConversationId) {
-                    state.activeConversationId = data.conversation_id;
-                    startMsgPolling();
-                }
-                elMessages.appendChild(buildMessageEl(data.message));
-                state.newestMessageId = data.message.id;
-                if (!state.oldestMessageId) state.oldestMessageId = data.message.id;
-                scrollToBottom();
+                if (!ws.convId) ws.convId = data.conversation_id;
+                ws.elMessages.appendChild(buildMessageEl(data.message));
+                ws.newestMsgId = data.message.id;
+                if (!ws.oldestMsgId) ws.oldestMsgId = data.message.id;
+                scrollToBottom(ws.elMessages);
             } else {
                 alert('Upload failed: ' + (data.error || 'Unknown error'));
             }
         } catch (err) {
-            console.error('Chat uploadImage failed:', err);
+            console.error('uploadImage failed:', err);
             alert('Upload failed. Please try again.');
-        } finally {
-            elSendBtn.disabled  = false;
-            elSendBtn.textContent = 'Send';
         }
     }
 
@@ -408,201 +413,144 @@
         } catch (_) { /* silent */ }
     }
 
-    /* ── UI helpers ─────────────────────────────────────────────────────────── */
+    /* ── Contact list ────────────────────────────────────────────────────── */
 
-    function scrollToBottom() {
-        elMessages.scrollTop = elMessages.scrollHeight;
+    async function loadUsers(search) {
+        const elList = document.getElementById('chat-users-list');
+        if (!elList) return;
+
+        try {
+            const url = siteUrl + '/chat/get_users.php'
+                + (search ? '?search=' + encodeURIComponent(search) : '');
+            const resp = await fetch(url, { credentials: 'same-origin' });
+            const data = await resp.json();
+            if (!data.ok) return;
+
+            renderUsers(data.users);
+            updateBadge(data.users.reduce((s, u) => s + u.unread_count, 0));
+        } catch (_) { /* silent */ }
     }
 
-    function updateToggleBadge(count) {
-        if (count > 0) {
-            elBadge.textContent    = count;
-            elBadge.style.display  = 'inline-block';
-        } else {
-            elBadge.style.display  = 'none';
+    function renderUsers(users) {
+        const elList = document.getElementById('chat-users-list');
+        if (!elList) return;
+
+        if (!users.length) {
+            elList.innerHTML = '<p class="chat-empty">No contacts found.</p>';
+            return;
         }
-    }
 
-    function openPanel() {
-        state.isOpen               = true;
-        elPanel.style.display      = 'flex';
-        elConvsPanel.style.display = 'flex';
-        elChatWindow.style.display = 'none';
-        loadConversations();
-
-        // Switch to faster 3-second background poll while the panel is open
-        clearInterval(state.convPollTimer);
-        state.convPollTimer = setInterval(pollConversations, 3000);
-    }
-
-    function closePanel() {
-        state.isOpen          = false;
-        elPanel.style.display = 'none';
-        stopMsgPolling();
-
-        // Return to slower 15-second background poll
-        clearInterval(state.convPollTimer);
-        state.convPollTimer = setInterval(pollConversations, 15000);
-    }
-
-    function showConversationList() {
-        stopMsgPolling();
-        state.activeConversationId = null;
-        state.activeReceiverId     = null;
-
-        elChatWindow.style.display  = 'none';
-        elConvsPanel.style.display  = 'flex';
-        loadConversations();
-    }
-
-    /* ── Drag-and-drop highlight ────────────────────────────────────────────── */
-
-    function bindDragDrop() {
-        // Highlight the whole messages area while dragging
-        elMessages.addEventListener('dragover', e => {
-            e.preventDefault();
-            elMessages.classList.add('chat-drop-active');
+        elList.innerHTML = '';
+        users.forEach(u => {
+            const item = document.createElement('div');
+            item.className = 'chat-user-item';
+            item.dataset.userId = u.id;
+            item.setAttribute('role', 'listitem');
+            item.innerHTML =
+                '<img src="' + esc(u.avatar_url) + '" alt=""'
+                + ' class="chat-user-avatar" width="34" height="34" loading="lazy">'
+                + '<span class="chat-user-name">' + esc(u.username) + '</span>'
+                + (u.unread_count > 0
+                    ? '<span class="badge">' + u.unread_count + '</span>'
+                    : '');
+            item.addEventListener('click', () => openWindow(u.id, u.username, u.avatar_url));
+            elList.appendChild(item);
         });
+    }
 
-        elMessages.addEventListener('dragleave', e => {
-            if (!elMessages.contains(e.relatedTarget)) {
-                elMessages.classList.remove('chat-drop-active');
+    /* ── Badge ───────────────────────────────────────────────────────────── */
+
+    function updateBadge(total) {
+        [
+            document.getElementById('chat-badge'),
+            document.getElementById('chat-badge-toggle'),
+        ].forEach(el => {
+            if (!el) return;
+            el.textContent    = total;
+            el.style.display  = total > 0 ? 'inline-block' : 'none';
+        });
+    }
+
+    /* ── Sidebar open / close ────────────────────────────────────────────── */
+
+    function openSidebar() {
+        sidebarOpen = true;
+        const elSidebar = document.getElementById('chat-sidebar');
+        const elToggle  = document.getElementById('chat-toggle');
+        if (elSidebar) elSidebar.style.display = 'flex';
+        if (elToggle)  elToggle.style.display  = 'none';
+        loadUsers('');
+    }
+
+    function closeSidebar() {
+        sidebarOpen = false;
+        const elSidebar = document.getElementById('chat-sidebar');
+        const elToggle  = document.getElementById('chat-toggle');
+        if (elSidebar) elSidebar.style.display = 'none';
+        if (elToggle)  elToggle.style.display  = 'flex';
+    }
+
+    /* ── Background badge poll ───────────────────────────────────────────── */
+
+    async function pollBadge() {
+        try {
+            // Always fetch the full (unfiltered) list to get accurate unread totals
+            const resp = await fetch(siteUrl + '/chat/get_users.php', { credentials: 'same-origin' });
+            const data = await resp.json();
+            if (!data.ok) return;
+            const total = data.users.reduce((s, u) => s + u.unread_count, 0);
+            updateBadge(total);
+            // If the sidebar is open, let loadUsers() refresh the list (it respects the
+            // current search query and fetches the filtered result from the server)
+            if (sidebarOpen) {
+                const search = document.getElementById('chat-user-search')?.value.trim() ?? '';
+                loadUsers(search);
             }
-        });
-
-        elMessages.addEventListener('drop', e => {
-            e.preventDefault();
-            elMessages.classList.remove('chat-drop-active');
-            const file = e.dataTransfer.files[0];
-            if (file && file.type.startsWith('image/')) {
-                uploadImage(file);
-            }
-        });
+        } catch (_) { /* silent */ }
     }
 
-    /* ── Initialization ─────────────────────────────────────────────────────── */
+    /* ── Initialisation ──────────────────────────────────────────────────── */
 
     function init() {
-        elWidget           = document.getElementById('chat-widget');
-        elToggle           = document.getElementById('chat-toggle');
-        elBadge            = document.getElementById('chat-badge');
-        elPanel            = document.getElementById('chat-panel');
-        elConvsPanel       = document.getElementById('chat-convs-panel');
-        elConvsList        = document.getElementById('chat-convs-list');
-        elChatWindow       = document.getElementById('chat-window');
-        elChatWindowAvatar = document.getElementById('chat-window-avatar');
-        elChatWindowName   = document.getElementById('chat-window-name');
-        elMessages         = document.getElementById('chat-messages');
-        elInput            = document.getElementById('chat-input');
-        elSendBtn          = document.getElementById('chat-send-btn');
-        elImageInput       = document.getElementById('chat-image-input');
-        elBackBtn          = document.getElementById('chat-back-btn');
-        elCloseBtn         = document.getElementById('chat-close-btn');
+        if (!document.getElementById('chat-widget')) return;
 
-        if (!elWidget) return; // not logged in / element absent
-
-        // Read CSRF token and site URL from the page
         const csrfEl = document.getElementById('chat-csrf');
         csrfToken    = csrfEl ? csrfEl.value : '';
         siteUrl      = document.querySelector('meta[name="site-url"]')?.content
                        || window.location.origin;
 
-        /* ── Button bindings ── */
-        elToggle.addEventListener('click', () => {
-            state.isOpen ? closePanel() : openPanel();
-        });
+        // Toggle button
+        document.getElementById('chat-toggle')?.addEventListener('click', openSidebar);
 
-        elCloseBtn.addEventListener('click', closePanel);
-        elBackBtn.addEventListener('click',  showConversationList);
+        // Sidebar close button
+        document.getElementById('chat-sidebar-close')?.addEventListener('click', closeSidebar);
 
-        // The chat window has its own close button too
-        const elWinCloseBtn = document.getElementById('chat-win-close-btn');
-        if (elWinCloseBtn) elWinCloseBtn.addEventListener('click', closePanel);
+        // Search input (debounced)
+        const elSearch = document.getElementById('chat-user-search');
+        if (elSearch) {
+            elSearch.addEventListener('input', () => {
+                clearTimeout(searchTimer);
+                searchTimer = setTimeout(() => loadUsers(elSearch.value.trim()), 300);
+            });
+        }
 
-        elSendBtn.addEventListener('click', sendMessage);
-
-        elInput.addEventListener('keydown', e => {
-            // Enter (without Shift) sends the message
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                sendMessage();
-            }
-        });
-
-        elImageInput.addEventListener('change', e => {
-            if (e.target.files[0]) {
-                uploadImage(e.target.files[0]);
-                e.target.value = ''; // reset so the same file can be re-picked
-            }
-        });
-
-        /* ── Scroll-up: load older messages ── */
-        elMessages.addEventListener('scroll', () => {
-            if (elMessages.scrollTop === 0) {
-                loadOlderMessages();
-            }
-        });
-
-        /* ── Drag and drop ── */
-        bindDragDrop();
-
-        /* ── Background conversation poll (every 15 s when panel is closed) ── */
-        state.convPollTimer = setInterval(pollConversations, 15000);
-
-        // Initial badge refresh
-        pollConversations();
+        // Background badge poll + immediate first run
+        badgePollTimer = setInterval(pollBadge, POLL_BADGE_MS);
+        pollBadge();
     }
 
-    /* ── Public API (for use in profile pages etc.) ─────────────────────────── */
+    /* ── Public API ──────────────────────────────────────────────────────── */
 
     /**
-     * Open the chat widget and start a new or existing conversation.
+     * Open the chat widget and start a conversation with a specific user.
      *
-     * Usage:
+     * Usage (e.g. from a profile page):
      *   ChatWidget.startChat(userId, username, avatarUrl)
      */
     window.ChatWidget = {
         startChat: async function (userId, username, avatarUrl) {
-            if (!state.isOpen) openPanel();
-
-            try {
-                const resp = await fetch(siteUrl + '/chat/get_conversations.php', {
-                    credentials: 'same-origin',
-                });
-                const data = await resp.json();
-
-                if (data.ok) {
-                    const existing = data.conversations.find(
-                        c => c.other_user.id === userId
-                    );
-                    if (existing) {
-                        openConversation(
-                            existing.id,
-                            userId,
-                            username,
-                            existing.other_user.avatar_url
-                        );
-                    } else {
-                        // New conversation — no ID yet
-                        state.activeConversationId = null;
-                        state.activeReceiverId     = userId;
-                        state.activeReceiverName   = username;
-                        state.activeReceiverAvatar = avatarUrl || '';
-                        state.newestMessageId      = 0;
-                        state.oldestMessageId      = null;
-
-                        elChatWindowAvatar.src       = avatarUrl || '';
-                        elChatWindowAvatar.alt       = username;
-                        elChatWindowName.textContent = username;
-                        elMessages.innerHTML         = '';
-
-                        elConvsPanel.style.display  = 'none';
-                        elChatWindow.style.display  = 'flex';
-                    }
-                }
-            } catch (err) {
-                console.error('ChatWidget.startChat failed:', err);
-            }
+            if (!sidebarOpen) openSidebar();
+            openWindow(userId, username, avatarUrl);
         },
     };
 
