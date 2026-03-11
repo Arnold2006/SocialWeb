@@ -13,8 +13,21 @@ if (!is_logged_in()) {
     exit;
 }
 
-$user    = current_user();
-$notifs  = (int) db_val('SELECT COUNT(*) FROM notifications WHERE user_id = ? AND is_read = 0', [(int)$user['id']]);
-$msgs    = (int) db_val('SELECT COUNT(*) FROM messages WHERE receiver_id = ? AND is_read = 0 AND is_deleted_receiver = 0', [(int)$user['id']]);
+$user   = current_user();
+$uid    = (int) $user['id'];
+$notifs = (int) db_val('SELECT COUNT(*) FROM notifications WHERE user_id = ? AND is_read = 0', [$uid]);
+$msgs   = (int) db_val(
+    'SELECT COUNT(*) FROM messages WHERE receiver_id = ? AND is_read = 0 AND is_deleted_receiver = 0',
+    [$uid]
+);
+$chat   = (int) db_val(
+    'SELECT COUNT(*)
+     FROM   chat_messages cm
+     JOIN   conversations c ON c.id = cm.conversation_id
+     WHERE  (c.user1_id = ? OR c.user2_id = ?)
+       AND  cm.sender_id != ?
+       AND  cm.is_read   = 0',
+    [$uid, $uid, $uid]
+);
 
-echo json_encode(['ok' => true, 'notifications' => $notifs, 'messages' => $msgs]);
+echo json_encode(['ok' => true, 'notifications' => $notifs, 'messages' => $msgs, 'chat' => $chat]);
