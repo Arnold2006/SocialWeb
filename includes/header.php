@@ -66,8 +66,6 @@ $siteTheme    = active_theme();
                     Notifications<?= $notifCount > 0 ? ' <span class="badge">' . $notifCount . '</span>' : '' ?>
                 </a>
             </li>
-            <li><a href="<?= SITE_URL ?>/pages/settings.php"
-                   class="<?= (str_ends_with($_SERVER['PHP_SELF'] ?? '', 'settings.php')) ? 'active' : '' ?>">Settings</a></li>
             <?php if (is_admin()): ?>
             <li><a href="<?= SITE_URL ?>/admin/dashboard.php"
                    class="<?= str_contains($_SERVER['PHP_SELF'] ?? '', '/admin/') ? 'active' : '' ?>">Admin</a></li>
