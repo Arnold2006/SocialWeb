@@ -66,6 +66,7 @@ include SITE_ROOT . '/includes/header.php';
             <li><a href="<?= SITE_URL ?>/admin/moderation.php" class="active">Moderation</a></li>
             <li><a href="<?= SITE_URL ?>/admin/media.php">Media</a></li>
             <li><a href="<?= SITE_URL ?>/admin/settings.php">Site Settings</a></li>
+            <li><a href="<?= SITE_URL ?>/admin/orphans.php">Orphan Cleanup</a></li>
             <li><a href="<?= SITE_URL ?>/upgrade.php">Database Upgrade</a></li>
         </ul>
     </nav>
