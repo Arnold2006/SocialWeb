@@ -2244,7 +2244,7 @@ textarea { resize: vertical; min-height: 80px; }
     padding: 0.45rem 0.75rem 0.3rem;
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-sm);
-    max-width: 260px;
+    max-width: 300px;
     word-break: break-word;
 }
 
@@ -2288,8 +2288,8 @@ textarea { resize: vertical; min-height: 80px; }
 }
 
 .chat-img-preview {
-    max-width: 220px;
-    max-height: 220px;
+    max-width: 300px;
+    max-height: 300px;
     width: auto;
     height: auto;
     border-radius: var(--radius-md);
