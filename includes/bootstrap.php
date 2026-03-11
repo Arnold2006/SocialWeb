@@ -75,7 +75,7 @@ require_once APP_ROOT . '/core/compat.php';
 
 if (!extension_loaded('mbstring')) {
     error_log(
-        'Tor-Social: the mbstring PHP extension is not loaded. ' .
+        'SocialWeb: the mbstring PHP extension is not loaded. ' .
         'Install php-mbstring for correct multibyte (UTF-8) string handling. ' .
         'Built-in polyfills are active but full UTF-8 accuracy is not guaranteed.'
     );

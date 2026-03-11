@@ -15,16 +15,16 @@ if (file_exists($localConfig)) {
 }
 
 // ── Site ────────────────────────────────────────────────────────────────────
-if (!defined('SITE_NAME'))  define('SITE_NAME',  'Tor-Social');
-if (!defined('SITE_URL'))   define('SITE_URL',   'http://localhost/Tor-Social');  // no trailing slash
+if (!defined('SITE_NAME'))  define('SITE_NAME',  'SocialWeb');
+if (!defined('SITE_URL'))   define('SITE_URL',   'http://localhost/SocialWeb');  // no trailing slash
 if (!defined('SITE_ROOT'))  define('SITE_ROOT',  dirname(__DIR__));               // /path/to/social-network
 if (!defined('SITE_DEBUG')) define('SITE_DEBUG', false);                          // set true only in dev
 
 // ── Database ────────────────────────────────────────────────────────────────
 if (!defined('DB_HOST'))    define('DB_HOST',    'localhost');
 if (!defined('DB_PORT'))    define('DB_PORT',    3306);
-if (!defined('DB_NAME'))    define('DB_NAME',    'tor_social');
-if (!defined('DB_USER'))    define('DB_USER',    'tor_social_user');
+if (!defined('DB_NAME'))    define('DB_NAME',    'socialweb');
+if (!defined('DB_USER'))    define('DB_USER',    'socialweb_user');
 if (!defined('DB_PASS'))    define('DB_PASS',    'change_me_in_config_local');
 if (!defined('DB_CHARSET')) define('DB_CHARSET', 'utf8mb4');
 
