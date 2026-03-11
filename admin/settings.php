@@ -419,7 +419,7 @@ include SITE_ROOT . '/includes/header.php';
                     <?php endforeach; ?>
                 </div>
 
-                <button type="submit" class="btn btn-primary">Save Theme</button>
+                <button type="submit" id="theme-submit-btn" hidden aria-hidden="true">Save Theme</button>
             </form>
 
             <style>
@@ -431,12 +431,15 @@ include SITE_ROOT . '/includes/header.php';
 
             <script>
             (function () {
-                var ACTIVE_BORDER  = '#e94560';
-                var ACTIVE_SHADOW  = '0 0 0 3px rgba(233,69,96,.35)';
+                var ACTIVE_BORDER   = '#e94560';
+                var ACTIVE_SHADOW   = '0 0 0 3px rgba(233,69,96,.35)';
+                var HOVER_BORDER    = '#4caf50';
+                var HOVER_SHADOW    = '0 0 0 3px rgba(76,175,80,.35)';
                 var INACTIVE_BORDER = 'rgba(255,255,255,.15)';
 
-                var swatches = document.querySelectorAll('.theme-swatch');
-                var input    = document.getElementById('site-theme-input');
+                var swatches   = document.querySelectorAll('.theme-swatch');
+                var input      = document.getElementById('site-theme-input');
+                var submitBtn  = document.getElementById('theme-submit-btn');
 
                 function selectSwatch(sw) {
                     swatches.forEach(function (s) {
@@ -449,6 +452,7 @@ include SITE_ROOT . '/includes/header.php';
                         if (label) { label.innerHTML = isActive ? '&#10003; Active' : '&nbsp;'; }
                     });
                     input.value = sw.dataset.themeSlug;
+                    submitBtn.click();
                 }
 
                 swatches.forEach(function (sw) {
@@ -457,6 +461,18 @@ include SITE_ROOT . '/includes/header.php';
                         if (e.key === 'Enter' || e.key === ' ') {
                             e.preventDefault();
                             selectSwatch(sw);
+                        }
+                    });
+                    sw.addEventListener('mouseenter', function () {
+                        if (!sw.classList.contains('theme-swatch--active')) {
+                            sw.style.borderColor = HOVER_BORDER;
+                            sw.style.boxShadow   = HOVER_SHADOW;
+                        }
+                    });
+                    sw.addEventListener('mouseleave', function () {
+                        if (!sw.classList.contains('theme-swatch--active')) {
+                            sw.style.borderColor = INACTIVE_BORDER;
+                            sw.style.boxShadow   = '';
                         }
                     });
                 });
