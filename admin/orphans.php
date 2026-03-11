@@ -100,6 +100,11 @@ function scan_upload_files(string $dir): array
     foreach ($it as $file) {
         /** @var SplFileInfo $file */
         if ($file->isFile()) {
+            $name = $file->getFilename();
+            // Skip placeholder and VCS meta-files that should never be treated as orphans
+            if ($name === 'dummy.txt' || str_starts_with($name, '.git')) {
+                continue;
+            }
             $real = $file->getRealPath();
             if ($real !== false) {
                 $files[] = $real;
