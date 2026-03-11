@@ -417,13 +417,43 @@ if (avatarInput && cropContainer && cropCanvas) {
         }
     }
 
+    /**
+     * The three server-side processing stages shown in the progress bar.
+     * UPLOAD  = data transfer to server  (bar: 0 – 60 %)
+     * SCRUB   = EXIF/metadata stripping  (bar: 62 – 80 %)
+     * RESIZE  = generating image sizes   (bar: 82 – 99 %)
+     */
+    const STAGES = [
+        { key: 'upload', icon: '↑', label: 'Upload' },
+        { key: 'scrub',  icon: '✦', label: 'Scrub'  },
+        { key: 'resize', icon: '⊞', label: 'Resize' },
+    ];
+
+    // Progress bar percentages for each server-side processing step
+    const PCT_SCRUB_START  = 62;   // bar value when the scrub step begins
+    const PCT_RESIZE_START = 82;   // bar value when the resize step begins
+    const SCRUB_DELAY_MS   = 600;  // ms to show "Scrubbing" before advancing to "Resizing"
+
     /** Lazily create (or retrieve) the progress bar element inside the dropzone. */
     function getProgress() {
         let el = dropzone.querySelector('.upload-progress');
         if (!el) {
+            // Build step indicators
+            const stepsHtml = STAGES.map((s, i) => {
+                const line = i < STAGES.length - 1
+                    ? '<div class="upload-step-line"></div>'
+                    : '';
+                return '<div class="upload-step" data-step="' + s.key + '">'
+                     +   '<div class="upload-step-icon">' + s.icon + '</div>'
+                     +   '<div class="upload-step-label">' + s.label + '</div>'
+                     + '</div>'
+                     + line;
+            }).join('');
+
             el = document.createElement('div');
             el.className  = 'upload-progress';
-            el.innerHTML  = '<div class="upload-progress-track">'
+            el.innerHTML  = '<div class="upload-progress-steps">' + stepsHtml + '</div>'
+                          + '<div class="upload-progress-track">'
                           +   '<div class="upload-progress-fill"></div>'
                           + '</div>'
                           + '<div class="upload-progress-info"></div>';
@@ -432,11 +462,33 @@ if (avatarInput && cropContainer && cropCanvas) {
         return el;
     }
 
-    function setProgress(pct, label) {
+    /**
+     * Update the progress bar.
+     * @param {number} pct   - Fill percentage (0–100).
+     * @param {string} label - Status text.
+     * @param {string} [step] - Key of the current stage ('upload'|'scrub'|'resize'|'done').
+     */
+    function setProgress(pct, label, step) {
         const el = getProgress();
         el.querySelector('.upload-progress-fill').style.width = pct + '%';
         el.querySelector('.upload-progress-info').textContent = label;
         el.style.display = 'block';
+
+        if (step) {
+            const currentIdx = STAGES.findIndex((s) => s.key === step);
+            el.querySelectorAll('.upload-step').forEach((stepEl, i) => {
+                stepEl.classList.remove('active', 'done');
+                if (step === 'done' || i < currentIdx) {
+                    stepEl.classList.add('done');
+                } else if (i === currentIdx) {
+                    stepEl.classList.add('active');
+                }
+            });
+            // Update connector lines
+            el.querySelectorAll('.upload-step-line').forEach((line, i) => {
+                line.classList.toggle('done', step === 'done' || i < currentIdx);
+            });
+        }
     }
 
     function hideProgress() {
@@ -457,21 +509,42 @@ if (avatarInput && cropContainer && cropCanvas) {
         const totalFiles  = selectedFiles.length;
         const fileWord    = (n) => n + ' file' + (n !== 1 ? 's' : '');
 
-        setProgress(0, 'Preparing ' + fileWord(totalFiles) + '…');
+        setProgress(0, 'Preparing ' + fileWord(totalFiles) + '…', 'upload');
         if (uploadBtn) uploadBtn.disabled = true;
 
         const xhr = new XMLHttpRequest();
         xhr.open('POST', window.location.href, true);
         xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
 
+        // Track whether the server has already responded (to avoid overwriting the
+        // final state with a late-firing processing animation timer).
+        let serverDone = false;
+        let processingTimer = null;
+
         xhr.upload.addEventListener('progress', (ev) => {
             if (ev.lengthComputable) {
-                const pct = Math.round((ev.loaded / ev.total) * 100);
-                setProgress(pct, 'Uploading ' + fileWord(totalFiles) + '… ' + pct + '%');
+                // Map real upload progress to 0–60 % of the bar
+                const ratio = ev.loaded / ev.total;
+                const pct   = Math.round(ratio * 60);
+                setProgress(pct, 'Uploading ' + fileWord(totalFiles) + '… ' + Math.round(ratio * 100) + '%', 'upload');
             }
         });
 
+        // All bytes sent — server is now scrubbing and resizing
+        xhr.upload.addEventListener('load', () => {
+            if (serverDone) return;
+            setProgress(PCT_SCRUB_START, 'Scrubbing metadata…', 'scrub');
+            processingTimer = setTimeout(() => {
+                if (!serverDone) {
+                    setProgress(PCT_RESIZE_START, 'Resizing images…', 'resize');
+                }
+            }, SCRUB_DELAY_MS);
+        });
+
         xhr.addEventListener('load', () => {
+            serverDone = true;
+            if (processingTimer) clearTimeout(processingTimer);
+
             let redirectUrl = window.location.href;
             try {
                 const data = JSON.parse(xhr.responseText);
@@ -483,14 +556,17 @@ if (avatarInput && cropContainer && cropCanvas) {
                 if (data.errors && data.errors.length > 0) {
                     msgs.push(...data.errors);
                 }
-                setProgress(100, msgs.length > 0 ? msgs.join(' ') : 'Done.');
+                setProgress(100, msgs.length > 0 ? msgs.join(' ') : 'Done.', 'done');
             } catch (_) {
                 // Server returned non-JSON; fall back to the current page
+                setProgress(100, 'Done.', 'done');
             }
             setTimeout(() => { window.location.href = redirectUrl; }, 800);
         });
 
         xhr.addEventListener('error', () => {
+            serverDone = true;
+            if (processingTimer) clearTimeout(processingTimer);
             hideProgress();
             if (uploadBtn) uploadBtn.disabled = false;
             alert('Upload failed. Please try again.');
