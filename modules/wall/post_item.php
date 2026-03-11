@@ -51,6 +51,10 @@ $moreComments = (int)$post['comment_count'] > 3;
 
     <div class="post-content">
         <?= nl2br(e($post['content'])) ?>
+        <?php if (($post['post_type'] ?? 'user') === 'album_upload' && !empty($post['album_id'])): ?>
+        <a href="<?= e(SITE_URL . '/pages/gallery.php?user_id=' . (int)$post['user_id'] . '&album=' . (int)$post['album_id']) ?>"
+           class="post-album-link">View Album →</a>
+        <?php endif; ?>
     </div>
 
     <?php if ($postMedia): ?>

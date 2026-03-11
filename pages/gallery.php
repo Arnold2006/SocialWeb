@@ -63,6 +63,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwn) {
             $aId      = sanitise_int($_POST['album_id'] ?? 0);
             $uploaded = 0;
             $errors   = [];
+            $uploadedMediaIds = [];
             if (!empty($_FILES['media']['name'][0])) {
                 $files = $_FILES['media'];
                 $count = count($files['name']);
@@ -89,11 +90,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwn) {
                     }
                     if ($res['ok']) {
                         $uploaded++;
+                        if (!empty($res['media_id'])) {
+                            $uploadedMediaIds[] = $res['media_id'];
+                        }
                     } else {
                         $errors[] = $res['error'];
                     }
                 }
             }
+
+            // Create a system wall post announcing the upload
+            if ($uploaded > 0 && $aId > 0 && !empty($uploadedMediaIds)) {
+                $uploadAlbum = db_row(
+                    'SELECT title FROM albums WHERE id = ? AND user_id = ? AND is_deleted = 0',
+                    [$aId, (int)$currentUser['id']]
+                );
+                if ($uploadAlbum) {
+                    create_album_upload_post(
+                        (int)$currentUser['id'],
+                        $aId,
+                        $uploadAlbum['title'],
+                        $uploaded,
+                        $uploadedMediaIds
+                    );
+                }
+            }
+
             $redirectUrl = SITE_URL . '/pages/gallery.php?user_id=' . $galleryOwner . '&album=' . $aId;
             if ($isAjax) {
                 header('Content-Type: application/json');
