@@ -205,7 +205,16 @@ if ($albumId > 0) {
 include SITE_ROOT . '/includes/header.php';
 ?>
 
-<div class="gallery-layout">
+<div class="two-col-layout">
+
+    <!-- ── Left Column ─────────────────────────────────────────── -->
+    <aside class="col-left">
+        <?php include SITE_ROOT . '/includes/sidebar_widgets.php'; ?>
+    </aside>
+
+    <!-- ── Right Column ────────────────────────────────────────── -->
+    <main class="col-right gallery-layout">
+
     <div class="gallery-header">
         <img src="<?= e(avatar_url($owner, 'small')) ?>" alt="" width="40" height="40" class="avatar avatar-small">
         <h1><?= e($owner['username']) ?>'s Gallery</h1>
@@ -410,6 +419,8 @@ include SITE_ROOT . '/includes/header.php';
 
     <?php endif; ?>
 
-</div><!-- /.gallery-layout -->
+    </main>
+
+</div><!-- /.two-col-layout -->
 
 <?php include SITE_ROOT . '/includes/footer.php'; ?>
