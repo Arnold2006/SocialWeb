@@ -72,13 +72,6 @@ include SITE_ROOT . '/includes/header.php';
                 <p><strong><?= e($n['from_username'] ?? 'Someone') ?></strong> commented on your post.</p>
                 <?php break;
 
-                case 'friend_request': ?>
-                <p><strong><?= e($n['from_username'] ?? 'Someone') ?></strong> sent you a friend request.</p>
-                <?php if ($n['from_user_id']): ?>
-                <a href="<?= e(SITE_URL . '/pages/profile.php?id=' . (int)$n['from_user_id']) ?>">View profile</a>
-                <?php endif; ?>
-                <?php break;
-
                 case 'message': ?>
                 <p><strong><?= e($n['from_username'] ?? 'Someone') ?></strong> sent you a message.</p>
                 <?php if ($n['from_user_id']): ?>

@@ -26,29 +26,6 @@ if ($profileUser === null) {
     redirect(SITE_URL . '/pages/members.php');
 }
 
-// Friend status
-$friendStatus = null;
-if ((int)$currentUser['id'] !== $profileId) {
-    $friendStatus = db_row(
-        'SELECT * FROM friends
-         WHERE (user_id = ? AND friend_id = ?) OR (user_id = ? AND friend_id = ?)
-         LIMIT 1',
-        [$currentUser['id'], $profileId, $profileId, $currentUser['id']]
-    );
-}
-
-// Friend list (accepted)
-$friends = db_query(
-    'SELECT u.id, u.username, u.avatar_path
-     FROM friends f
-     JOIN users u ON (
-         CASE WHEN f.user_id = ? THEN f.friend_id ELSE f.user_id END = u.id
-     )
-     WHERE (f.user_id = ? OR f.friend_id = ?) AND f.status = "accepted" AND u.is_banned = 0
-     LIMIT 12',
-    [$profileId, $profileId, $profileId]
-);
-
 // Recent posts
 $posts = db_query(
     'SELECT p.*, u.username, u.avatar_path,
@@ -86,39 +63,11 @@ include SITE_ROOT . '/includes/header.php';
         <p class="profile-bio"><?= nl2br(e($profileUser['bio'])) ?></p>
         <?php endif; ?>
 
-        <!-- Friend action buttons -->
+        <!-- Send Mail button -->
         <?php if ((int)$currentUser['id'] !== $profileId): ?>
-        <div class="friend-actions">
-            <?php if ($friendStatus === null): ?>
-            <form method="POST" action="<?= SITE_URL ?>/modules/profile/friend_request.php">
-                <?= csrf_field() ?>
-                <input type="hidden" name="to_user" value="<?= $profileId ?>">
-                <button type="submit" class="btn btn-primary">Add Friend</button>
-            </form>
-            <?php elseif ($friendStatus['status'] === 'pending'): ?>
-                <?php if ((int)$friendStatus['user_id'] === (int)$currentUser['id']): ?>
-                <span class="friend-status">Friend request sent</span>
-                <?php else: ?>
-                <form method="POST" action="<?= SITE_URL ?>/modules/profile/accept_friend.php">
-                    <?= csrf_field() ?>
-                    <input type="hidden" name="request_id" value="<?= (int)$friendStatus['id'] ?>">
-                    <button type="submit" class="btn btn-success">Accept Request</button>
-                </form>
-                <?php endif; ?>
-            <?php elseif ($friendStatus['status'] === 'accepted'): ?>
-            <form method="POST" action="<?= SITE_URL ?>/modules/profile/remove_friend.php">
-                <?= csrf_field() ?>
-                <input type="hidden" name="friend_id" value="<?= $profileId ?>">
-                <button type="submit" class="btn btn-secondary">Remove Friend</button>
-            </form>
-            <?php endif; ?>
-
-            <button type="button" class="btn btn-secondary"
-                    onclick="ChatWidget.startChat(
-                        <?= (int)$profileId ?>,
-                        <?= json_encode($profileUser['username']) ?>,
-                        <?= json_encode(avatar_url($profileUser, 'small')) ?>
-                    )">Message</button>
+        <div class="profile-actions">
+            <a href="<?= e(SITE_URL . '/pages/messages.php?with=' . $profileId) ?>"
+               class="btn btn-primary">Send Mail</a>
         </div>
         <?php endif; ?>
 
@@ -146,23 +95,6 @@ include SITE_ROOT . '/includes/header.php';
         <!-- Gallery link -->
         <a href="<?= e(SITE_URL . '/pages/gallery.php?user_id=' . $profileId) ?>"
            class="btn btn-sm btn-secondary profile-gallery-btn">View Gallery</a>
-
-        <!-- Friend list -->
-        <?php if (!empty($friends)): ?>
-        <div class="profile-friends">
-            <h3>Friends</h3>
-            <div class="friends-grid">
-                <?php foreach ($friends as $f): ?>
-                <a href="<?= e(SITE_URL . '/pages/profile.php?id=' . (int)$f['id']) ?>"
-                   title="<?= e($f['username']) ?>">
-                    <img src="<?= e(avatar_url($f, 'small')) ?>"
-                         alt="<?= e($f['username']) ?>"
-                         class="avatar avatar-small" width="48" height="48" loading="lazy">
-                </a>
-                <?php endforeach; ?>
-            </div>
-        </div>
-        <?php endif; ?>
 
         <!-- Plugin profile extensions -->
         <?php foreach ($plugins['profile_extensions'] as $ext): ?>

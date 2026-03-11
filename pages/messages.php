@@ -12,9 +12,30 @@ $pageTitle   = 'Messages';
 $currentUser = current_user();
 $withUserId  = sanitise_int($_GET['with'] ?? 0);
 
-// Send message
+// Send message or delete conversation
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_verify();
+
+    $action = $_POST['action'] ?? 'send';
+
+    if ($action === 'delete') {
+        $deleteWith = sanitise_int($_POST['delete_with'] ?? 0);
+        if ($deleteWith > 0) {
+            // Soft-delete from current user's perspective
+            db_exec(
+                'UPDATE messages SET is_deleted_sender = 1
+                 WHERE sender_id = ? AND receiver_id = ?',
+                [(int)$currentUser['id'], $deleteWith]
+            );
+            db_exec(
+                'UPDATE messages SET is_deleted_receiver = 1
+                 WHERE sender_id = ? AND receiver_id = ?',
+                [$deleteWith, (int)$currentUser['id']]
+            );
+            flash_set('success', 'Conversation deleted.');
+        }
+        redirect(SITE_URL . '/pages/messages.php');
+    }
 
     $receiverId = sanitise_int($_POST['receiver_id'] ?? 0);
     $content    = sanitise_string($_POST['content'] ?? '', 5000);
@@ -123,6 +144,13 @@ include SITE_ROOT . '/includes/header.php';
         <div class="conversation-header">
             <img src="<?= e(avatar_url($withUser, 'small')) ?>" alt="" width="36" height="36" class="avatar avatar-small">
             <h2><?= e($withUser['username']) ?></h2>
+            <form method="POST" class="delete-conversation-form"
+                  onsubmit="return confirm('Delete this conversation?')">
+                <?= csrf_field() ?>
+                <input type="hidden" name="action" value="delete">
+                <input type="hidden" name="delete_with" value="<?= (int)$withUser['id'] ?>">
+                <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+            </form>
         </div>
 
         <div class="message-thread" id="message-thread">

@@ -113,24 +113,7 @@ CREATE TABLE IF NOT EXISTS `likes` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
--- Table: friends
--- --------------------------------------------------------
-CREATE TABLE IF NOT EXISTS `friends` (
-  `id`          INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `user_id`     INT UNSIGNED NOT NULL,               -- request sender
-  `friend_id`   INT UNSIGNED NOT NULL,               -- request receiver
-  `status`      ENUM('pending','accepted','rejected') NOT NULL DEFAULT 'pending',
-  `created_at`  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `accepted_at` DATETIME DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `unique_friend_pair` (`user_id`, `friend_id`),
-  KEY `idx_user_id` (`user_id`),
-  KEY `idx_friend_id` (`friend_id`),
-  KEY `idx_status` (`status`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
--- Table: messages (private messaging)
+-- Table: messages (private messaging / mail system)
 -- --------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `messages` (
   `id`          INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -153,7 +136,7 @@ CREATE TABLE IF NOT EXISTS `messages` (
 CREATE TABLE IF NOT EXISTS `notifications` (
   `id`          INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `user_id`     INT UNSIGNED NOT NULL,               -- recipient
-  `type`        ENUM('like','comment','friend_request','message') NOT NULL,
+  `type`        ENUM('like','comment','message') NOT NULL,
   `from_user_id` INT UNSIGNED DEFAULT NULL,          -- who triggered it
   `ref_id`      INT UNSIGNED DEFAULT NULL,           -- post/comment/message id
   `is_read`     TINYINT(1) NOT NULL DEFAULT 0,
