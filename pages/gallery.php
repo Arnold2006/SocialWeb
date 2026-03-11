@@ -361,7 +361,9 @@ include SITE_ROOT . '/includes/header.php';
                                 class="btn btn-xs btn-secondary set-cover-btn"
                                 data-media-id="<?= (int)$media['id'] ?>"
                                 data-media-src="<?= e(get_media_url($media, 'medium')) ?>"
-                                data-album-id="<?= $albumId ?>">
+                                data-album-id="<?= $albumId ?>"
+                                data-orig-width="<?= (int)$media['width'] ?>"
+                                data-orig-height="<?= (int)$media['height'] ?>">
                             <?= $isCover ? '★' : '☆' ?> Cover
                         </button>
                         <?php endif; ?>
