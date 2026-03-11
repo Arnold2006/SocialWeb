@@ -142,18 +142,6 @@ include SITE_ROOT . '/includes/header.php';
         <?php foreach ($plugins['profile_extensions'] as $ext): ?>
             <?php $ext($profileId); ?>
         <?php endforeach; ?>
-    </aside>
-
-    <!-- Recent Posts -->
-    <main class="profile-posts">
-        <h2>Recent Posts</h2>
-        <?php if (empty($posts)): ?>
-        <p class="empty-state">No posts yet.</p>
-        <?php else: ?>
-            <?php foreach ($posts as $post): ?>
-                <?php include SITE_ROOT . '/modules/wall/post_item.php'; ?>
-            <?php endforeach; ?>
-        <?php endif; ?>
 
         <?php if ($isOwnProfile): ?>
         <!-- ── Settings widget (own profile only) ──────────── -->
@@ -222,6 +210,18 @@ include SITE_ROOT . '/includes/header.php';
             </section>
 
         </div><!-- /.settings-layout -->
+        <?php endif; ?>
+    </aside>
+
+    <!-- Recent Posts -->
+    <main class="profile-posts">
+        <h2>Recent Posts</h2>
+        <?php if (empty($posts)): ?>
+        <p class="empty-state">No posts yet.</p>
+        <?php else: ?>
+            <?php foreach ($posts as $post): ?>
+                <?php include SITE_ROOT . '/modules/wall/post_item.php'; ?>
+            <?php endforeach; ?>
         <?php endif; ?>
     </main>
 
