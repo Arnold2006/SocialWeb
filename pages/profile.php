@@ -113,8 +113,12 @@ include SITE_ROOT . '/includes/header.php';
             </form>
             <?php endif; ?>
 
-            <a href="<?= e(SITE_URL . '/pages/messages.php?with=' . $profileId) ?>"
-               class="btn btn-secondary">Message</a>
+            <button type="button" class="btn btn-secondary"
+                    onclick="ChatWidget.startChat(
+                        <?= (int)$profileId ?>,
+                        <?= json_encode($profileUser['username']) ?>,
+                        <?= json_encode(avatar_url($profileUser, 'small')) ?>
+                    )">Message</button>
         </div>
         <?php endif; ?>
 

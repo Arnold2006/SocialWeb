@@ -173,6 +173,25 @@ function unread_messages_count(): int
 }
 
 /**
+ * Count unread chat messages (from the real-time chat system) for the current user.
+ */
+function unread_chat_count(): int
+{
+    $user = current_user();
+    if (!$user) return 0;
+    // Count messages in conversations where the current user is NOT the sender
+    return (int) db_val(
+        'SELECT COUNT(*)
+         FROM   chat_messages cm
+         JOIN   conversations c ON c.id = cm.conversation_id
+         WHERE  (c.user1_id = ? OR c.user2_id = ?)
+           AND  cm.sender_id != ?
+           AND  cm.is_read   = 0',
+        [$user['id'], $user['id'], $user['id']]
+    );
+}
+
+/**
  * Get site setting from DB.
  */
 function site_setting(string $key, string $default = ''): string
