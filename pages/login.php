@@ -54,9 +54,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $pageTitle = 'Login';
+$siteTheme = active_theme();
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="<?= e($siteTheme) ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">

@@ -4,7 +4,7 @@
    System fonts only, no external resources
    ============================================================ */
 
-/* ── CSS Variables ──────────────────────────────────────────── */
+/* ── CSS Variables — default theme: blue-red ────────────────── */
 :root {
     --color-bg:           #1a1a2e;
     --color-surface:      #16213e;
@@ -36,6 +36,34 @@
     --transition:  0.2s ease;
     --container-w: 1200px;
     --sidebar-w:   300px;
+}
+
+/* ── Theme: gray-orange ─────────────────────────────────────── */
+[data-theme="gray-orange"] {
+    --color-bg:           #1c1c1c;
+    --color-surface:      #252525;
+    --color-surface2:     #333333;
+    --color-accent:       #e87c2a;
+    --color-accent-hover: #c56620;
+    --color-text:         #e0e0e0;
+    --color-text-muted:   #999999;
+    --color-border:       #3a3a3a;
+    --color-like:         #e87c2a;
+    --color-badge:        #e87c2a;
+}
+
+/* ── Theme: purple-red ──────────────────────────────────────── */
+[data-theme="purple-red"] {
+    --color-bg:           #1a0a2e;
+    --color-surface:      #230e3c;
+    --color-surface2:     #3d1a60;
+    --color-accent:       #e94560;
+    --color-accent-hover: #c73652;
+    --color-text:         #e0e0e0;
+    --color-text-muted:   #9090a0;
+    --color-border:       #3a1a5a;
+    --color-like:         #e94560;
+    --color-badge:        #e94560;
 }
 
 /* ── Reset ──────────────────────────────────────────────────── */

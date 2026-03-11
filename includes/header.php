@@ -25,9 +25,11 @@ $overlayShadow = site_setting('banner_overlay_shadow', 'medium');
 require_once SITE_ROOT . '/includes/overlay_maps.php';
 $overlayFontCSS   = $OVERLAY_FONT_MAP[$overlayFont]     ?? $OVERLAY_FONT_MAP['system'];
 $overlayShadowCSS = $OVERLAY_SHADOW_MAP[$overlayShadow] ?? $OVERLAY_SHADOW_MAP['medium'];
+
+$siteTheme    = active_theme();
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="<?= e($siteTheme) ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
