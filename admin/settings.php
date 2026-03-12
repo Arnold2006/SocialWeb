@@ -171,7 +171,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $ocolor = '#ffffff';
         }
 
-        $validFonts = ['system', 'serif', 'mono', 'impact'];
+        // Build valid font list from built-in presets + any uploaded custom fonts
+        try {
+            $customFonts = db_query("SELECT id FROM site_fonts ORDER BY id");
+        } catch (\Throwable $e) {
+            $customFonts = [];
+        }
+        $validFonts  = array_merge(
+            ['system', 'serif', 'mono', 'impact'],
+            array_map(fn($f) => 'custom_' . $f['id'], $customFonts)
+        );
         $ofont = in_array($_POST['overlay_font'] ?? 'system', $validFonts, true)
             ? $_POST['overlay_font'] : 'system';
 
@@ -196,6 +205,77 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         flash_set('success', 'Banner overlay settings saved.');
         redirect(SITE_URL . '/admin/settings.php');
+    } elseif ($action === 'upload_font') {
+        // ── Custom font upload ──────────────────────────────────────────────
+        $fontName = trim($_POST['font_name'] ?? '');
+        if ($fontName === '' || !preg_match('/^[A-Za-z0-9 _\-]{1,60}$/', $fontName)) {
+            $error = 'Font name is required and may only contain letters, numbers, spaces, hyphens, and underscores (max 60 chars).';
+        } elseif (!isset($_FILES['font_file']) || $_FILES['font_file']['error'] === UPLOAD_ERR_NO_FILE) {
+            $error = 'No font file selected.';
+        } elseif ($_FILES['font_file']['error'] !== UPLOAD_ERR_OK) {
+            $error = 'Upload error (code ' . (int)$_FILES['font_file']['error'] . '). Please try again.';
+        } else {
+            $file = $_FILES['font_file'];
+
+            // Validate size (max 5 MB)
+            if ($file['size'] > 5 * 1024 * 1024) {
+                $error = 'Font file too large. Maximum size is 5 MB.';
+            } else {
+                // Determine format from extension (MIME type detection is unreliable for fonts)
+                $origName  = $file['name'];
+                $ext       = strtolower(pathinfo($origName, PATHINFO_EXTENSION));
+                $fmtKey    = ['woff2' => 'woff2', 'woff' => 'woff', 'ttf' => 'ttf', 'otf' => 'otf'];
+
+                if (!isset($fmtKey[$ext])) {
+                    $error = 'Invalid font format. Allowed formats: WOFF2, WOFF, TTF, OTF.';
+                } else {
+                    $fontsDir = UPLOADS_DIR . '/fonts';
+                    if (!is_dir($fontsDir)) {
+                        mkdir($fontsDir, 0755, true);
+                    }
+
+                    $filename = 'font_' . time() . '_' . bin2hex(random_bytes(16)) . '.' . $ext;
+                    $savePath = $fontsDir . '/' . $filename;
+
+                    if (!move_uploaded_file($file['tmp_name'], $savePath)) {
+                        $error = 'Failed to save font file. Please check directory permissions.';
+                    } else {
+                        db_insert(
+                            "INSERT INTO site_fonts (name, filename, format) VALUES (?, ?, ?)",
+                            [$fontName, $filename, $fmtKey[$ext]]
+                        );
+
+                        flash_set('success', 'Font "' . $fontName . '" uploaded successfully.');
+                        redirect(SITE_URL . '/admin/settings.php');
+                    }
+                }
+            }
+        }
+    } elseif ($action === 'delete_font') {
+        // ── Delete a custom font ────────────────────────────────────────────
+        $fontId = (int)($_POST['font_id'] ?? 0);
+        if ($fontId > 0) {
+            $font = db_row("SELECT filename FROM site_fonts WHERE id = ?", [$fontId]);
+            if ($font) {
+                $fontFile = UPLOADS_DIR . '/fonts/' . $font['filename'];
+                if (file_exists($fontFile)) {
+                    @unlink($fontFile);
+                }
+                db_exec("DELETE FROM site_fonts WHERE id = ?", [$fontId]);
+
+                // If the deleted font was the active overlay font, reset to system
+                $currentFont = site_setting('banner_overlay_font', 'system');
+                if ($currentFont === 'custom_' . $fontId) {
+                    db_exec(
+                        "INSERT INTO site_settings (`key`, value) VALUES ('banner_overlay_font', 'system')
+                         ON DUPLICATE KEY UPDATE value = 'system'"
+                    );
+                }
+            }
+        }
+
+        flash_set('success', 'Font deleted.');
+        redirect(SITE_URL . '/admin/settings.php');
     }
 }
 
@@ -211,6 +291,17 @@ $currentTheme = active_theme();
 
 // CSS maps (shared via includes/overlay_maps.php; also mirrored in assets/js/app.js)
 require_once SITE_ROOT . '/includes/overlay_maps.php';
+
+// Extend font map with any uploaded custom fonts (table may not exist on fresh installs)
+try {
+    $uploadedFonts = db_query("SELECT id, name, filename, format FROM site_fonts ORDER BY name");
+} catch (\Throwable $e) {
+    $uploadedFonts = [];
+}
+foreach ($uploadedFonts as $uf) {
+    $OVERLAY_FONT_MAP['custom_' . $uf['id']] = "'" . str_replace("'", "\\'", $uf['name']) . "',sans-serif";
+}
+
 $overlayFontCSS   = $OVERLAY_FONT_MAP[$overlayFont]     ?? $OVERLAY_FONT_MAP['system'];
 $overlayShadowCSS = $OVERLAY_SHADOW_MAP[$overlayShadow] ?? $OVERLAY_SHADOW_MAP['medium'];
 
@@ -353,10 +444,23 @@ include SITE_ROOT . '/includes/header.php';
                 <div class="form-group" style="max-width:320px">
                     <label class="form-label" for="overlay-font-select">Font</label>
                     <select id="overlay-font-select" name="overlay_font" class="form-control">
-                        <option value="system"<?= $overlayFont === 'system' ? ' selected' : '' ?>>System (default)</option>
-                        <option value="serif"<?= $overlayFont === 'serif'  ? ' selected' : '' ?>>Serif (Georgia)</option>
-                        <option value="mono"<?= $overlayFont === 'mono'   ? ' selected' : '' ?>>Monospace (Courier)</option>
-                        <option value="impact"<?= $overlayFont === 'impact' ? ' selected' : '' ?>>Impact</option>
+                        <option value="system"
+                                data-css-family="system-ui,-apple-system,BlinkMacSystemFont,&quot;Segoe UI&quot;,Roboto,sans-serif"
+                                <?= $overlayFont === 'system' ? ' selected' : '' ?>>System (default)</option>
+                        <option value="serif"
+                                data-css-family="Georgia,&quot;Times New Roman&quot;,Times,serif"
+                                <?= $overlayFont === 'serif'  ? ' selected' : '' ?>>Serif (Georgia)</option>
+                        <option value="mono"
+                                data-css-family="&quot;Courier New&quot;,Courier,monospace"
+                                <?= $overlayFont === 'mono'   ? ' selected' : '' ?>>Monospace (Courier)</option>
+                        <option value="impact"
+                                data-css-family="Impact,Haettenschweiler,&quot;Arial Narrow Bold&quot;,sans-serif"
+                                <?= $overlayFont === 'impact' ? ' selected' : '' ?>>Impact</option>
+                        <?php foreach ($uploadedFonts as $uf): ?>
+                        <option value="custom_<?= (int)$uf['id'] ?>"
+                                data-css-family="'<?= e(str_replace("'", "\\'", $uf['name'])) ?>',sans-serif"
+                                <?= $overlayFont === 'custom_' . $uf['id'] ? ' selected' : '' ?>><?= e($uf['name']) ?></option>
+                        <?php endforeach; ?>
                     </select>
                 </div>
 
@@ -371,6 +475,69 @@ include SITE_ROOT . '/includes/header.php';
                 </div>
 
                 <button type="submit" class="btn btn-primary">Save Overlay</button>
+            </form>
+        </section>
+
+        <!-- ── Custom Fonts ──────────────────────────────────────────── -->
+        <section class="admin-section" style="margin-top:2rem">
+            <h2>Custom Fonts</h2>
+            <p class="muted" style="margin-bottom:1rem">
+                Upload custom fonts to use in the site name overlay.
+                Supported formats: WOFF2, WOFF, TTF, OTF &nbsp;|&nbsp; Max size: 5 MB.
+            </p>
+
+            <?php if (!empty($uploadedFonts)): ?>
+            <table style="width:100%;max-width:600px;border-collapse:collapse;margin-bottom:1.5rem">
+                <thead>
+                    <tr>
+                        <th style="text-align:left;padding:.4rem .6rem;border-bottom:1px solid var(--color-border)">Name</th>
+                        <th style="text-align:left;padding:.4rem .6rem;border-bottom:1px solid var(--color-border)">Format</th>
+                        <th style="padding:.4rem .6rem;border-bottom:1px solid var(--color-border)"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($uploadedFonts as $uf): ?>
+                    <tr>
+                        <td style="padding:.4rem .6rem;border-bottom:1px solid var(--color-border)"><?= e($uf['name']) ?></td>
+                        <td style="padding:.4rem .6rem;border-bottom:1px solid var(--color-border);text-transform:uppercase"><?= e($uf['format']) ?></td>
+                        <td style="padding:.4rem .6rem;border-bottom:1px solid var(--color-border);text-align:right">
+                            <form method="POST" style="display:inline">
+                                <?= csrf_field() ?>
+                                <input type="hidden" name="action"  value="delete_font">
+                                <input type="hidden" name="font_id" value="<?= (int)$uf['id'] ?>">
+                                <button type="submit" class="btn btn-danger btn-sm"
+                                        onclick="return confirm('Delete font \u0022' + <?= json_encode($uf['name'], JSON_HEX_TAG | JSON_HEX_QUOT | JSON_HEX_APOS) ?> + '\u0022?')">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+            <?php else: ?>
+            <p class="muted" style="margin-bottom:1rem">No custom fonts uploaded yet.</p>
+            <?php endif; ?>
+
+            <form method="POST" enctype="multipart/form-data" class="settings-form">
+                <?= csrf_field() ?>
+                <input type="hidden" name="action" value="upload_font">
+
+                <div class="form-group" style="max-width:320px">
+                    <label class="form-label" for="font-name-input">Font Name</label>
+                    <input type="text" id="font-name-input" name="font_name"
+                           class="form-control" maxlength="60" required
+                           placeholder="e.g. My Brand Font"
+                           pattern="[A-Za-z0-9 _\-]+"
+                           title="Letters, numbers, spaces, hyphens and underscores only">
+                </div>
+
+                <div class="form-group" style="max-width:320px">
+                    <label class="form-label" for="font-file-input">Font File</label>
+                    <input type="file" id="font-file-input" name="font_file"
+                           accept=".woff2,.woff,.ttf,.otf"
+                           class="form-control" required>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Upload Font</button>
             </form>
         </section>
 
