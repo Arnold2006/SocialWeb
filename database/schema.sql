@@ -253,6 +253,18 @@ INSERT IGNORE INTO `site_settings` (`key`, `value`) VALUES
   ('site_theme',          'blue-red');
 
 -- --------------------------------------------------------
+-- Table: site_fonts (custom font uploads)
+-- --------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `site_fonts` (
+  `id`          INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `name`        VARCHAR(100) NOT NULL,
+  `filename`    VARCHAR(255) NOT NULL,
+  `format`      ENUM('woff2','woff','ttf','otf') NOT NULL,
+  `uploaded_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
 -- Table: conversations (real-time chat)
 -- user1_id is always the smaller user ID for uniqueness.
 -- --------------------------------------------------------
