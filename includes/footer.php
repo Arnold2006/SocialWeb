@@ -51,6 +51,70 @@ $_footerUser = current_user();
 </div><!-- /#chat-widget -->
 <?php endif; ?>
 
+<!-- ── Welcome modal ────────────────────────────────────────────── -->
+<div id="welcome-modal" class="info-modal" style="display:none"
+     role="dialog" aria-modal="true" aria-labelledby="welcome-modal-title">
+    <div class="info-modal-inner">
+        <button type="button" class="info-modal-close" aria-label="Close">&times;</button>
+        <h2 id="welcome-modal-title">Welcome to Tor Social</h2>
+        <p class="info-modal-subtitle">YOUR PRIVATE MEDIA &amp; SOCIAL SANCTUARY</p>
+        <div class="info-modal-grid">
+            <div>
+                <h4>📋 The Wall (Newsfeed)</h4>
+                <p>The Wall is the heart of the community. Share your thoughts, photos, or videos here.</p>
+                <blockquote class="info-modal-tip"><strong>Pro Tip:</strong> This Wall features &ldquo;Bumping.&rdquo; Every time a post receives a new comment or a like, it automatically jumps to the very top of the feed!</blockquote>
+            </div>
+            <div>
+                <h4>🎑 Immersive Viewing</h4>
+                <p>Click any photo in an album to enter the <strong>Lightbox</strong>. Use your <strong>Left/Right arrow keys</strong> to flip through the entire album without leaving the page.</p>
+            </div>
+            <div>
+                <h4>🌟 Smart Gallery</h4>
+                <p>Create custom albums to organize your life. You can drag and drop multiple files directly from your computer into an album to start an upload.</p>
+            </div>
+            <div>
+                <h4>💬 Multi-Chat Dock</h4>
+                <p>Open the Chat at the bottom right. You can select multiple members to talk to; each conversation will spawn its own private window, allowing you to multitask side-by-side.</p>
+            </div>
+        </div>
+        <div class="info-modal-footer-box">
+            <p class="info-modal-footer-title">🛡️ Your Privacy is Hardcoded</p>
+            <p>Every time you upload an image or video, our server acts as a digital shredder. It re-renders the file to physically destroy <strong>GPS coordinates, device serial numbers</strong>, and <strong>timestamps</strong>. You share the moment; we hide the location.</p>
+        </div>
+    </div>
+</div>
+
+<!-- ── How it Works modal ────────────────────────────────────── -->
+<div id="how-it-works-modal" class="info-modal" style="display:none"
+     role="dialog" aria-modal="true" aria-labelledby="how-it-works-modal-title">
+    <div class="info-modal-inner">
+        <button type="button" class="info-modal-close" aria-label="Close">&times;</button>
+        <h2 id="how-it-works-modal-title" class="info-modal-tech-title">TECHNICAL SPECIFICATIONS &amp; PRIVACY PROTOCOLS</h2>
+        <div class="info-modal-grid">
+            <div>
+                <h4>🌐 Network Encapsulation</h4>
+                <p>The application is strictly bound to <code>127.0.0.1:8080</code>. By disabling public listeners on all network interfaces (0.0.0.0), we eliminate &ldquo;Side-Channel Leaks.&rdquo; The server is invisible to the LAN; the only entry point is the encrypted Tor circuit.</p>
+            </div>
+            <div>
+                <h4>🛡️ Forensic Media Scrubbing</h4>
+                <p>Unlike standard sites that simply &ldquo;hide&rdquo; metadata, our media engine (PHP-GD &amp; FFmpeg) performs a <strong>pixel-level re-render</strong> of every upload. By creating a brand-new canvas and copying only the raw visual data, we physically destroy the EXIF, IPTC, and XMP headers that contain GPS and device forensics.</p>
+            </div>
+            <div>
+                <h4>🔑 Session Integrity</h4>
+                <p>We utilize strictly typed <strong>HttpOnly</strong> and <strong>SameSite</strong> cookie attributes. This prevents client-side scripts from accessing session identifiers. Furthermore, every sensitive action (deletion, password changes) is protected by a <strong>Cryptographic CSRF Token</strong> unique to your current session.</p>
+            </div>
+            <div>
+                <h4>🚫 Zero-External Dependencies</h4>
+                <p>Tor Social is a <strong>Closed-Loop Ecosystem</strong>. We host every font, script, and icon locally. By refusing to call external CDNs (like Google or Cloudflare), we ensure your browser never makes a request to the clear-web, preventing IP de-anonymization.</p>
+            </div>
+        </div>
+        <div class="info-modal-footer-box">
+            <p class="info-modal-footer-title">💾 Data Sovereignty &amp; Disposal</p>
+            <p>Our deletion protocol is <strong>Absolute</strong>. When a user deletes a post, image, or account, the server doesn&rsquo;t just remove a database entry&mdash;it actively &ldquo;unlinks&rdquo; the physical files from the storage clusters. Our Admin Disk Scrubber runs heuristics to find and shred any unreferenced data fragments, maintaining a zero-residual footprint.</p>
+        </div>
+    </div>
+</div>
+
 <!-- JavaScript modules (vanilla JS, local only) -->
 <script src="<?= ASSETS_URL ?>/js/app.js"></script>
 <script src="<?= ASSETS_URL ?>/js/shoutbox.js"></script>
