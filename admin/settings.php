@@ -1,6 +1,6 @@
 <?php
 /**
- * settings.php — Admin site settings (banner image)
+ * settings.php — Admin site settings (banner image, site description, theme)
  */
 
 declare(strict_types=1);
@@ -309,10 +309,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         flash_set('success', 'Font deleted.');
         redirect(SITE_URL . '/admin/settings.php');
+    } elseif ($action === 'save_site_info') {
+        // ── Save site description ────────────────────────────────────────────
+        $desc = trim($_POST['site_description'] ?? '');
+        if (mb_strlen($desc) > 255) {
+            $desc = mb_substr($desc, 0, 255);
+        }
+
+        db_exec(
+            "INSERT INTO site_settings (`key`, value) VALUES ('site_description', ?)
+             ON DUPLICATE KEY UPDATE value = ?",
+            [$desc, $desc]
+        );
+
+        flash_set('success', 'Site information updated.');
+        redirect(SITE_URL . '/admin/settings.php');
     }
 }
 
 $currentBanner  = site_setting('banner_image');
+$siteDescription = site_setting('site_description', 'An invite-only social network');
 $overlayX       = site_setting('banner_overlay_x',      '50');
 $overlayY       = site_setting('banner_overlay_y',      '50');
 $overlaySize    = site_setting('banner_overlay_size',   '2.4');
@@ -571,6 +587,29 @@ include SITE_ROOT . '/includes/header.php';
                 </div>
 
                 <button type="submit" class="btn btn-primary">Upload Font</button>
+            </form>
+        </section>
+
+        <!-- ── Site Information ──────────────────────────────────────── -->
+        <section class="admin-section" style="margin-top:2rem">
+            <h2>Site Information</h2>
+            <p class="muted" style="margin-bottom:1rem">
+                This short description appears in the <strong>About</strong> widget in the sidebar.
+            </p>
+
+            <form method="POST" class="settings-form">
+                <?= csrf_field() ?>
+                <input type="hidden" name="action" value="save_site_info">
+
+                <div class="form-group" style="max-width:480px">
+                    <label class="form-label" for="site-description-input">Site Description</label>
+                    <input type="text" id="site-description-input" name="site_description"
+                           class="form-control" maxlength="255"
+                           value="<?= e($siteDescription) ?>"
+                           placeholder="e.g. An invite-only social network">
+                </div>
+
+                <button type="submit" class="btn btn-primary">Save Description</button>
             </form>
         </section>
 
