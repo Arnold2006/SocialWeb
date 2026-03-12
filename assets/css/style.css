@@ -1226,6 +1226,7 @@ textarea { resize: vertical; min-height: 80px; }
     font-size: 0.88rem;
     line-height: 1.6;
     color: var(--color-text-muted);
+    margin-top: 1rem;
 }
 
 .info-modal-footer-title {

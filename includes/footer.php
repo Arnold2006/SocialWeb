@@ -119,6 +119,10 @@ $_footerUser = current_user();
             <p class="info-modal-footer-title">💾 Data Sovereignty &amp; Disposal</p>
             <p>Our deletion protocol is <strong>Absolute</strong>. When a user deletes a post, image, or account, the server doesn&rsquo;t just remove a database entry&mdash;it actively &ldquo;unlinks&rdquo; the physical files from the storage clusters. Our Admin Disk Scrubber runs heuristics to find and shred any unreferenced data fragments, maintaining a zero-residual footprint.</p>
         </div>
+        <div class="info-modal-footer-box">
+            <p class="info-modal-footer-title">🔒 Private, Encrypted &amp; Self-Hosted &mdash; We Trust No One Else With Your Data</p>
+            <p>This site runs on a <strong>privately owned, fully encrypted server</strong> that we manage ourselves, from hardware to software. All data at rest is encrypted, and a separate <strong>encrypted backup</strong> runs on an isolated machine under our direct control. We do <strong>not</strong> use big-tech hosting providers or cloud storage platforms&mdash;not because we can&rsquo;t, but because <strong>trust is something that must be earned</strong>. Handing your conversations and photos to a corporation whose business model is data harvesting defeats the entire purpose of a private network. By self-hosting every component, we eliminate third-party access, government back-door clauses buried in Terms of Service, and the ever-present risk of a vendor selling out. <em>Your data lives on our hardware, under our lock and key, and no one else&rsquo;s.</em></p>
+        </div>
     </div>
 </div>
 
