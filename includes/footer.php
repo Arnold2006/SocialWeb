@@ -56,7 +56,7 @@ $_footerUser = current_user();
      role="dialog" aria-modal="true" aria-labelledby="welcome-modal-title">
     <div class="info-modal-inner">
         <button type="button" class="info-modal-close" aria-label="Close">&times;</button>
-        <h2 id="welcome-modal-title">Welcome to Tor Social</h2>
+        <h2 id="welcome-modal-title">Welcome to SocialWeb</h2>
         <p class="info-modal-subtitle">YOUR PRIVATE MEDIA &amp; SOCIAL SANCTUARY</p>
         <div class="info-modal-grid">
             <div>
@@ -93,7 +93,7 @@ $_footerUser = current_user();
         <div class="info-modal-grid">
             <div>
                 <h4>🌐 Network Encapsulation</h4>
-                <p>The application is strictly bound to <code>127.0.0.1:8080</code>. By disabling public listeners on all network interfaces (0.0.0.0), we eliminate &ldquo;Side-Channel Leaks.&rdquo; The server is invisible to the LAN; the only entry point is the encrypted Tor circuit.</p>
+                <p>The application is strictly bound to <code>127.0.0.1:81</code>. By disabling public listeners on all network interfaces (0.0.0.0), we eliminate &ldquo;Side-Channel Leaks.&rdquo; The server is invisible to the LAN; the only entry point is an ncrypted Firewall circuit.</p>
             </div>
             <div>
                 <h4>🛡️ Forensic Media Scrubbing</h4>
@@ -105,7 +105,7 @@ $_footerUser = current_user();
             </div>
             <div>
                 <h4>🚫 Zero-External Dependencies</h4>
-                <p>Tor Social is a <strong>Closed-Loop Ecosystem</strong>. We host every font, script, and icon locally. By refusing to call external CDNs (like Google or Cloudflare), we ensure your browser never makes a request to the clear-web, preventing IP de-anonymization.</p>
+                <p>SocialWeb is a <strong>Closed-Loop Ecosystem</strong>. We host every font, script, and icon locally. By refusing to call external CDNs (like Google or Cloudflare), we ensure your browser never makes a request to the clear-web, preventing IP leaks.</p>
             </div>
         </div>
         <div class="info-modal-footer-box">
