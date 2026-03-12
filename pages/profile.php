@@ -105,13 +105,7 @@ include SITE_ROOT . '/includes/header.php';
         <p class="profile-bio"><?= nl2br(e($profileUser['bio'])) ?></p>
         <?php endif; ?>
 
-        <!-- Send Mail button -->
-        <?php if (!$isOwnProfile): ?>
-        <div class="profile-actions">
-            <a href="<?= e(SITE_URL . '/pages/messages.php?with=' . $profileId) ?>"
-               class="btn btn-primary">Send Mail</a>
-        </div>
-        <?php endif; ?>
+
 
         <!-- Avatar upload (own profile) -->
         <?php if ($isOwnProfile): ?>

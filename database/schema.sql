@@ -121,6 +121,7 @@ CREATE TABLE IF NOT EXISTS `messages` (
   `id`          INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `sender_id`   INT UNSIGNED NOT NULL,
   `receiver_id` INT UNSIGNED NOT NULL,
+  `subject`     VARCHAR(255) NOT NULL DEFAULT '(no subject)',
   `content`     TEXT NOT NULL,
   `is_read`     TINYINT(1) NOT NULL DEFAULT 0,
   `created_at`  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
