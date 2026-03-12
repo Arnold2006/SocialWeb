@@ -234,19 +234,52 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         mkdir($fontsDir, 0755, true);
                     }
 
-                    $filename = 'font_' . time() . '_' . bin2hex(random_bytes(16)) . '.' . $ext;
-                    $savePath = $fontsDir . '/' . $filename;
-
-                    if (!move_uploaded_file($file['tmp_name'], $savePath)) {
-                        $error = 'Failed to save font file. Please check directory permissions.';
+                    // Validate font magic bytes (positive allowlist).
+                    // Each known format starts with a specific binary signature:
+                    //   WOFF  → "wOFF"  (0x774F4646)
+                    //   WOFF2 → "wOF2"  (0x774F4632)
+                    //   TTF   → 0x00 0x01 0x00 0x00  or "true"
+                    //   OTF   → "OTTO"
+                    $fp = fopen($file['tmp_name'], 'rb');
+                    if ($fp === false) {
+                        $error = 'Could not read the uploaded file.';
                     } else {
-                        db_insert(
-                            "INSERT INTO site_fonts (name, filename, format) VALUES (?, ?, ?)",
-                            [$fontName, $filename, $fmtKey[$ext]]
-                        );
+                        $header = fread($fp, 8);
+                        fclose($fp);
 
-                        flash_set('success', 'Font "' . $fontName . '" uploaded successfully.');
-                        redirect(SITE_URL . '/admin/settings.php');
+                        $validMagic = [
+                            'woff2' => ["\x77\x4F\x46\x32"],                          // wOF2
+                            'woff'  => ["\x77\x4F\x46\x46"],                          // wOFF
+                            'ttf'   => ["\x00\x01\x00\x00", "\x74\x72\x75\x65"],     // 0x00010000 | "true"
+                            'otf'   => ["\x4F\x54\x54\x4F"],                          // OTTO
+                        ];
+
+                        $matched = false;
+                        foreach (($validMagic[$ext] ?? []) as $magic) {
+                            if (str_starts_with($header, $magic)) {
+                                $matched = true;
+                                break;
+                            }
+                        }
+
+                        if (!$matched) {
+                            $error = 'Font file content does not match the declared format.';
+                        } else {
+                            $filename = 'font_' . bin2hex(random_bytes(16)) . '.' . $ext;
+                            $savePath = $fontsDir . '/' . $filename;
+
+                            if (!move_uploaded_file($file['tmp_name'], $savePath)) {
+                                $error = 'Failed to save font file. Please check directory permissions.';
+                            } else {
+                                db_insert(
+                                    "INSERT INTO site_fonts (name, filename, format) VALUES (?, ?, ?)",
+                                    [$fontName, $filename, $fmtKey[$ext]]
+                                );
+
+                                flash_set('success', 'Font "' . $fontName . '" uploaded successfully.');
+                                redirect(SITE_URL . '/admin/settings.php');
+                            }
+                        }
                     }
                 }
             }

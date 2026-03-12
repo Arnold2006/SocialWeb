@@ -19,10 +19,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'delete' && $mediaId > 0) {
         $media = db_row('SELECT * FROM media WHERE id = ?', [$mediaId]);
         if ($media) {
-            // Remove files
+            // Remove files — verify each path is within UPLOADS_DIR before deletion
+            $uploadsReal = realpath(UPLOADS_DIR);
             foreach (['storage_path', 'large_path', 'medium_path', 'thumb_path', 'thumbnail_path'] as $field) {
-                if (!empty($media[$field]) && file_exists($media[$field])) {
-                    @unlink($media[$field]);
+                if (empty($media[$field])) {
+                    continue;
+                }
+                $real = realpath($media[$field]);
+                if ($real !== false
+                    && $uploadsReal !== false
+                    && str_starts_with($real, $uploadsReal . DIRECTORY_SEPARATOR)
+                    && file_exists($real)) {
+                    @unlink($real);
                 }
             }
             db_exec('UPDATE media SET is_deleted = 1 WHERE id = ?', [$mediaId]);
