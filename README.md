@@ -86,11 +86,23 @@ sudo systemctl restart php-fpm
    # Edit core/config.local.php with your DB credentials and SITE_URL
    ```
 
-4. **Set permissions**:
+4. **Set ownership and permissions** — the web server must be able to write to
+   `cache/`, `uploads/`, and `database/migrations/` (PHP deletes migration files
+   after applying them).  Run the following as root, replacing `www` with the
+   user your web server runs as (`www-data` on Debian/Ubuntu, `apache` on
+   RHEL/CentOS):
    ```bash
-   chmod 755 uploads/ cache/
-   chmod -R 755 uploads/
+   # Transfer ownership of writable directories to the web-server user
+   sudo chown -R www:www cache/ uploads/ database/migrations/
+
+   # Set directory permissions
+   sudo chmod -R 755 cache/ database/migrations/
+   sudo chmod -R 755 uploads/
    ```
+
+   > **Tip:** On subsequent deployments use the included `deploy.sh` script
+   > (see [Deployment](#deployment) below), which runs `git pull` and resets
+   > permissions in one step.
 
 5. **Run the setup wizard** — visit `http://yoursite/setup.php` in your browser to:
    - Create the database tables
@@ -124,6 +136,7 @@ sudo systemctl restart php-fpm
 │   ├── avatars/        Avatar sizes: small/medium/large
 │   ├── images/         Photo sizes: original/large/medium/thumbs
 │   └── videos/         Videos: original/processed/thumbnails
+├── deploy.sh           Deployment helper (git pull + ownership / permissions)
 ├── index.php           Entry point (redirects to login or wall)
 ├── setup.php           One-time installation wizard
 └── upgrade.php         Database migration runner (run after updates)
@@ -141,11 +154,41 @@ sudo systemctl restart php-fpm
 - Media: MIME type validated with `finfo`, EXIF stripped via GD re-encoding
 - Uploads directory protected by `.htaccess`
 
+## Deployment
+
+When pulling updates to a running server, use the included `deploy.sh` script
+instead of running `sudo git pull` on its own.  Running `git pull` as root
+leaves all newly-added files (including migration scripts) owned by `root`, so
+the web server process cannot delete them after applying migrations, resulting
+in *permission denied* errors.
+
+`deploy.sh` pulls the latest code **and** resets ownership and permissions on
+all writable directories in a single step:
+
+```bash
+# Default web-server user is 'www'.  Override with WEB_USER= if needed.
+sudo bash deploy.sh
+
+# Debian / Ubuntu (web-server user is www-data):
+sudo WEB_USER=www-data bash deploy.sh
+
+# RHEL / CentOS / AlmaLinux (web-server user is apache):
+sudo WEB_USER=apache bash deploy.sh
+```
+
+After the script completes, visit `http://yoursite/upgrade.php` (or run
+`php upgrade.php` from the CLI) to apply any pending database migrations.
+
+> **Why only those three directories?**  Only `cache/`, `uploads/`, and
+> `database/migrations/` need web-server write access.  Source files (PHP,
+> CSS, JS) are owned by the deployment user and are read-only to the web
+> server, which limits the damage if the application is ever compromised.
+
 ## Upgrading
 
 When deploying a new version, apply any pending database migrations using the built-in migration runner:
 
-1. Deploy the new files to your server.
+1. Deploy the new files to your server using `deploy.sh` (see [Deployment](#deployment)), which resets file ownership so PHP can delete migration files after applying them.
 2. Log in as an admin and visit `http://yoursite/upgrade.php` in your browser, **or** run it from the CLI:
    ```bash
    php upgrade.php
