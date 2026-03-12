@@ -111,8 +111,11 @@ sudo systemctl restart php-fpm
 │   ├── js/             Vanilla JS modules
 │   └── images/         Static assets (SVG icons)
 ├── cache/              HTML cache files (auto-managed)
+├── chat/               AJAX/JSON API endpoints for the chat system
 ├── core/               Framework files (db, auth, security, etc.)
-├── database/           SQL schema
+├── database/
+│   ├── schema.sql      Full database schema
+│   └── migrations/     Incremental SQL migration scripts
 ├── includes/           Shared PHP includes (header, footer, functions)
 ├── modules/            Feature modules (wall, profile, gallery, etc.)
 ├── pages/              Public-facing pages
@@ -122,7 +125,8 @@ sudo systemctl restart php-fpm
 │   ├── images/         Photo sizes: original/large/medium/thumbs
 │   └── videos/         Videos: original/processed/thumbnails
 ├── index.php           Entry point (redirects to login or wall)
-└── setup.php           One-time installation wizard
+├── setup.php           One-time installation wizard
+└── upgrade.php         Database migration runner (run after updates)
 ```
 
 ## Security
@@ -137,6 +141,20 @@ sudo systemctl restart php-fpm
 - Media: MIME type validated with `finfo`, EXIF stripped via GD re-encoding
 - Uploads directory protected by `.htaccess`
 
+## Upgrading
+
+When deploying a new version, apply any pending database migrations using the built-in migration runner:
+
+1. Deploy the new files to your server.
+2. Log in as an admin and visit `http://yoursite/upgrade.php` in your browser, **or** run it from the CLI:
+   ```bash
+   php upgrade.php
+   ```
+3. Click **Apply Migrations** to run all pending SQL scripts from `database/migrations/`.
+4. **Delete or restrict access to `upgrade.php`** once all migrations have been applied.
+
+> Migrations are tracked in the `db_migrations` table and are never applied twice.
+
 ## Plugin Development
 
 Create a directory in `/plugins/my_plugin/` containing `plugin.php`:
@@ -145,11 +163,37 @@ Create a directory in `/plugins/my_plugin/` containing `plugin.php`:
 <?php
 function plugin_register_my_plugin(array &$registry): void
 {
-    $registry['sidebar_widgets'][] = function() {
+    // Sidebar widget — rendered in the right-hand sidebar on every page
+    $registry['sidebar_widgets'][] = function () {
         echo '<div class="widget"><h3 class="widget-title">My Widget</h3></div>';
+    };
+
+    // Wall widget — rendered inside the news-feed / wall page
+    $registry['wall_widgets'][] = function () {
+        echo '<div class="widget"><p>Wall content here.</p></div>';
+    };
+
+    // Menu item — appended to the main navigation bar
+    $registry['menu_items'][] = [
+        'label' => '🔗 My Page',
+        'url'   => SITE_URL . '/pages/my_page.php',
+    ];
+
+    // Profile extension — rendered on user profile pages; receives the profile user's ID
+    $registry['profile_extensions'][] = function (int $userId) {
+        echo '<div class="widget"><p>Extra info for user ' . (int)$userId . '</p></div>';
     };
 }
 ```
+
+### Plugin hook summary
+
+| Hook | Type | Description |
+|------|------|-------------|
+| `sidebar_widgets` | `callable` | Rendered in the sidebar on every page |
+| `wall_widgets` | `callable` | Rendered in the news-feed / wall |
+| `menu_items` | `array{label, url}` | Appended to the main navigation |
+| `profile_extensions` | `callable(int $userId)` | Rendered on user profile pages |
 
 Then enable it in the database:
 ```sql
