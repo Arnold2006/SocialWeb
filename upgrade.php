@@ -45,10 +45,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     foreach ($files as $file) {
         $name = basename($file);
 
-        // Skip already-applied migrations
+        // If already tracked, the SQL is already in the database — just remove the file.
         $already = db_val('SELECT COUNT(*) FROM db_migrations WHERE migration = ?', [$name]);
         if ((int)$already > 0) {
-            $results[] = ['name' => $name, 'status' => 'skipped', 'msg' => 'Already applied'];
+            $deleted = @unlink($file);
+            $results[] = [
+                'name'   => $name,
+                'status' => 'skipped',
+                'msg'    => $deleted ? 'Already applied — file removed' : 'Already applied (file could not be removed)',
+            ];
             continue;
         }
 
@@ -57,7 +62,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Execute each non-empty statement individually so that
             // multi-statement migration files work reliably across drivers.
             foreach (array_filter(array_map('trim', explode(';', $sql))) as $stmt) {
-                db()->exec($stmt);
+                try {
+                    db()->exec($stmt);
+                } catch (\Throwable $stmtEx) {
+                    // MySQL/MariaDB-specific error codes (this application targets MySQL/MariaDB only):
+                    //   1060: Duplicate column name — ALTER TABLE ADD COLUMN on an existing column.
+                    //   1050: Table already exists — CREATE TABLE on a table already present in schema.sql.
+                    // Both mean the structural change is already in the database.  We record the
+                    // migration as applied and remove the file.  All other exceptions (including
+                    // non-PDOException types) are re-thrown as real errors.
+                    $errCode = ($stmtEx instanceof \PDOException)
+                        ? (int)($stmtEx->errorInfo[1] ?? 0)
+                        : 0;
+                    if (!in_array($errCode, [1050, 1060], true)) {
+                        throw $stmtEx;
+                    }
+                }
             }
             db_insert('INSERT INTO db_migrations (migration) VALUES (?)', [$name]);
         } catch (\Throwable $ex) {
