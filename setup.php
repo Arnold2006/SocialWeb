@@ -62,10 +62,63 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 [$inviteCode, $adminId]
             );
 
+            // Run any pending migrations automatically
+            db()->exec("
+                CREATE TABLE IF NOT EXISTS `db_migrations` (
+                    `id`         INT UNSIGNED NOT NULL AUTO_INCREMENT,
+                    `migration`  VARCHAR(255) NOT NULL UNIQUE,
+                    `applied_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    PRIMARY KEY (`id`)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            ");
+
+            $migrationsDir = __DIR__ . '/database/migrations';
+            $migrationFiles = is_dir($migrationsDir) ? (glob($migrationsDir . '/*.sql') ?: []) : [];
+            sort($migrationFiles);
+
+            $migrationResults = [];
+            foreach ($migrationFiles as $migFile) {
+                $migName = basename($migFile);
+                $already = db_val('SELECT COUNT(*) FROM db_migrations WHERE migration = ?', [$migName]);
+                if ((int)$already > 0) {
+                    $deleted = @unlink($migFile);
+                    $migrationResults[] = $migName . ': already applied — ' . ($deleted ? 'file removed' : 'file could not be removed');
+                    continue;
+                }
+                try {
+                    $migSql = file_get_contents($migFile);
+                    foreach (array_filter(array_map('trim', explode(';', $migSql))) as $stmt) {
+                        try {
+                            db()->exec($stmt);
+                        } catch (\Throwable $stmtEx) {
+                            $errInfo = ($stmtEx instanceof \PDOException) ? $stmtEx->errorInfo : [];
+                            $errCode = is_array($errInfo) && isset($errInfo[1]) ? (int)$errInfo[1] : 0;
+                            if (!in_array($errCode, [1050, 1060], true)) {
+                                throw $stmtEx;
+                            }
+                        }
+                    }
+                    db_insert('INSERT INTO db_migrations (migration) VALUES (?)', [$migName]);
+                    $deleted = @unlink($migFile);
+                    $migrationResults[] = $migName . ': applied successfully — ' . ($deleted ? 'file deleted' : 'file could not be deleted');
+                } catch (\Throwable $migEx) {
+                    $migrationResults[] = $migName . ': error — ' . $migEx->getMessage();
+                    break;
+                }
+            }
+
             // Write lock file
             file_put_contents($lockFile, date('Y-m-d H:i:s'));
 
+            $migInfo = '';
+            if ($migrationResults) {
+                $migInfo = '<br><strong>Migrations applied:</strong><ul style="margin:.25rem 0 0 1rem">'
+                    . implode('', array_map(fn($r) => '<li>' . e($r) . '</li>', $migrationResults))
+                    . '</ul>';
+            }
+
             $success = 'Setup complete! Admin user created. Your first invite code is: <strong>' . e($inviteCode) . '</strong>'
+                     . $migInfo
                      . '<br><a href="' . e(SITE_URL . '/pages/login.php') . '">Click here to log in</a>';
         } catch (\Throwable $ex) {
             $error = 'Setup failed: ' . $ex->getMessage();
