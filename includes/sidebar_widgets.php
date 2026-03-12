@@ -62,6 +62,23 @@ if (!isset($plugins)) {
     </form>
 </div>
 
+<!-- Quick Links -->
+<div class="widget widget-links">
+    <h3 class="widget-title">Quick Links</h3>
+    <ul class="site-links-list">
+        <li>
+            <button type="button" class="btn-link" data-modal="welcome-modal">
+                👋 Welcome
+            </button>
+        </li>
+        <li>
+            <button type="button" class="btn-link" data-modal="how-it-works-modal">
+                ⚙️ How it Works
+            </button>
+        </li>
+    </ul>
+</div>
+
 <!-- Site Info -->
 <div class="widget widget-info">
     <h3 class="widget-title">About <?= e(SITE_NAME) ?></h3>

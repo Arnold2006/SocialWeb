@@ -1065,6 +1065,50 @@ if (avatarInput && cropContainer && cropCanvas) {
     }
 })();
 
+// ── Info modals (Welcome & How it Works) ─────────────────────────────────────
+
+(function initInfoModals() {
+    function openInfoModal(modalId) {
+        const modal = document.getElementById(modalId);
+        if (!modal) return;
+        modal.style.display = 'flex';
+        modal.classList.add('is-open');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeInfoModal(modal) {
+        modal.style.display = 'none';
+        modal.classList.remove('is-open');
+        document.body.style.overflow = '';
+    }
+
+    document.addEventListener('click', (e) => {
+        // Open via data-modal trigger
+        const trigger = e.target.closest('[data-modal]');
+        if (trigger) {
+            openInfoModal(trigger.dataset.modal);
+            return;
+        }
+        // Close button inside modal
+        const closeBtn = e.target.closest('.info-modal-close');
+        if (closeBtn) {
+            const modal = closeBtn.closest('.info-modal');
+            if (modal) closeInfoModal(modal);
+            return;
+        }
+        // Backdrop click
+        if (e.target.classList.contains('info-modal')) {
+            closeInfoModal(e.target);
+        }
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key !== 'Escape') return;
+        const openModal = document.querySelector('.info-modal.is-open');
+        if (openModal) closeInfoModal(openModal);
+    });
+})();
+
 // ── Theme swatch selection ────────────────────────────────────────────────────
 
 (function () {
