@@ -113,7 +113,7 @@ function process_image_upload(array $file, int $userId, int $albumId = 0): array
     $origH = imagesy($gd);
 
     // Build storage paths
-    $baseName  = uniqid('img_', true);
+    $baseName  = bin2hex(random_bytes(16));
     $extension = 'jpg'; // always re-encode as JPEG to strip metadata
 
     $paths = [
@@ -418,7 +418,7 @@ function process_video_upload(array $file, int $userId, int $albumId = 0): array
         return ['ok' => true, 'error' => '', 'media_id' => (int) $newId];
     }
 
-    $baseName  = uniqid('vid_', true);
+    $baseName  = bin2hex(random_bytes(16));
     $origPath  = UPLOADS_DIR . '/videos/original/' . $baseName . '.mp4';
     $thumbPath = UPLOADS_DIR . '/videos/thumbnails/' . $baseName . '.jpg';
 

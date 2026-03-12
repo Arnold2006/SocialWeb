@@ -42,9 +42,13 @@ $moreComments = (int)$post['comment_count'] > 3;
         </div>
         <?php if ((int)$user['id'] === (int)$post['user_id'] || is_admin()): ?>
         <div class="post-actions-menu">
-            <a href="<?= e(SITE_URL . '/modules/wall/delete_post.php?id=' . (int)$post['id']) ?>"
-               class="btn btn-danger btn-xs"
-               onclick="return confirm('Delete this post?')">Delete</a>
+            <form method="POST" action="<?= e(SITE_URL . '/modules/wall/delete_post.php') ?>"
+                  class="inline-form"
+                  onsubmit="return confirm('Delete this post?')">
+                <?= csrf_field() ?>
+                <input type="hidden" name="post_id" value="<?= (int)$post['id'] ?>">
+                <button type="submit" class="btn btn-danger btn-xs">Delete</button>
+            </form>
         </div>
         <?php endif; ?>
     </div>

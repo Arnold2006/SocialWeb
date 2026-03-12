@@ -1,6 +1,8 @@
 <?php
 /**
  * delete_post.php — Delete a post (owner or admin only)
+ *
+ * Requires a POST request with a valid CSRF token to prevent CSRF attacks.
  */
 
 declare(strict_types=1);
@@ -8,7 +10,16 @@ require_once dirname(dirname(__DIR__)) . '/includes/bootstrap.php';
 
 require_login();
 
-$postId = sanitise_int($_GET['id'] ?? 0);
+// Only accept POST requests to prevent CSRF via GET (e.g. <img src="...?id=X">)
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405);
+    flash_set('error', 'Invalid request method.');
+    redirect(SITE_URL . '/pages/index.php');
+}
+
+csrf_verify();
+
+$postId = sanitise_int($_POST['post_id'] ?? 0);
 $user   = current_user();
 
 if ($postId < 1) {

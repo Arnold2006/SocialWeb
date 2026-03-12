@@ -96,7 +96,7 @@ $setupCsrfToken = $_SESSION['setup_csrf'];
         <h2>Installation Setup</h2>
 
         <?php if ($error): ?>
-        <div class="alert alert-error"><?= $error ?></div>
+        <div class="alert alert-error"><?= e($error) ?></div>
         <?php endif; ?>
 
         <?php if ($success): ?>
