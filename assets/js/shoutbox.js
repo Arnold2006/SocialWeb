@@ -26,6 +26,22 @@
         return div.innerHTML;
     }
 
+    function linkifyHtml(rawStr) {
+        function escStr(s) {
+            const d = document.createElement('div');
+            d.appendChild(document.createTextNode(String(s)));
+            return d.innerHTML;
+        }
+        return String(rawStr).split(/(\bhttps?:\/\/\S+)/g).map(function (part, i) {
+            if (i % 2 === 0) return escStr(part);
+            const url        = part.replace(/[.,;:!?)'"]+$/, '');
+            const escapedUrl = escStr(url);
+            return '<a href="' + escapedUrl + '" rel="noopener noreferrer nofollow" target="_blank">'
+                + escapedUrl + '</a>'
+                + escStr(part.slice(url.length));
+        }).join('');
+    }
+
     /** Render messages into the container */
     function renderMessages(messages) {
         if (!messages || messages.length === 0) return;
@@ -44,7 +60,7 @@
                     <a href="${escapeHtml(m.profile_url)}">${escapeHtml(m.username)}</a>
                 </span>
                 <span class="shout-time">${escapeHtml(m.time_ago)}</span>
-                <p class="shout-text">${escapeHtml(m.message)}</p>
+                <p class="shout-text">${linkifyHtml(m.message)}</p>
             </div>
         `).join('');
 

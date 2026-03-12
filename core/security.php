@@ -62,6 +62,43 @@ function sanitise_string(string $input, int $maxLength = 0): string
 }
 
 /**
+ * Convert http/https URLs in raw text into safe clickable links, while also
+ * HTML-escaping all content.
+ *
+ * This function replaces the combination of e() + manual linkification. It
+ * splits the raw text on http/https URLs, HTML-escapes plain-text segments,
+ * and wraps each URL in an <a> tag whose href is also properly HTML-escaped.
+ * Only http:// and https:// schemes are linkified — javascript:, data:,
+ * ftp:, etc. are never turned into links. Each link receives
+ * rel="noopener noreferrer nofollow" (prevents tabnabbing and referrer
+ * leakage) and target="_blank". URLs are always rendered as text anchors;
+ * embedded content (images, audio, video) is never created regardless of the
+ * URL's file extension.
+ *
+ * @param string $rawText Raw (unescaped) user text
+ * @return string HTML-safe text with http/https URLs wrapped in <a> tags
+ */
+function linkify(string $rawText): string
+{
+    $parts  = preg_split('/(\bhttps?:\/\/\S+)/u', $rawText, -1, PREG_SPLIT_DELIM_CAPTURE);
+    $result = '';
+    foreach ($parts as $i => $part) {
+        if ($i % 2 === 0) {
+            // Plain text segment — HTML-escape it
+            $result .= e($part);
+        } else {
+            // URL segment — strip trailing punctuation, then HTML-escape
+            $url      = rtrim($part, '.,;:!?)\'"');
+            $trailing = e(mb_substr($part, mb_strlen($url)));
+            $escaped  = e($url);
+            $result  .= '<a href="' . $escaped . '" rel="noopener noreferrer nofollow" target="_blank">'
+                . $escaped . '</a>' . $trailing;
+        }
+    }
+    return $result;
+}
+
+/**
  * Sanitise an email address.
  * Returns empty string if invalid.
  */

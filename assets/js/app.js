@@ -26,6 +26,28 @@ function escapeHtml(str) {
     return div.innerHTML;
 }
 
+/**
+ * Convert http/https URLs in raw text into safe clickable links, while also
+ * HTML-escaping all content. Takes raw (unescaped) user text; do NOT call
+ * escapeHtml() on the input first. Only http/https schemes are linkified;
+ * links get rel="noopener noreferrer nofollow" and target="_blank".
+ */
+function linkifyHtml(rawStr) {
+    function escStr(s) {
+        const d = document.createElement('div');
+        d.appendChild(document.createTextNode(String(s)));
+        return d.innerHTML;
+    }
+    return String(rawStr).split(/(\bhttps?:\/\/\S+)/g).map(function (part, i) {
+        if (i % 2 === 0) return escStr(part);
+        const url        = part.replace(/[.,;:!?)'"]+$/, '');
+        const escapedUrl = escStr(url);
+        return '<a href="' + escapedUrl + '" rel="noopener noreferrer nofollow" target="_blank">'
+            + escapedUrl + '</a>'
+            + escStr(part.slice(url.length));
+    }).join('');
+}
+
 /** POST JSON (or FormData) to a URL, return parsed JSON */
 async function apiPost(url, data) {
     const body = data instanceof FormData ? data : new URLSearchParams(data);
@@ -151,7 +173,7 @@ document.addEventListener('submit', async (e) => {
                             ${escapeHtml(result.username)}
                         </a>
                         <span class="comment-time">${escapeHtml(result.time_ago)}</span>
-                        <p class="comment-text">${escapeHtml(result.content)}</p>
+                        <p class="comment-text">${linkifyHtml(result.content)}</p>
                     </div>
                 </div>`;
                 section.insertAdjacentHTML('beforeend', commentHtml);
