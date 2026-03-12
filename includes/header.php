@@ -23,6 +23,17 @@ $overlayFont   = site_setting('banner_overlay_font',   'system');
 $overlayShadow = site_setting('banner_overlay_shadow', 'medium');
 
 require_once SITE_ROOT . '/includes/overlay_maps.php';
+
+// Extend font map with any uploaded custom fonts (table may not exist on fresh installs)
+try {
+    $customFonts = db_query("SELECT id, name, filename, format FROM site_fonts ORDER BY name");
+} catch (\Throwable $e) {
+    $customFonts = [];
+}
+foreach ($customFonts as $cf) {
+    $OVERLAY_FONT_MAP['custom_' . $cf['id']] = "'" . str_replace("'", "\\'", $cf['name']) . "',sans-serif";
+}
+
 $overlayFontCSS   = $OVERLAY_FONT_MAP[$overlayFont]     ?? $OVERLAY_FONT_MAP['system'];
 $overlayShadowCSS = $OVERLAY_SHADOW_MAP[$overlayShadow] ?? $OVERLAY_SHADOW_MAP['medium'];
 
@@ -36,6 +47,21 @@ $siteTheme    = active_theme();
     <title><?= e($pageTitle) ?> — <?= e(SITE_NAME) ?></title>
     <meta name="site-url" content="<?= SITE_URL ?>">
     <link rel="stylesheet" href="<?= ASSETS_URL ?>/css/style.css">
+    <?php if (!empty($customFonts)): ?>
+    <style>
+        <?php foreach ($customFonts as $cf):
+            $fontUrl    = SITE_URL . '/uploads/fonts/' . rawurlencode($cf['filename']);
+            $fontFamily = str_replace("'", "\\'", $cf['name']);
+            $fmtMap     = ['woff2' => 'woff2', 'woff' => 'woff', 'ttf' => 'truetype', 'otf' => 'opentype'];
+            $cssFmt     = $fmtMap[$cf['format']] ?? $cf['format'];
+        ?>
+        @font-face {
+            font-family: '<?= e($fontFamily) ?>';
+            src: url('<?= e($fontUrl) ?>') format('<?= e($cssFmt) ?>');
+        }
+        <?php endforeach; ?>
+    </style>
+    <?php endif; ?>
 </head>
 <body>
 

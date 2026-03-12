@@ -1050,10 +1050,11 @@ if (avatarInput && cropContainer && cropCanvas) {
         });
     }
 
-    // Font family select
+    // Font family select — read CSS family from option's data-css-family attribute
     if (fontSelect) {
         fontSelect.addEventListener('change', () => {
-            handle.style.fontFamily = fontMap[fontSelect.value] || fontMap.system;
+            const opt = fontSelect.options[fontSelect.selectedIndex];
+            handle.style.fontFamily = (opt && opt.dataset.cssFamily) || fontMap[fontSelect.value] || fontMap.system;
         });
     }
 

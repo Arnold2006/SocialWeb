@@ -225,9 +225,6 @@ ul { list-style: none; }
     font-size: 2.4rem;
     font-weight: 800;
     letter-spacing: -0.5px;
-    background: rgba(0,0,0,.45);
-    padding: 0.3rem 0.8rem;
-    border-radius: var(--radius-sm);
     transform: translate(-50%, -50%);
     white-space: nowrap;
     user-select: none;
@@ -1347,7 +1344,6 @@ textarea { resize: vertical; min-height: 80px; }
 .banner-overlay-handle {
     position: absolute;
     transform: translate(-50%, -50%);
-    background: rgba(0,0,0,.45);
     font-weight: 800;
     padding: 0.3rem 0.8rem;
     border-radius: 4px;
