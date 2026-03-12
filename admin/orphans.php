@@ -22,6 +22,9 @@ $pageTitle = 'Admin – Orphan Cleanup';
  *
  * Uses unbuffered/streaming PDO fetches so that large tables do not cause
  * memory exhaustion.
+ *
+ * Sources: media, users (avatars), albums (covers), chat_messages, site_settings (banner),
+ *          site_fonts (custom fonts).
  */
 function collect_referenced_paths(): array
 {
@@ -78,6 +81,15 @@ function collect_referenced_paths(): array
     if (!empty($banner)) {
         $abs = SITE_ROOT . $banner;
         $refs[realpath($abs) ?: $abs] = true;
+    }
+
+    // ── site_fonts  filename  (stored in uploads/fonts/)
+    $stmt = $pdo->query('SELECT filename FROM site_fonts');
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        if (!empty($row['filename'])) {
+            $abs = UPLOADS_DIR . '/fonts/' . $row['filename'];
+            $refs[realpath($abs) ?: $abs] = true;
+        }
     }
 
     return $refs;
@@ -227,9 +239,9 @@ include SITE_ROOT . '/includes/header.php';
 
         <p class="muted">
             Orphan files are upload files that exist on disk but are no longer referenced
-            by any database record (media, avatars, album covers, chat images, or the site banner).
-            They may accumulate when users or admins delete content without the corresponding
-            filesystem cleanup completing.
+            by any database record (media, avatars, album covers, chat images, the site banner,
+            or custom fonts). They may accumulate when users or admins delete content without
+            the corresponding filesystem cleanup completing.
         </p>
 
         <?= flash_render() ?>
