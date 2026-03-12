@@ -2725,3 +2725,44 @@ textarea { resize: vertical; min-height: 80px; }
         width: 160px;
     }
 }
+
+/* ── Back-to-top button ─────────────────────────────────────── */
+.back-to-top-btn {
+    position: fixed;
+    bottom: 1.5rem;
+    left: 1.5rem;
+    z-index: 999;
+    width: 52px;
+    height: 52px;
+    border-radius: var(--radius-full);
+    background: var(--color-accent);
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow-md);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(12px);
+    transition: opacity var(--transition), visibility var(--transition), transform var(--transition), background var(--transition);
+}
+
+.back-to-top-btn svg {
+    width: 24px;
+    height: 24px;
+    fill: #fff;
+    pointer-events: none;
+}
+
+.back-to-top-btn:hover {
+    background: var(--color-accent-hover);
+    transform: translateY(0);
+}
+
+.back-to-top-btn.visible {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}

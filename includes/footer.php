@@ -13,6 +13,13 @@ $_footerUser = current_user();
     <p>&copy; <?= date('Y') ?> <?= e(SITE_NAME) ?> &mdash; All rights reserved.</p>
 </footer>
 
+<!-- ── Back to top button ──────────────────────────────────── -->
+<button id="back-to-top" class="back-to-top-btn" aria-label="Back to top" title="Back to top">
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M4 12l1.41 1.41L11 7.83V20h2V7.83l5.58 5.59L20 12l-8-8-8 8z"/>
+    </svg>
+</button>
+
 <?php if ($_footerUser): ?>
 <!-- ── Chat widget (Oxwall-style) ──────────────────────────── -->
 <div id="chat-widget">
