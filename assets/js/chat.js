@@ -58,6 +58,18 @@
         return d.innerHTML;
     }
 
+    /** Convert http/https URLs in raw text to safe clickable links, HTML-escaping all content */
+    function linkify(rawStr) {
+        return String(rawStr ?? '').split(/(\bhttps?:\/\/\S+)/g).map(function (part, i) {
+            if (i % 2 === 0) return esc(part);
+            const url        = part.replace(/[.,;:!?)'"]+$/, '');
+            const escapedUrl = esc(url);
+            return '<a href="' + escapedUrl + '" rel="noopener noreferrer nofollow" target="_blank">'
+                + escapedUrl + '</a>'
+                + esc(part.slice(url.length));
+        }).join('');
+    }
+
     /** POST FormData to a URL, return parsed JSON */
     async function apiPost(url, fields) {
         const fd = new FormData();
@@ -82,7 +94,7 @@
 
         if (msg.message_text) {
             bubble += '<p class="chat-bubble-text">'
-                + esc(msg.message_text).replace(/\n/g, '<br>')
+                + linkify(msg.message_text).replace(/\n/g, '<br>')
                 + '</p>';
         }
 
