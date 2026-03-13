@@ -78,8 +78,8 @@ $siteTheme    = active_theme();
                    class="<?= (str_ends_with($_SERVER['PHP_SELF'] ?? '', 'members.php')) ? 'active' : '' ?>">Members</a></li>
             <li><a href="<?= SITE_URL ?>/pages/profile.php?id=<?= (int)$user['id'] ?>"
                    class="<?= (str_ends_with($_SERVER['PHP_SELF'] ?? '', 'profile.php')) ? 'active' : '' ?>">My Profile</a></li>
-            <li><a href="<?= SITE_URL ?>/pages/gallery.php?user_id=<?= (int)$user['id'] ?>"
-                   class="<?= (str_ends_with($_SERVER['PHP_SELF'] ?? '', 'gallery.php')) ? 'active' : '' ?>">My Gallery</a></li>
+            <li><a href="<?= SITE_URL ?>/pages/photos.php"
+                   class="<?= (str_ends_with($_SERVER['PHP_SELF'] ?? '', 'photos.php')) ? 'active' : '' ?>">Photos</a></li>
             <li>
                 <a href="<?= SITE_URL ?>/pages/messages.php"
                    class="<?= (str_ends_with($_SERVER['PHP_SELF'] ?? '', 'messages.php')) ? 'active' : '' ?>">
