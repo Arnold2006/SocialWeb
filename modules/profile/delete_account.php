@@ -133,7 +133,13 @@ db_exec('DELETE FROM users WHERE id = ?', [$userId]);
 cache_invalidate_wall();
 
 // ── Log out ───────────────────────────────────────────────────────────────────
-logout();
-
+// Preserve the success flash message across the session boundary: capture it
+// before logout() destroys the session, then restore it in a fresh anonymous
+// session so that login.php can display it after the redirect.
 flash_set('success', 'Your account has been permanently deleted. We are sorry to see you go.');
+$pendingFlash = $_SESSION['flash'] ?? [];
+logout();
+session_start_secure();
+$_SESSION['flash'] = $pendingFlash;
+
 redirect(SITE_URL . '/pages/login.php');
