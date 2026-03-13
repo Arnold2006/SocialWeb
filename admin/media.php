@@ -263,7 +263,7 @@ include SITE_ROOT . '/includes/header.php';
             <?php foreach ($mediaList as $media): ?>
             <div class="media-admin-item">
                 <?php if ($media['type'] === 'image'): ?>
-                <a href="<?= e(get_media_url($media, 'large')) ?>"
+                <a href="<?= e(get_media_url($media, 'original')) ?>"
                    class="lightbox-trigger media-admin-thumb-link"
                    data-src="<?= e(get_media_url($media, 'large')) ?>">
                     <img src="<?= e(get_media_url($media, 'thumb')) ?>"
