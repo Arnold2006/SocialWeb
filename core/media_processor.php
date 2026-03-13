@@ -113,14 +113,13 @@ function process_image_upload(array $file, int $userId, int $albumId = 0): array
     $origH = imagesy($gd);
 
     // Build storage paths
-    $baseName  = bin2hex(random_bytes(16));
-    $extension = 'jpg'; // always re-encode as JPEG to strip metadata
+    $baseName = bin2hex(random_bytes(16));
 
     $paths = [
-        'original' => UPLOADS_DIR . '/images/original/' . $baseName . '.' . $extension,
-        'large'    => UPLOADS_DIR . '/images/large/'    . $baseName . '.' . $extension,
-        'medium'   => UPLOADS_DIR . '/images/medium/'   . $baseName . '.' . $extension,
-        'thumb'    => UPLOADS_DIR . '/images/thumbs/'   . $baseName . '.' . $extension,
+        'original' => UPLOADS_DIR . '/images/original/' . $baseName . '.jpg',   // JPEG — EXIF-stripped original
+        'large'    => UPLOADS_DIR . '/images/large/'    . $baseName . '.webp',   // WebP — bandwidth/storage savings
+        'medium'   => UPLOADS_DIR . '/images/medium/'   . $baseName . '.webp',
+        'thumb'    => UPLOADS_DIR . '/images/thumbs/'   . $baseName . '.webp',
     ];
 
     // Save original (re-encoded, EXIF stripped)
@@ -178,7 +177,7 @@ function image_create_from_upload(string $path, string $mimeType): \GdImage|fals
 }
 
 /**
- * Resize $gd to fit within $maxDim and save as JPEG.
+ * Resize $gd to fit within $maxDim and save as WebP.
  *
  * @param \GdImage $gd
  */
@@ -186,7 +185,7 @@ function image_resize_and_save(\GdImage $gd, int $origW, int $origH, string $des
 {
     if ($origW <= $maxDim && $origH <= $maxDim) {
         // No resize needed, just re-save
-        return imagejpeg($gd, $destPath, 85);
+        return imagewebp($gd, $destPath, 85);
     }
 
     $ratio  = min($maxDim / $origW, $maxDim / $origH);
@@ -200,7 +199,7 @@ function image_resize_and_save(\GdImage $gd, int $origW, int $origH, string $des
     imagesavealpha($resized, true);
 
     imagecopyresampled($resized, $gd, 0, 0, 0, 0, $newW, $newH, $origW, $origH);
-    $result = imagejpeg($resized, $destPath, 85);
+    $result = imagewebp($resized, $destPath, 85);
     imagedestroy($resized);
 
     return $result;
@@ -287,8 +286,8 @@ function process_avatar_upload(array $file, int $userId, array $crop = []): arra
     foreach ($sizes as $sizeName => $px) {
         $resized = imagecreatetruecolor($px, $px);
         imagecopyresampled($resized, $gd, 0, 0, 0, 0, $px, $px, $origW, $origH);
-        $path = UPLOADS_DIR . '/avatars/' . $sizeName . '/' . $baseName . '.jpg';
-        imagejpeg($resized, $path, 90);
+        $path = UPLOADS_DIR . '/avatars/' . $sizeName . '/' . $baseName . '.webp';
+        imagewebp($resized, $path, 90);
         imagedestroy($resized);
         $paths[$sizeName] = $path;
     }
@@ -296,7 +295,7 @@ function process_avatar_upload(array $file, int $userId, array $crop = []): arra
     imagedestroy($gd);
 
     // Store avatar path in users table (relative URL path)
-    $relPath = '/uploads/avatars/large/' . $baseName . '.jpg';
+    $relPath = '/uploads/avatars/large/' . $baseName . '.webp';
 
     // Delete old avatar files before updating the record
     $oldUser = db_row('SELECT avatar_path FROM users WHERE id = ?', [$userId]);
@@ -365,12 +364,12 @@ function process_cover_crop(array $media, array $crop): array
     }
 
     $baseName  = 'cover_' . bin2hex(random_bytes(8));
-    $destPath  = $coverDir . '/' . $baseName . '.jpg';
+    $destPath  = $coverDir . '/' . $baseName . '.webp';
 
     // Create a 400×400 square cover
     $cover = imagecreatetruecolor(400, 400);
     imagecopyresampled($cover, $gd, 0, 0, $cx, $cy, 400, 400, $cw, $ch);
-    $saved = imagejpeg($cover, $destPath, 90);
+    $saved = imagewebp($cover, $destPath, 90);
     imagedestroy($cover);
     imagedestroy($gd);
 
@@ -379,7 +378,7 @@ function process_cover_crop(array $media, array $crop): array
     }
 
     // Return as a relative URL path (like avatar_path)
-    $relPath = '/uploads/images/covers/' . $baseName . '.jpg';
+    $relPath = '/uploads/images/covers/' . $baseName . '.webp';
     return ['ok' => true, 'error' => '', 'cover_path' => $relPath];
 }
 
@@ -515,7 +514,7 @@ function media_delete_files(array $media): void
 /**
  * Delete avatar files for all size variants of a relative avatar path.
  *
- * @param string $relPath  e.g. /uploads/avatars/large/avatar_1_1234.jpg
+ * @param string $relPath  e.g. /uploads/avatars/large/avatar_1_1234.webp
  */
 function avatar_delete_files(string $relPath): void
 {
@@ -535,7 +534,7 @@ function avatar_delete_files(string $relPath): void
 /**
  * Delete a cover image file given its relative URL path.
  *
- * @param string $relPath  e.g. /uploads/images/covers/cover_XXXX.jpg
+ * @param string $relPath  e.g. /uploads/images/covers/cover_XXXX.webp
  */
 function cover_delete_file(string $relPath): void
 {
@@ -620,9 +619,9 @@ function generate_album_mosaic(array $mediaItems): array
     }
 
     $baseName = 'mosaic_' . bin2hex(random_bytes(8));
-    $destPath = $mosaicDir . '/' . $baseName . '.jpg';
+    $destPath = $mosaicDir . '/' . $baseName . '.webp';
 
-    $saved = imagejpeg($canvas, $destPath, 85);
+    $saved = imagewebp($canvas, $destPath, 85);
     imagedestroy($canvas);
 
     if (!$saved) {
@@ -673,7 +672,7 @@ function create_album_upload_post(
                 'INSERT INTO media
                     (user_id, album_id, type, file_hash, storage_path,
                      large_path, medium_path, thumb_path, size, mime_type)
-                 VALUES (?, ?, "image", ?, ?, ?, ?, ?, ?, "image/jpeg")',
+                 VALUES (?, ?, "image", ?, ?, ?, ?, ?, ?, "image/webp")',
                 [
                     $userId,
                     $albumId,
