@@ -7,7 +7,6 @@ An invite-only social network platform built with PHP 8.3, MySQL/MariaDB, and va
 - **Invite-only registration** — Admins generate invite codes with expiry dates and usage limits
 - **Wall / News Feed** — Posts with text and media, likes, comments, cached HTML feed
 - **User Profiles** — Avatar (with crop tool), bio, friend list, recent posts
-- **Friend System** — Send/accept/remove friend requests with notifications
 - **Private Messaging** — Inbox, threaded conversations, unread indicators
 - **Gallery** — Albums, image/video uploads, lightbox viewer, progressive loading
 - **Shoutbox** — Real-time AJAX polling in the sidebar
