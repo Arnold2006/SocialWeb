@@ -19,7 +19,10 @@ declare(strict_types=1);
        data-media-id="<?= (int)$media['id'] ?>">
         <img src="<?= e(get_media_url($media, 'thumb')) ?>"
              data-src="<?= e(get_media_url($media, 'medium')) ?>"
-             alt="" class="lazy-image" loading="lazy">
+             alt="" class="lazy-image" loading="lazy"
+             <?php if (!empty($media['width']) && !empty($media['height'])): ?>
+             width="<?= (int)$media['width'] ?>" height="<?= (int)$media['height'] ?>"
+             <?php endif; ?>>
     </a>
     <?php if ($isCover): ?>
     <span class="cover-badge">★ Cover</span>
