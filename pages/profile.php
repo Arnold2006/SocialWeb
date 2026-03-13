@@ -207,12 +207,19 @@ include SITE_ROOT . '/includes/header.php';
             <section class="settings-section danger-zone">
                 <h2>Danger Zone</h2>
                 <p class="danger-zone-desc">
-                    Permanently delete your account and all associated data.
-                    This action <strong>cannot be undone</strong>.
+                    Download a copy of all your original media before you go, then
+                    permanently delete your account and all associated data.
+                    Deletion <strong>cannot be undone</strong>.
                 </p>
-                <button type="button" class="btn btn-danger" id="open-delete-modal">
-                    Delete My Account
-                </button>
+                <div class="danger-zone-actions">
+                    <a href="<?= e(SITE_URL) ?>/modules/profile/download_media.php"
+                       class="btn btn-secondary">
+                        ⬇ Download My Media
+                    </a>
+                    <button type="button" class="btn btn-danger" id="open-delete-modal">
+                        Delete My Account
+                    </button>
+                </div>
             </section>
 
         </div><!-- /.settings-layout -->
@@ -239,6 +246,12 @@ include SITE_ROOT . '/includes/header.php';
                         <li>All likes and notifications</li>
                         <li>Your profile, avatar, and account information</li>
                     </ul>
+                    <p class="delete-modal-tip">
+                        💾 Want to keep your photos and videos?
+                        <a href="<?= e(SITE_URL) ?>/modules/profile/download_media.php"
+                           class="delete-download-link">Download your media archive</a>
+                        before continuing.
+                    </p>
                     <p class="delete-modal-warning">
                         There is <strong>no recovery</strong> after this step.
                         Your data will be wiped from the server immediately.
@@ -302,6 +315,7 @@ include SITE_ROOT . '/includes/header.php';
             var step1   = document.getElementById('delete-step-1');
             var step2   = document.getElementById('delete-step-2');
             var step3   = document.getElementById('delete-step-3');
+            var isOpen  = false;
 
             function showStep(s) {
                 [step1, step2, step3].forEach(function (el) { el.style.display = 'none'; });
@@ -314,12 +328,16 @@ include SITE_ROOT . '/includes/header.php';
                 document.getElementById('delete-confirm-error').style.display = 'none';
                 document.getElementById('delete-password').value = '';
                 modal.style.display = 'flex';
+                modal.setAttribute('aria-hidden', 'false');
                 document.body.style.overflow = 'hidden';
+                isOpen = true;
             }
 
             function closeModal() {
                 modal.style.display = 'none';
+                modal.setAttribute('aria-hidden', 'true');
                 document.body.style.overflow = '';
+                isOpen = false;
             }
 
             document.getElementById('open-delete-modal').addEventListener('click', openModal);
@@ -362,7 +380,7 @@ include SITE_ROOT . '/includes/header.php';
 
             // Close on Escape key
             document.addEventListener('keydown', function (e) {
-                if (e.key === 'Escape' && modal.style.display !== 'none') { closeModal(); }
+                if (e.key === 'Escape' && isOpen) { closeModal(); }
             });
         }());
         </script>

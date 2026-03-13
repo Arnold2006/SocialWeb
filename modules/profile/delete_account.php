@@ -56,14 +56,19 @@ foreach ($mediaRows as $media) {
 db_exec('DELETE FROM media WHERE user_id = ?', [$userId]);
 
 // 2. Delete chat message images
-$chatImages = db_query(
+$uploadsReal = realpath(UPLOADS_DIR);
+$chatImages  = db_query(
     'SELECT image_path FROM chat_messages WHERE sender_id = ? AND image_path IS NOT NULL',
     [$userId]
 );
 foreach ($chatImages as $row) {
+    // Validate path is within uploads directory before deleting (path-traversal prevention)
     $absPath = SITE_ROOT . $row['image_path'];
-    if (file_exists($absPath)) {
-        @unlink($absPath);
+    $real    = realpath($absPath);
+    if ($real !== false
+        && $uploadsReal !== false
+        && str_starts_with($real, $uploadsReal . DIRECTORY_SEPARATOR)) {
+        @unlink($real);
     }
 }
 
