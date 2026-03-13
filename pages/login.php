@@ -71,6 +71,8 @@ $siteTheme = active_theme();
         <h1 class="auth-title"><?= e(SITE_NAME) ?></h1>
         <h2>Sign In</h2>
 
+        <?= flash_render() ?>
+
         <?php if ($error): ?>
             <div class="alert alert-error"><?= e($error) ?></div>
         <?php endif; ?>
