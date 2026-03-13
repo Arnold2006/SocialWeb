@@ -203,7 +203,187 @@ include SITE_ROOT . '/includes/header.php';
                 </form>
             </section>
 
+            <!-- Danger zone -->
+            <section class="settings-section danger-zone">
+                <h2>Danger Zone</h2>
+                <p class="danger-zone-desc">
+                    Download a copy of all your original media before you go, then
+                    permanently delete your account and all associated data.
+                    Deletion <strong>cannot be undone</strong>.
+                </p>
+                <div class="danger-zone-actions">
+                    <a href="<?= e(SITE_URL) ?>/modules/profile/download_media.php"
+                       class="btn btn-secondary">
+                        ⬇ Download My Media
+                    </a>
+                    <button type="button" class="btn btn-danger" id="open-delete-modal">
+                        Delete My Account
+                    </button>
+                </div>
+            </section>
+
         </div><!-- /.settings-layout -->
+
+        <!-- ── Delete Account Modal ───────────────────────────────── -->
+        <div id="delete-account-modal" class="delete-modal" style="display:none"
+             role="dialog" aria-modal="true" aria-labelledby="delete-modal-title">
+            <div class="delete-modal-inner">
+                <button type="button" class="delete-modal-close" aria-label="Close">&times;</button>
+
+                <!-- Step 1 — Warning -->
+                <div class="delete-step" id="delete-step-1">
+                    <h2 id="delete-modal-title" class="delete-modal-title">⚠️ Delete Account</h2>
+                    <p class="delete-modal-lead">
+                        You are about to <strong>permanently delete</strong> your account.
+                        The following data will be <strong>irreversibly erased</strong>:
+                    </p>
+                    <ul class="delete-consequences">
+                        <li>All wall posts and comments</li>
+                        <li>All uploaded images and videos (albums &amp; gallery)</li>
+                        <li>All chat messages and conversations</li>
+                        <li>All private messages (inbox &amp; sent)</li>
+                        <li>All shoutbox entries</li>
+                        <li>All likes and notifications</li>
+                        <li>Your profile, avatar, and account information</li>
+                    </ul>
+                    <p class="delete-modal-tip">
+                        💾 Want to keep your photos and videos?
+                        <a href="<?= e(SITE_URL) ?>/modules/profile/download_media.php"
+                           class="delete-download-link">Download your media archive</a>
+                        before continuing.
+                    </p>
+                    <p class="delete-modal-warning">
+                        There is <strong>no recovery</strong> after this step.
+                        Your data will be wiped from the server immediately.
+                    </p>
+                    <div class="delete-modal-actions">
+                        <button type="button" class="btn btn-secondary" id="delete-cancel-1">Cancel</button>
+                        <button type="button" class="btn btn-danger" id="delete-next-1">I understand — Continue</button>
+                    </div>
+                </div>
+
+                <!-- Step 2 — Confirmation text -->
+                <div class="delete-step" id="delete-step-2" style="display:none">
+                    <h2 class="delete-modal-title">⚠️ Confirm Deletion</h2>
+                    <p class="delete-modal-lead">
+                        To confirm, type <strong>DELETE</strong> in the box below:
+                    </p>
+                    <div class="form-group">
+                        <input type="text" id="delete-confirm-text" class="delete-confirm-input"
+                               placeholder="Type DELETE here" autocomplete="off" spellcheck="false">
+                    </div>
+                    <p id="delete-confirm-error" class="delete-confirm-error" style="display:none">
+                        Please type DELETE (all caps) to proceed.
+                    </p>
+                    <div class="delete-modal-actions">
+                        <button type="button" class="btn btn-secondary" id="delete-back-2">Back</button>
+                        <button type="button" class="btn btn-danger" id="delete-next-2">Continue</button>
+                    </div>
+                </div>
+
+                <!-- Step 3 — Password verification & final submit -->
+                <div class="delete-step" id="delete-step-3" style="display:none">
+                    <h2 class="delete-modal-title">🔑 Verify Your Identity</h2>
+                    <p class="delete-modal-lead">
+                        Enter your current password to authorize account deletion.
+                        This is your <strong>last chance</strong> to cancel.
+                    </p>
+                    <form method="POST"
+                          action="<?= e(SITE_URL) ?>/modules/profile/delete_account.php"
+                          id="delete-account-form">
+                        <?= csrf_field() ?>
+                        <input type="hidden" name="confirm_text" id="delete-confirm-hidden" value="">
+                        <div class="form-group">
+                            <label for="delete-password">Current Password</label>
+                            <input type="password" id="delete-password" name="delete_password"
+                                   autocomplete="current-password" required>
+                        </div>
+                        <div class="delete-modal-actions">
+                            <button type="button" class="btn btn-secondary" id="delete-back-3">Back</button>
+                            <button type="submit" class="btn btn-danger">
+                                Permanently Delete My Account
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <script>
+        (function () {
+            var modal   = document.getElementById('delete-account-modal');
+            var step1   = document.getElementById('delete-step-1');
+            var step2   = document.getElementById('delete-step-2');
+            var step3   = document.getElementById('delete-step-3');
+            var isOpen  = false;
+
+            function showStep(s) {
+                [step1, step2, step3].forEach(function (el) { el.style.display = 'none'; });
+                s.style.display = 'block';
+            }
+
+            function openModal() {
+                showStep(step1);
+                document.getElementById('delete-confirm-text').value = '';
+                document.getElementById('delete-confirm-error').style.display = 'none';
+                document.getElementById('delete-password').value = '';
+                modal.style.display = 'flex';
+                modal.setAttribute('aria-hidden', 'false');
+                document.body.style.overflow = 'hidden';
+                isOpen = true;
+            }
+
+            function closeModal() {
+                modal.style.display = 'none';
+                modal.setAttribute('aria-hidden', 'true');
+                document.body.style.overflow = '';
+                isOpen = false;
+            }
+
+            document.getElementById('open-delete-modal').addEventListener('click', openModal);
+            document.querySelector('.delete-modal-close').addEventListener('click', closeModal);
+            document.getElementById('delete-cancel-1').addEventListener('click', closeModal);
+
+            // Step 1 → Step 2
+            document.getElementById('delete-next-1').addEventListener('click', function () {
+                showStep(step2);
+                document.getElementById('delete-confirm-text').focus();
+            });
+
+            // Step 2 → Step 1
+            document.getElementById('delete-back-2').addEventListener('click', function () {
+                showStep(step1);
+            });
+
+            // Step 2 → Step 3
+            document.getElementById('delete-next-2').addEventListener('click', function () {
+                var val = document.getElementById('delete-confirm-text').value.trim();
+                if (val !== 'DELETE') {
+                    document.getElementById('delete-confirm-error').style.display = 'block';
+                    return;
+                }
+                document.getElementById('delete-confirm-error').style.display = 'none';
+                document.getElementById('delete-confirm-hidden').value = val;
+                showStep(step3);
+                document.getElementById('delete-password').focus();
+            });
+
+            // Step 3 → Step 2
+            document.getElementById('delete-back-3').addEventListener('click', function () {
+                showStep(step2);
+            });
+
+            // Close on backdrop click
+            modal.addEventListener('click', function (e) {
+                if (e.target === modal) { closeModal(); }
+            });
+
+            // Close on Escape key
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape' && isOpen) { closeModal(); }
+            });
+        }());
+        </script>
         <?php endif; ?>
     </aside>
 
