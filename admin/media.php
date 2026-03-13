@@ -263,10 +263,23 @@ include SITE_ROOT . '/includes/header.php';
             <?php foreach ($mediaList as $media): ?>
             <div class="media-admin-item">
                 <?php if ($media['type'] === 'image'): ?>
-                <img src="<?= e(get_media_url($media, 'thumb')) ?>"
-                     alt="" loading="lazy" class="media-admin-thumb">
+                <a href="<?= e(get_media_url($media, 'large')) ?>"
+                   class="lightbox-trigger media-admin-thumb-link"
+                   data-src="<?= e(get_media_url($media, 'large')) ?>">
+                    <img src="<?= e(get_media_url($media, 'thumb')) ?>"
+                         alt="" loading="lazy" class="media-admin-thumb">
+                </a>
                 <?php else: ?>
-                <div class="media-admin-video-icon">🎥</div>
+                <a href="<?= e(get_media_url($media, 'original')) ?>"
+                   class="lightbox-trigger media-admin-thumb-link"
+                   data-video-src="<?= e(get_media_url($media, 'original')) ?>">
+                    <?php if (!empty($media['thumbnail_path'])): ?>
+                    <img src="<?= e(get_media_url($media, 'thumbnail')) ?>"
+                         alt="" loading="lazy" class="media-admin-thumb">
+                    <?php else: ?>
+                    <div class="media-admin-video-icon">🎥</div>
+                    <?php endif; ?>
+                </a>
                 <?php endif; ?>
                 <div class="media-admin-info">
                     <span class="media-admin-type"><?= e($media['type']) ?></span>

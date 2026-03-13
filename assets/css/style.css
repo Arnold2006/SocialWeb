@@ -1966,6 +1966,12 @@ textarea { resize: vertical; min-height: 80px; }
     gap: 2px;
 }
 
+.media-admin-thumb-link {
+    display: block;
+    line-height: 0;
+    cursor: zoom-in;
+}
+
 .media-admin-delete {
     position: absolute;
     top: 4px; right: 4px;
