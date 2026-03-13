@@ -1207,3 +1207,61 @@ if (avatarInput && cropContainer && cropCanvas) {
     // Handle initial state (e.g. page restored with scroll position)
     onScroll();
 }());
+
+// ── Load More wall posts ──────────────────────────────────────────────────────
+
+(function () {
+    'use strict';
+
+    const wrap    = document.getElementById('load-more-wrap');
+    const btn     = document.getElementById('load-more-btn');
+    const feed    = document.getElementById('post-feed');
+
+    if (!wrap || !btn || !feed) return;
+
+    // Hide the button immediately if there are no more posts to load
+    if (feed.dataset.hasMore !== '1') {
+        wrap.classList.add('hidden');
+        return;
+    }
+
+    // Number of posts loaded per batch (must match PHP $limit in load_posts.php)
+    const BATCH_SIZE = parseInt(feed.dataset.offset || '10', 10);
+    let offset  = BATCH_SIZE;
+    let loading = false;
+
+    btn.addEventListener('click', async function () {
+        if (loading) return;
+        loading = true;
+        btn.disabled    = true;
+        btn.textContent = 'Loading\u2026';
+
+        const baseUrl = document.querySelector('meta[name="site-url"]')?.content || '';
+
+        try {
+            const resp   = await fetch(
+                baseUrl + '/modules/wall/load_posts.php?offset=' + encodeURIComponent(offset),
+                { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } }
+            );
+            const result = await resp.json();
+
+            if (result.ok) {
+                feed.insertAdjacentHTML('beforeend', result.html);
+                offset += BATCH_SIZE;
+
+                if (!result.has_more) {
+                    wrap.classList.add('hidden');
+                }
+            } else {
+                alert('Could not load more posts. Please try again.');
+            }
+        } catch (err) {
+            console.error('Load more failed:', err);
+            alert('Failed to load more posts. Please try again.');
+        } finally {
+            loading         = false;
+            btn.disabled    = false;
+            btn.textContent = 'Load More';
+        }
+    });
+}());

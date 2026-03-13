@@ -638,6 +638,37 @@ textarea { resize: vertical; min-height: 80px; }
     justify-content: center;
 }
 
+/* ── Load More floating button ───────────────────────────────── */
+.load-more-wrap {
+    position: fixed;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 200;
+    pointer-events: none;
+}
+.btn-load-more {
+    pointer-events: all;
+    padding: 0.65rem 2.2rem;
+    border-radius: 2rem;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+    font-size: 0.95rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    transition: transform var(--transition), box-shadow var(--transition), opacity var(--transition);
+}
+.btn-load-more:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+}
+.btn-load-more:disabled {
+    opacity: 0.65;
+    cursor: default;
+}
+.load-more-wrap.hidden {
+    display: none;
+}
+
 .page-link {
     display: inline-block;
     padding: 0.4rem 0.75rem;
