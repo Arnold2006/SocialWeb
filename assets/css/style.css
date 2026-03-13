@@ -1436,16 +1436,22 @@ textarea { resize: vertical; min-height: 80px; }
 }
 
 .media-grid {
-    columns: 4;
-    column-gap: 0.75rem;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.75rem;
+    align-items: start;
 }
 
 @media (max-width: 900px) {
-    .media-grid { columns: 3; }
+    .media-grid { grid-template-columns: repeat(3, 1fr); }
 }
 
 @media (max-width: 600px) {
-    .media-grid { columns: 2; }
+    .media-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+.media-grid .empty-state {
+    grid-column: 1 / -1;
 }
 
 .media-load-sentinel {
@@ -1478,8 +1484,6 @@ textarea { resize: vertical; min-height: 80px; }
 }
 
 .media-item {
-    break-inside: avoid;
-    margin-bottom: 0.75rem;
     position: relative;
     border-radius: var(--radius-md);
     background: var(--color-bg);
