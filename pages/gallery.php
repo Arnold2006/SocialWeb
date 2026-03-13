@@ -210,16 +210,23 @@ $albums = db_query(
     [$galleryOwner]
 );
 
-// Load media for selected album (with like + comment counts)
-$mediaItems = [];
+// Load media for selected album (first page only)
+$mediaItems  = [];
+$mediaTotal  = 0;
+$mediaLimit  = 25;
 if ($albumId > 0) {
+    $mediaTotal = (int) db_val(
+        'SELECT COUNT(*) FROM media WHERE album_id = ? AND user_id = ? AND is_deleted = 0',
+        [$albumId, $galleryOwner]
+    );
     $mediaItems = db_query(
         'SELECT m.*,
             (SELECT COUNT(*) FROM likes    WHERE media_id = m.id) AS like_count,
             (SELECT COUNT(*) FROM comments WHERE media_id = m.id AND is_deleted = 0) AS comment_count
          FROM media m
          WHERE m.album_id = ? AND m.user_id = ? AND m.is_deleted = 0
-         ORDER BY m.created_at DESC',
+         ORDER BY m.created_at DESC
+         LIMIT ' . (int)$mediaLimit,
         [$albumId, $galleryOwner]
     );
 }
@@ -351,109 +358,29 @@ include SITE_ROOT . '/includes/header.php';
         </div>
         <?php endif; ?>
 
-        <div class="media-grid" id="lightbox-gallery">
+        <?php $hasMoreMedia = $mediaTotal > $mediaLimit; ?>
+        <div class="media-grid" id="lightbox-gallery"
+             data-album-id="<?= $albumId ?>"
+             data-user-id="<?= $galleryOwner ?>"
+             data-offset="<?= count($mediaItems) ?>"
+             data-has-more="<?= $hasMoreMedia ? '1' : '0' ?>">
             <?php if (empty($mediaItems)): ?>
             <p class="empty-state">No media in this album yet.</p>
             <?php else: ?>
                 <?php foreach ($mediaItems as $media): ?>
                 <?php $isCover = ((int)$media['id'] === (int)($currentAlbum['cover_id'] ?? 0)); ?>
-                <div class="media-item<?= $isCover ? ' is-cover' : '' ?>">
-                    <?php if ($media['type'] === 'image'): ?>
-                    <a href="<?= e(get_media_url($media, 'original')) ?>"
-                       class="lightbox-trigger"
-                       data-src="<?= e(get_media_url($media, 'large')) ?>"
-                       data-media-id="<?= (int)$media['id'] ?>">
-                        <img src="<?= e(get_media_url($media, 'thumb')) ?>"
-                             data-src="<?= e(get_media_url($media, 'medium')) ?>"
-                             alt="" class="lazy-image" loading="lazy">
-                    </a>
-                    <?php if ($isCover): ?>
-                    <span class="cover-badge">★ Cover</span>
-                    <?php endif; ?>
-                    <?php else: ?>
-                    <?php
-                        $videoThumb = !empty($media['thumbnail_path'])
-                            ? e(get_media_url($media, 'thumbnail'))
-                            : e(SITE_URL . '/assets/images/placeholder.svg');
-                        $videoSrc = e(get_media_url($media, 'original'));
-                    ?>
-                    <a href="<?= $videoSrc ?>"
-                       class="lightbox-trigger video-thumb-wrap"
-                       data-src="<?= $videoThumb ?>"
-                       data-video-src="<?= $videoSrc ?>"
-                       data-media-id="<?= (int)$media['id'] ?>"
-                       aria-label="Play video">
-                        <img src="<?= $videoThumb ?>" alt="" class="media-video-thumb" loading="lazy">
-                        <span class="video-play-icon" aria-hidden="true">&#9654;</span>
-                    </a>
-                    <?php if ($isCover): ?>
-                    <span class="cover-badge">★ Cover</span>
-                    <?php endif; ?>
-                    <?php endif; ?>
-                    <?php if ((int)$media['like_count'] > 0 || (int)$media['comment_count'] > 0): ?>
-                    <div class="media-stats">
-                        <?php if ((int)$media['like_count'] > 0): ?>
-                        <span class="media-stat media-stat-likes">♥ <?= (int)$media['like_count'] ?></span>
-                        <?php endif; ?>
-                        <?php if ((int)$media['comment_count'] > 0): ?>
-                        <span class="media-stat media-stat-comments">💬 <?= (int)$media['comment_count'] ?></span>
-                        <?php endif; ?>
-                    </div>
-                    <?php endif; ?>
-                    <?php if ($media['type'] === 'video'): ?>
-                    <div class="media-item-top-actions">
-                        <a href="<?= e(get_media_url($media, 'original')) ?>"
-                           download
-                           class="btn btn-xs btn-secondary">&#8595; Download</a>
-                        <?php if ($isOwn): ?>
-                        <form method="POST">
-                            <?= csrf_field() ?>
-                            <input type="hidden" name="action" value="delete_media">
-                            <input type="hidden" name="media_id" value="<?= (int)$media['id'] ?>">
-                            <button type="submit" class="btn btn-danger btn-xs"
-                                    onclick="return confirm('Delete this media?')">✕</button>
-                        </form>
-                        <?php endif; ?>
-                    </div>
-                    <?php if ($isOwn && !empty($media['thumbnail_path'])): ?>
-                    <div class="media-item-actions">
-                        <?php /* data-orig-width/height=0: the crop source IS the thumbnail,
-                               so JS falls back to img.width/height giving a 1:1 scale */ ?>
-                        <button type="button"
-                                class="btn btn-xs btn-secondary set-cover-btn"
-                                data-media-id="<?= (int)$media['id'] ?>"
-                                data-media-src="<?= e(get_media_url($media, 'thumbnail')) ?>"
-                                data-album-id="<?= $albumId ?>"
-                                data-orig-width="0"
-                                data-orig-height="0">
-                            <?= $isCover ? '★' : '☆' ?> Cover
-                        </button>
-                    </div>
-                    <?php endif; ?>
-                    <?php elseif ($isOwn): ?>
-                    <div class="media-item-actions">
-                        <button type="button"
-                                class="btn btn-xs btn-secondary set-cover-btn"
-                                data-media-id="<?= (int)$media['id'] ?>"
-                                data-media-src="<?= e(get_media_url($media, 'medium')) ?>"
-                                data-album-id="<?= $albumId ?>"
-                                data-orig-width="<?= (int)$media['width'] ?>"
-                                data-orig-height="<?= (int)$media['height'] ?>">
-                            <?= $isCover ? '★' : '☆' ?> Cover
-                        </button>
-                        <form method="POST" class="media-delete-form">
-                            <?= csrf_field() ?>
-                            <input type="hidden" name="action" value="delete_media">
-                            <input type="hidden" name="media_id" value="<?= (int)$media['id'] ?>">
-                            <button type="submit" class="btn btn-danger btn-xs"
-                                    onclick="return confirm('Delete this media?')">✕</button>
-                        </form>
-                    </div>
-                    <?php endif; ?>
-                </div>
+                <?php include SITE_ROOT . '/modules/gallery/media_item.php'; ?>
                 <?php endforeach; ?>
             <?php endif; ?>
         </div>
+        <?php if ($hasMoreMedia): ?>
+        <div id="media-load-sentinel" class="media-load-sentinel" aria-hidden="true"></div>
+        <div id="media-load-spinner" class="media-load-spinner" style="display:none" role="status" aria-label="Loading more media" aria-live="polite">
+            <span class="media-load-spinner-dot"></span>
+            <span class="media-load-spinner-dot"></span>
+            <span class="media-load-spinner-dot"></span>
+        </div>
+        <?php endif; ?>
     </div>
 
     <!-- Cover Crop Modal -->
@@ -487,5 +414,8 @@ include SITE_ROOT . '/includes/header.php';
     </main>
 
 </div><!-- /.two-col-layout -->
+<?php if ($albumId > 0): ?>
+<script src="<?= ASSETS_URL ?>/js/gallery_infinite_scroll.js"></script>
+<?php endif; ?>
 
 <?php include SITE_ROOT . '/includes/footer.php'; ?>

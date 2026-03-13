@@ -1,0 +1,79 @@
+<?php
+/**
+ * get_media.php — AJAX endpoint for paginated album media.
+ *
+ * GET params:
+ *   album_id  int   Album to load media from
+ *   user_id   int   Owner of the album
+ *   offset    int   Number of items already loaded (default 0)
+ *
+ * Returns JSON:
+ *   { ok: true,  html: string, has_more: bool }
+ *   { ok: false, error: string }
+ */
+
+declare(strict_types=1);
+require_once dirname(__DIR__, 2) . '/includes/bootstrap.php';
+
+require_login();
+
+header('Content-Type: application/json; charset=utf-8');
+
+$currentUser = current_user();
+$albumId     = sanitise_int($_GET['album_id'] ?? 0);
+$galleryOwner = sanitise_int($_GET['user_id'] ?? 0);
+$offset      = max(0, sanitise_int($_GET['offset'] ?? 0));
+$limit       = 25;
+
+if ($albumId < 1 || $galleryOwner < 1) {
+    echo json_encode(['ok' => false, 'error' => 'Invalid parameters']);
+    exit;
+}
+
+// Verify album exists and belongs to the given owner
+$album = db_row(
+    'SELECT * FROM albums WHERE id = ? AND user_id = ? AND is_deleted = 0',
+    [$albumId, $galleryOwner]
+);
+
+if (!$album) {
+    echo json_encode(['ok' => false, 'error' => 'Album not found']);
+    exit;
+}
+
+$isOwn = ((int)$currentUser['id'] === $galleryOwner);
+
+try {
+    $fetchLimit = $limit + 1; // fetch one extra to detect whether more items exist
+
+    $mediaRows = db_query(
+        'SELECT m.*,
+            (SELECT COUNT(*) FROM likes    WHERE media_id = m.id) AS like_count,
+            (SELECT COUNT(*) FROM comments WHERE media_id = m.id AND is_deleted = 0) AS comment_count
+         FROM media m
+         WHERE m.album_id = ? AND m.user_id = ? AND m.is_deleted = 0
+         ORDER BY m.created_at DESC
+         LIMIT ' . (int)$fetchLimit . ' OFFSET ' . (int)$offset,
+        [$albumId, $galleryOwner]
+    );
+
+    $hasMore = count($mediaRows) > $limit;
+    if ($hasMore) {
+        array_pop($mediaRows);
+    }
+
+    ob_start();
+    foreach ($mediaRows as $media) {
+        $isCover = ((int)$media['id'] === (int)($album['cover_id'] ?? 0));
+        include __DIR__ . '/media_item.php';
+    }
+    $html = ob_get_clean() ?: '';
+
+    echo json_encode(['ok' => true, 'html' => $html, 'has_more' => $hasMore]);
+} catch (Throwable $e) {
+    if (ob_get_level() > 0) {
+        ob_end_clean();
+    }
+    error_log('get_media error: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+    echo json_encode(['ok' => false, 'error' => 'Failed to load media']);
+}
