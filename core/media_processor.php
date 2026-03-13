@@ -312,19 +312,25 @@ function process_avatar_upload(array $file, int $userId, array $crop = []): arra
 // ── Cover image processing ────────────────────────────────────────────────────
 
 /**
- * Crop an existing media image to produce a square album cover.
+ * Crop an existing media image or video thumbnail to produce a square album cover.
  *
- * Coordinates are in the original image's pixel space.
+ * Coordinates are in the source image's pixel space. For video media the crop
+ * is applied to the pre-generated video thumbnail.
  *
- * @param array $media  Row from the media table (must be type=image)
- * @param array $crop   [x, y, w, h] in original-image pixels
+ * @param array $media  Row from the media table (type=image or type=video)
+ * @param array $crop   [x, y, w, h] in source-image pixels
  * @return array{ok: bool, error: string, cover_path: string}
  */
 function process_cover_crop(array $media, array $crop): array
 {
-    $srcPath = $media['storage_path'] ?? '';
+    // For videos, use the generated thumbnail as the cover source image
+    if (($media['type'] ?? '') === 'video') {
+        $srcPath = $media['thumbnail_path'] ?? '';
+    } else {
+        $srcPath = $media['storage_path'] ?? '';
+    }
     if (empty($srcPath) || !file_exists($srcPath)) {
-        return ['ok' => false, 'error' => 'Source image not found.', 'cover_path' => ''];
+        return ['ok' => false, 'error' => 'Cover source not found.', 'cover_path' => ''];
     }
 
     $finfo    = new finfo(FILEINFO_MIME_TYPE);

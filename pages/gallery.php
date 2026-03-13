@@ -140,7 +140,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwn) {
             $aId     = sanitise_int($_POST['album_id'] ?? 0);
             $mediaId = sanitise_int($_POST['media_id'] ?? 0);
             $media   = db_row(
-                'SELECT * FROM media WHERE id = ? AND user_id = ? AND is_deleted = 0 AND type = "image"',
+                'SELECT * FROM media WHERE id = ? AND user_id = ? AND is_deleted = 0 AND type IN ("image", "video")',
                 [$mediaId, (int)$currentUser['id']]
             );
             $album   = db_row(
@@ -386,6 +386,9 @@ include SITE_ROOT . '/includes/header.php';
                         <img src="<?= $videoThumb ?>" alt="" class="media-video-thumb" loading="lazy">
                         <span class="video-play-icon" aria-hidden="true">&#9654;</span>
                     </a>
+                    <?php if ($isCover): ?>
+                    <span class="cover-badge">★ Cover</span>
+                    <?php endif; ?>
                     <?php endif; ?>
                     <?php if ((int)$media['like_count'] > 0 || (int)$media['comment_count'] > 0): ?>
                     <div class="media-stats">
@@ -402,6 +405,19 @@ include SITE_ROOT . '/includes/header.php';
                         <a href="<?= e(get_media_url($media, 'original')) ?>"
                            download
                            class="btn btn-xs btn-secondary">&#8595; Download</a>
+                        <?php if ($isOwn && !empty($media['thumbnail_path'])): ?>
+                        <?php /* data-orig-width/height=0: the crop source IS the thumbnail,
+                               so JS falls back to img.width/height giving a 1:1 scale */ ?>
+                        <button type="button"
+                                class="btn btn-xs btn-secondary set-cover-btn"
+                                data-media-id="<?= (int)$media['id'] ?>"
+                                data-media-src="<?= e(get_media_url($media, 'thumbnail')) ?>"
+                                data-album-id="<?= $albumId ?>"
+                                data-orig-width="0"
+                                data-orig-height="0">
+                            <?= $isCover ? '★' : '☆' ?> Cover
+                        </button>
+                        <?php endif; ?>
                         <?php if ($isOwn): ?>
                         <form method="POST" class="media-delete-form">
                             <?= csrf_field() ?>
