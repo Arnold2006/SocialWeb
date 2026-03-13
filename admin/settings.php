@@ -97,7 +97,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         imagedestroy($src);
 
                         $bannerDir  = UPLOADS_DIR . '/banner';
-                        $filename   = 'banner_' . time() . '_' . bin2hex(random_bytes(4)) . '.jpg';
+                        $filename   = 'banner_' . time() . '_' . bin2hex(random_bytes(4)) . '.webp';
                         $savePath   = $bannerDir . '/' . $filename;
                         $relPath    = '/uploads/banner/' . $filename;
 
@@ -105,7 +105,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             mkdir($bannerDir, 0755, true);
                         }
 
-                        if (imagejpeg($dst, $savePath, 90)) {
+                        if (imagewebp($dst, $savePath, 90)) {
                             imagedestroy($dst);
 
                             // Delete old banner file if it exists
