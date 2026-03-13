@@ -1227,8 +1227,48 @@ if (avatarInput && cropContainer && cropCanvas) {
 
     // Number of posts loaded per batch (must match PHP $limit in load_posts.php)
     const BATCH_SIZE = parseInt(feed.dataset.offset || '10', 10);
-    let offset  = BATCH_SIZE;
-    let loading = false;
+    let offset   = BATCH_SIZE;
+    let loading  = false;
+    let sentinel = null; // IntersectionObserver watching the last post
+
+    /**
+     * Show the "Load More" button only when the last post in the feed
+     * enters the viewport.  This replaces any previous sentinel observer.
+     */
+    function watchLastPost() {
+        if (sentinel) {
+            sentinel.disconnect();
+            sentinel = null;
+        }
+
+        const posts = feed.querySelectorAll('.post-item');
+        if (!posts.length) return;
+        const lastPost = posts[posts.length - 1];
+
+        if (!('IntersectionObserver' in window)) {
+            // Fallback for very old browsers: always show the button
+            wrap.classList.remove('hidden');
+            return;
+        }
+
+        sentinel = new IntersectionObserver(
+            (entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        wrap.classList.remove('hidden');
+                    } else {
+                        wrap.classList.add('hidden');
+                    }
+                });
+            },
+            { rootMargin: '0px', threshold: 0 }
+        );
+        sentinel.observe(lastPost);
+    }
+
+    // Start hidden; the sentinel will reveal the button as needed
+    wrap.classList.add('hidden');
+    watchLastPost();
 
     btn.addEventListener('click', async function () {
         if (loading) return;
@@ -1246,11 +1286,31 @@ if (avatarInput && cropContainer && cropCanvas) {
             const result = await resp.json();
 
             if (result.ok) {
+                // Remember how many post items exist before inserting new ones
+                const countBefore = feed.querySelectorAll('.post-item').length;
+
                 feed.insertAdjacentHTML('beforeend', result.html);
                 offset += BATCH_SIZE;
 
+                // Initialise lazy images and lightbox triggers in the new posts only
+                const allPosts  = feed.querySelectorAll('.post-item');
+                const newPosts  = Array.from(allPosts).slice(countBefore);
+                const lazyObs   = typeof window.lazyObserveImages === 'function' ? window.lazyObserveImages   : null;
+                const lbBindNew = typeof window.lightboxBindNew    === 'function' ? window.lightboxBindNew    : null;
+                newPosts.forEach(post => {
+                    if (lazyObs)   lazyObs(post);
+                    if (lbBindNew) lbBindNew(post);
+                });
+
                 if (!result.has_more) {
                     wrap.classList.add('hidden');
+                    if (sentinel) {
+                        sentinel.disconnect();
+                        sentinel = null;
+                    }
+                } else {
+                    // Update the sentinel to watch the new last post
+                    watchLastPost();
                 }
             } else {
                 alert('Could not load more posts. Please try again.');

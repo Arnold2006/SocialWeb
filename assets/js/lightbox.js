@@ -475,6 +475,25 @@
         });
     }
 
+    /**
+     * Bind click events to any new .lightbox-trigger elements found inside
+     * the given container.  New triggers are appended to the existing triggers
+     * array so that prev/next navigation still works across all posts.
+     * Call this after dynamically inserting new post HTML (e.g. "Load More").
+     */
+    function bindNewTriggers(container) {
+        if (!container) return;
+        const newTriggers = Array.from(container.querySelectorAll('.lightbox-trigger'));
+        newTriggers.forEach(el => {
+            const idx = triggers.length;
+            triggers.push(el);
+            el.addEventListener('click', (e) => {
+                e.preventDefault();
+                openLightbox(idx);
+            });
+        });
+    }
+
     // Keyboard navigation
     document.addEventListener('keydown', (e) => {
         if (!overlay || overlay.style.display === 'none') return;
@@ -491,4 +510,8 @@
     } else {
         bindTriggers();
     }
+
+    // Public API: bind lightbox triggers in dynamically loaded content
+    // (e.g. "Load More" posts).
+    window.lightboxBindNew = bindNewTriggers;
 })();

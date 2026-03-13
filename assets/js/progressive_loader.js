@@ -42,18 +42,13 @@
         });
     }
 
-    /** Set up IntersectionObserver for lazy images */
-    function initLazyLoader() {
-        const lazyImages = document.querySelectorAll('.' + LAZY_CLASS + '[data-src]');
-        if (lazyImages.length === 0) return;
+    /** Shared IntersectionObserver instance (created once, reused for all lazy images) */
+    let sharedObserver = null;
 
-        if (!('IntersectionObserver' in window)) {
-            // Fallback: load all immediately
-            lazyImages.forEach(loadFullImage);
-            return;
-        }
-
-        const observer = new IntersectionObserver(
+    function getObserver() {
+        if (sharedObserver) return sharedObserver;
+        if (!('IntersectionObserver' in window)) return null;
+        sharedObserver = new IntersectionObserver(
             (entries, obs) => {
                 entries.forEach(entry => {
                     if (entry.isIntersecting) {
@@ -67,8 +62,32 @@
                 threshold: 0.01,
             }
         );
+        return sharedObserver;
+    }
+
+    /**
+     * Observe all unloaded lazy images within the given container (or the whole
+     * document when no container is provided).  Safe to call multiple times —
+     * already-loaded images (no data-src) are skipped automatically.
+     */
+    function observeImages(container) {
+        const ctx = container || document;
+        const lazyImages = ctx.querySelectorAll('.' + LAZY_CLASS + '[data-src]');
+        if (lazyImages.length === 0) return;
+
+        const observer = getObserver();
+        if (!observer) {
+            // Fallback: load all immediately
+            lazyImages.forEach(loadFullImage);
+            return;
+        }
 
         lazyImages.forEach(img => observer.observe(img));
+    }
+
+    /** Set up IntersectionObserver for lazy images */
+    function initLazyLoader() {
+        observeImages(document);
     }
 
     if (document.readyState === 'loading') {
@@ -80,4 +99,8 @@
         markNoLazyAsLoaded();
         initLazyLoader();
     }
+
+    // Public API: allow other scripts to observe lazy images in dynamically
+    // added content (e.g. "Load More" posts).
+    window.lazyObserveImages = observeImages;
 })();
