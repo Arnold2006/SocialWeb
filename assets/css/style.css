@@ -1436,6 +1436,18 @@ textarea { resize: vertical; min-height: 80px; }
 }
 .media-item:hover .media-delete-form { opacity: 1; }
 
+.media-item-top-actions {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    opacity: 0;
+    transition: opacity var(--transition);
+}
+.media-item:hover .media-item-top-actions { opacity: 1; }
+
 .media-video { width: 100%; height: 100%; object-fit: cover; }
 
 /* Video thumbnail in media grid */
