@@ -370,6 +370,23 @@ include SITE_ROOT . '/includes/header.php';
                     <?php if ($isCover): ?>
                     <span class="cover-badge">★ Cover</span>
                     <?php endif; ?>
+                    <?php else: ?>
+                    <?php
+                        $videoThumb = !empty($media['thumbnail_path'])
+                            ? e(get_media_url($media, 'thumbnail'))
+                            : e(SITE_URL . '/assets/images/placeholder.svg');
+                        $videoSrc = e(get_media_url($media, 'original'));
+                    ?>
+                    <a href="<?= $videoSrc ?>"
+                       class="lightbox-trigger video-thumb-wrap"
+                       data-src="<?= $videoThumb ?>"
+                       data-video-src="<?= $videoSrc ?>"
+                       data-media-id="<?= (int)$media['id'] ?>"
+                       aria-label="Play video">
+                        <img src="<?= $videoThumb ?>" alt="" class="media-video-thumb" loading="lazy">
+                        <span class="video-play-icon" aria-hidden="true">&#9654;</span>
+                    </a>
+                    <?php endif; ?>
                     <?php if ((int)$media['like_count'] > 0 || (int)$media['comment_count'] > 0): ?>
                     <div class="media-stats">
                         <?php if ((int)$media['like_count'] > 0): ?>
@@ -380,14 +397,23 @@ include SITE_ROOT . '/includes/header.php';
                         <?php endif; ?>
                     </div>
                     <?php endif; ?>
-                    <?php else: ?>
-                    <video controls class="media-video" preload="metadata">
-                        <source src="<?= e(get_media_url($media, 'original')) ?>" type="video/mp4">
-                    </video>
-                    <?php endif; ?>
-                    <?php if ($isOwn): ?>
+                    <?php if ($media['type'] === 'video'): ?>
                     <div class="media-item-actions">
-                        <?php if ($media['type'] === 'image'): ?>
+                        <a href="<?= e(get_media_url($media, 'original')) ?>"
+                           download
+                           class="btn btn-xs btn-secondary">&#8595; Download</a>
+                        <?php if ($isOwn): ?>
+                        <form method="POST" class="media-delete-form">
+                            <?= csrf_field() ?>
+                            <input type="hidden" name="action" value="delete_media">
+                            <input type="hidden" name="media_id" value="<?= (int)$media['id'] ?>">
+                            <button type="submit" class="btn btn-danger btn-xs"
+                                    onclick="return confirm('Delete this media?')">✕</button>
+                        </form>
+                        <?php endif; ?>
+                    </div>
+                    <?php elseif ($isOwn): ?>
+                    <div class="media-item-actions">
                         <button type="button"
                                 class="btn btn-xs btn-secondary set-cover-btn"
                                 data-media-id="<?= (int)$media['id'] ?>"
@@ -397,7 +423,6 @@ include SITE_ROOT . '/includes/header.php';
                                 data-orig-height="<?= (int)$media['height'] ?>">
                             <?= $isCover ? '★' : '☆' ?> Cover
                         </button>
-                        <?php endif; ?>
                         <form method="POST" class="media-delete-form">
                             <?= csrf_field() ?>
                             <input type="hidden" name="action" value="delete_media">
