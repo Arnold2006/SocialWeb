@@ -12,9 +12,8 @@ $pageTitle = 'Wall';
 $user      = current_user();
 $plugins   = plugins_load();
 
-// Fetch wall posts with caching
-$page      = max(1, sanitise_int($_GET['page'] ?? 1));
-$cacheKey  = 'wall_feed_page_' . $page;
+// Fetch wall posts with caching (always load the first page of 10)
+$cacheKey   = 'wall_feed_page_1';
 $cachedFeed = cache_get($cacheKey);
 
 include SITE_ROOT . '/includes/header.php';
@@ -52,19 +51,23 @@ include SITE_ROOT . '/includes/header.php';
         </div>
 
         <!-- Post feed -->
-        <div id="post-feed">
-        <?php if ($cachedFeed): ?>
-            <?= $cachedFeed ?>
-        <?php else:
+        <?php
+        $postsPerPage = 10;
+        $totalPosts   = 0;
+        $hasMore      = false;
+
+        if ($cachedFeed) {
+            // Also retrieve the cached has_more flag
+            $cachedHasMore = cache_get($cacheKey . '_has_more') ?? '0';
+            echo '<div id="post-feed" data-offset="' . $postsPerPage . '" data-has-more="' . htmlspecialchars($cachedHasMore, ENT_QUOTES, 'UTF-8') . '">';
+            echo $cachedFeed;
+            echo '</div>';
+        } else {
             try {
                 ob_start();
 
-                $postsPerPage = 20;
-                $offset       = ($page - 1) * $postsPerPage;
-
-                // Cast to int before interpolation (already sanitised integers)
-                $limitSql = (int) $postsPerPage;
-                $offsetSql = (int) $offset;
+                $limitSql  = (int) $postsPerPage;
+                $offsetSql = 0;
 
                 $posts = db_query(
                     "SELECT p.*, u.username, u.avatar_path,
@@ -79,23 +82,27 @@ include SITE_ROOT . '/includes/header.php';
                     [$user['id']]
                 );
 
-                foreach ($posts as $post):
+                foreach ($posts as $post) {
                     include SITE_ROOT . '/modules/wall/post_item.php';
-                endforeach;
+                }
 
-                // Pagination
                 $totalPosts = (int) db_val('SELECT COUNT(*) FROM posts WHERE is_deleted = 0');
-                $totalPages = (int) ceil($totalPosts / $postsPerPage);
-                echo pagination_links($page, $totalPages, SITE_URL . '/pages/index.php');
+                $hasMore    = $totalPosts > $postsPerPage;
 
                 $feedHtml = ob_get_clean() ?: '';
                 cache_set($cacheKey, $feedHtml);
+                cache_set($cacheKey . '_has_more', $hasMore ? '1' : '0');
+
+                $hasMoreAttr = $hasMore ? '1' : '0';
+                echo '<div id="post-feed" data-offset="' . $postsPerPage . '" data-has-more="' . $hasMoreAttr . '">';
                 echo $feedHtml;
+                echo '</div>';
             } catch (Throwable $e) {
                 if (ob_get_level() > 0) {
                     ob_end_clean();
                 }
                 error_log('Feed load error: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+                echo '<div id="post-feed">';
                 if (SITE_DEBUG) {
                     echo '<div class="alert alert-error"><pre>'
                         . htmlspecialchars(
@@ -109,8 +116,16 @@ include SITE_ROOT . '/includes/header.php';
                 } else {
                     echo '<div class="alert alert-error">Unable to load posts. Please try again later.</div>';
                 }
+                echo '</div>';
             }
-        endif; ?>
+        }
+        ?>
+
+        <!-- Floating "Load More" button (hidden via JS when no more posts) -->
+        <div class="load-more-wrap" id="load-more-wrap">
+            <button class="btn btn-primary btn-load-more" id="load-more-btn" type="button">
+                Load More
+            </button>
         </div>
 
         <!-- Plugin wall widgets -->
