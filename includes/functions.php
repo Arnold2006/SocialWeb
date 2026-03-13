@@ -101,10 +101,11 @@ function avatar_url(array $user, string $size = 'medium'): string
 function get_media_url(array $media, string $size = 'medium'): string
 {
     $field = match ($size) {
-        'thumb'    => 'thumb_path',
-        'large'    => 'large_path',
-        'original' => 'storage_path',
-        default    => 'medium_path',
+        'thumb'     => 'thumb_path',
+        'thumbnail' => 'thumbnail_path',
+        'large'     => 'large_path',
+        'original'  => 'storage_path',
+        default     => 'medium_path',
     };
 
     $path = $media[$field] ?? $media['storage_path'] ?? '';

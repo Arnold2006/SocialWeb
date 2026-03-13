@@ -1,12 +1,13 @@
 /**
- * lightbox.js — Vanilla JS photo lightbox viewer
+ * lightbox.js — Vanilla JS photo/video lightbox viewer
  *
  * Features:
  *  - Click .lightbox-trigger to open
+ *  - Supports images (data-src) and videos (data-video-src)
  *  - Prev / Next navigation
  *  - Keyboard: ArrowLeft, ArrowRight, Escape
  *  - Close on overlay click
- *  - Comment / Like panel for gallery images (data-media-id present)
+ *  - Comment / Like panel for gallery media (data-media-id present)
  */
 
 'use strict';
@@ -17,6 +18,7 @@
     let overlay    = null;
     let inner      = null;
     let imgEl      = null;
+    let videoEl    = null;
     let panel      = null;
     let likeBtn    = null;
     let likeCountEl  = null;
@@ -35,9 +37,9 @@
         overlay.id = 'lightbox-overlay';
         overlay.setAttribute('role', 'dialog');
         overlay.setAttribute('aria-modal', 'true');
-        overlay.setAttribute('aria-label', 'Image viewer');
+        overlay.setAttribute('aria-label', 'Media viewer');
 
-        // Inner wrapper holds the image + optional side panel
+        // Inner wrapper holds the media + optional side panel
         inner = document.createElement('div');
         inner.className = 'lightbox-inner';
 
@@ -55,7 +57,15 @@
             }
         });
 
+        videoEl = document.createElement('video');
+        videoEl.className = 'lightbox-video';
+        videoEl.controls = true;
+        videoEl.preload = 'metadata';
+        videoEl.style.display = 'none';
+        videoEl.addEventListener('click', (e) => e.stopPropagation());
+
         imageWrap.appendChild(imgEl);
+        imageWrap.appendChild(videoEl);
 
         // Comment / like panel (hidden until a media-id trigger is opened)
         panel = document.createElement('div');
@@ -68,7 +78,7 @@
 
         likeBtn = document.createElement('button');
         likeBtn.className = 'btn-like-media';
-        likeBtn.setAttribute('aria-label', 'Like image');
+        likeBtn.setAttribute('aria-label', 'Like media');
         likeBtn.setAttribute('type', 'button');
 
         likeCountEl = document.createElement('span');
@@ -133,7 +143,7 @@
 
         const prevBtn = document.createElement('button');
         prevBtn.className = 'lightbox-btn';
-        prevBtn.setAttribute('aria-label', 'Previous image');
+        prevBtn.setAttribute('aria-label', 'Previous');
         prevBtn.textContent = '\u2039';
         prevBtn.addEventListener('click', (e) => { e.stopPropagation(); navigate(-1); });
 
@@ -145,18 +155,19 @@
 
         const openBtn = document.createElement('button');
         openBtn.className = 'lightbox-btn';
-        openBtn.setAttribute('aria-label', 'Open image in new tab');
+        openBtn.setAttribute('aria-label', 'Open in new tab');
         openBtn.textContent = '\u2922';
         openBtn.addEventListener('click', (e) => {
             e.stopPropagation();
-            if (imgEl && imgEl.dataset.fullSrc) {
-                window.open(imgEl.dataset.fullSrc, '_blank', 'noopener,noreferrer');
-            }
+            const trigger = triggers[currentIdx];
+            if (!trigger) return;
+            const url = trigger.dataset.videoSrc || (imgEl && imgEl.dataset.fullSrc) || trigger.href || '';
+            if (url) window.open(url, '_blank', 'noopener,noreferrer');
         });
 
         const nextBtn = document.createElement('button');
         nextBtn.className = 'lightbox-btn';
-        nextBtn.setAttribute('aria-label', 'Next image');
+        nextBtn.setAttribute('aria-label', 'Next');
         nextBtn.textContent = '\u203a';
         nextBtn.addEventListener('click', (e) => { e.stopPropagation(); navigate(1); });
 
@@ -179,7 +190,7 @@
     function openLightbox(index) {
         if (!overlay) buildOverlay();
         currentIdx = index;
-        showImage(currentIdx);
+        showMedia(currentIdx);
         overlay.style.display = 'flex';
         document.body.style.overflow = 'hidden';
         overlay.focus();
@@ -187,31 +198,58 @@
 
     function closeLightbox() {
         if (!overlay) return;
+        stopVideo();
         overlay.style.display = 'none';
         document.body.style.overflow = '';
     }
 
     function navigate(direction) {
+        stopVideo();
         currentIdx = (currentIdx + direction + triggers.length) % triggers.length;
-        showImage(currentIdx);
+        showMedia(currentIdx);
     }
 
-    function showImage(index) {
-        const trigger = triggers[index];
-        if (!trigger || !imgEl) return;
-        const src     = trigger.dataset.src || trigger.href || '';
-        const mediaId = trigger.dataset.mediaId || '';
+    /** Pause and reset the lightbox video element */
+    function stopVideo() {
+        if (videoEl && !videoEl.paused) {
+            videoEl.pause();
+        }
+    }
 
-        imgEl.style.opacity = '0';
-        imgEl.src = src;
-        imgEl.dataset.fullSrc = src;
-        imgEl.onload = () => { imgEl.style.opacity = '1'; };
+    function showMedia(index) {
+        const trigger = triggers[index];
+        if (!trigger) return;
+
+        const mediaId  = trigger.dataset.mediaId || '';
+        const videoSrc = trigger.dataset.videoSrc || '';
+
+        if (videoSrc) {
+            // — Video mode —
+            imgEl.style.display  = 'none';
+            videoEl.style.display = '';
+
+            // Compare against stored src to avoid unnecessary reloads
+            if (videoEl.dataset.loadedSrc !== videoSrc) {
+                videoEl.dataset.loadedSrc = videoSrc;
+                videoEl.src = videoSrc;
+                videoEl.load();
+            }
+        } else {
+            // — Image mode —
+            const src = trigger.dataset.src || trigger.href || '';
+            videoEl.style.display = 'none';
+            imgEl.style.display   = '';
+
+            imgEl.style.opacity = '0';
+            imgEl.src = src;
+            imgEl.dataset.fullSrc = src;
+            imgEl.onload = () => { imgEl.style.opacity = '1'; };
+        }
 
         if (mediaId) {
             overlay.classList.add('has-panel');
             panel.style.display = 'flex';
             panel.dataset.mediaId = mediaId;
-            // Keep the CSRF token in sync
             const csrfEl = commentForm ? commentForm.querySelector('input[name="csrf_token"]') : null;
             if (csrfEl) {
                 const pageCsrf = document.querySelector('input[name="csrf_token"]');

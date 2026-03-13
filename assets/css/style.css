@@ -1407,6 +1407,44 @@ textarea { resize: vertical; min-height: 80px; }
 
 .media-video { width: 100%; height: 100%; object-fit: cover; }
 
+/* Video thumbnail in media grid */
+.video-thumb-wrap {
+    display: block;
+    position: relative;
+    line-height: 0;
+}
+
+.media-video-thumb {
+    width: 100%;
+    height: auto;
+    display: block;
+    transition: transform 0.3s ease;
+}
+
+.media-item:hover .media-video-thumb { transform: scale(1.06); }
+
+.video-play-icon {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 3rem;
+    height: 3rem;
+    background: rgba(0, 0, 0, 0.6);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 1.25rem;
+    pointer-events: none;
+    transition: background 0.2s;
+}
+
+.video-thumb-wrap:hover .video-play-icon {
+    background: rgba(0, 0, 0, 0.85);
+}
+
 /* ── Messages (webmail interface) ────────────────────────────── */
 .mail-layout {
     display: grid;
@@ -2124,6 +2162,19 @@ textarea { resize: vertical; min-height: 80px; }
 #lightbox-overlay.has-panel .lightbox-image-wrap img {
     max-width: 62vw;
     max-height: 82vh;
+}
+
+/* Lightbox video element */
+.lightbox-video {
+    max-width: 100%;
+    max-height: 82vh;
+    border-radius: var(--radius-md);
+    background: #000;
+    display: block;
+}
+
+#lightbox-overlay.has-panel .lightbox-video {
+    max-width: 62vw;
 }
 
 /* ── Lightbox comment/like panel ───────────────────────────────── */
