@@ -40,6 +40,9 @@ $commentId = db_insert(
     [$postId, (int)$user['id'], $content]
 );
 
+// Bump the post to the top of the feed
+db_exec('UPDATE posts SET bumped_at = NOW() WHERE id = ?', [$postId]);
+
 // Notify post owner
 if ((int)$post['user_id'] !== (int)$user['id']) {
     db_insert(
