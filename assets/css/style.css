@@ -867,6 +867,44 @@ textarea { resize: vertical; min-height: 80px; }
     margin-bottom: 1.25rem;
 }
 
+/* ── Photos page tabs ────────────────────────────────────────── */
+.photos-tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 2px solid var(--color-border);
+    margin: 0 1rem 1.25rem;
+}
+
+.photos-tab-btn {
+    padding: 0.55rem 1.25rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    text-decoration: none;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -2px;
+    transition: color var(--transition), border-color var(--transition);
+}
+
+.photos-tab-btn:hover {
+    color: var(--color-text);
+}
+
+.photos-tab-btn.active {
+    color: var(--color-accent);
+    border-bottom-color: var(--color-accent);
+}
+
+.photos-tab-panel {
+    padding: 0 1rem 1.5rem;
+}
+
+.photos-my-albums-header {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 1rem;
+}
+
 .albums-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
