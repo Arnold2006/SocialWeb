@@ -401,11 +401,22 @@ include SITE_ROOT . '/includes/header.php';
                     </div>
                     <?php endif; ?>
                     <?php if ($media['type'] === 'video'): ?>
-                    <div class="media-item-actions">
+                    <div class="media-item-top-actions">
                         <a href="<?= e(get_media_url($media, 'original')) ?>"
                            download
                            class="btn btn-xs btn-secondary">&#8595; Download</a>
-                        <?php if ($isOwn && !empty($media['thumbnail_path'])): ?>
+                        <?php if ($isOwn): ?>
+                        <form method="POST">
+                            <?= csrf_field() ?>
+                            <input type="hidden" name="action" value="delete_media">
+                            <input type="hidden" name="media_id" value="<?= (int)$media['id'] ?>">
+                            <button type="submit" class="btn btn-danger btn-xs"
+                                    onclick="return confirm('Delete this media?')">✕</button>
+                        </form>
+                        <?php endif; ?>
+                    </div>
+                    <?php if ($isOwn && !empty($media['thumbnail_path'])): ?>
+                    <div class="media-item-actions">
                         <?php /* data-orig-width/height=0: the crop source IS the thumbnail,
                                so JS falls back to img.width/height giving a 1:1 scale */ ?>
                         <button type="button"
@@ -417,17 +428,8 @@ include SITE_ROOT . '/includes/header.php';
                                 data-orig-height="0">
                             <?= $isCover ? '★' : '☆' ?> Cover
                         </button>
-                        <?php endif; ?>
-                        <?php if ($isOwn): ?>
-                        <form method="POST" class="media-delete-form">
-                            <?= csrf_field() ?>
-                            <input type="hidden" name="action" value="delete_media">
-                            <input type="hidden" name="media_id" value="<?= (int)$media['id'] ?>">
-                            <button type="submit" class="btn btn-danger btn-xs"
-                                    onclick="return confirm('Delete this media?')">✕</button>
-                        </form>
-                        <?php endif; ?>
                     </div>
+                    <?php endif; ?>
                     <?php elseif ($isOwn): ?>
                     <div class="media-item-actions">
                         <button type="button"
