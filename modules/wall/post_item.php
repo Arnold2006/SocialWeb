@@ -64,7 +64,7 @@ $moreComments = (int)$post['comment_count'] > 3;
     <?php if ($postMedia): ?>
     <div class="post-media">
         <?php if ($postMedia['type'] === 'image'): ?>
-        <a href="#" class="lightbox-trigger"
+        <a href="<?= e(get_media_url($postMedia, 'original')) ?>" class="lightbox-trigger"
            data-src="<?= e(get_media_url($postMedia, 'large')) ?>"
            data-caption="<?= e($post['username']) ?>">
             <img src="<?= e(get_media_url($postMedia, 'thumb')) ?>"

@@ -242,7 +242,9 @@
 
             imgEl.style.opacity = '0';
             imgEl.src = src;
-            imgEl.dataset.fullSrc = src;
+            // Use href (original scrubbed file) as the click-to-open full-size link,
+            // falling back to the display src if href is not a real URL.
+            imgEl.dataset.fullSrc = trigger.href || src;
             imgEl.onload = () => { imgEl.style.opacity = '1'; };
         }
 

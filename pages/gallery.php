@@ -359,7 +359,7 @@ include SITE_ROOT . '/includes/header.php';
                 <?php $isCover = ((int)$media['id'] === (int)($currentAlbum['cover_id'] ?? 0)); ?>
                 <div class="media-item<?= $isCover ? ' is-cover' : '' ?>">
                     <?php if ($media['type'] === 'image'): ?>
-                    <a href="<?= e(get_media_url($media, 'large')) ?>"
+                    <a href="<?= e(get_media_url($media, 'original')) ?>"
                        class="lightbox-trigger"
                        data-src="<?= e(get_media_url($media, 'large')) ?>"
                        data-media-id="<?= (int)$media['id'] ?>">
