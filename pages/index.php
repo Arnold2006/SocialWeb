@@ -77,7 +77,7 @@ include SITE_ROOT . '/includes/header.php';
                      FROM posts p
                      JOIN users u ON u.id = p.user_id
                      WHERE p.is_deleted = 0
-                     ORDER BY p.created_at DESC
+                     ORDER BY COALESCE(p.bumped_at, p.created_at) DESC
                      LIMIT {$limitSql} OFFSET {$offsetSql}",
                     [$user['id']]
                 );

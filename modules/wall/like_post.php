@@ -47,6 +47,9 @@ if ($existing) {
     db_insert('INSERT INTO likes (user_id, post_id) VALUES (?, ?)', [(int)$user['id'], $postId]);
     $liked = true;
 
+    // Bump the post to the top of the feed
+    db_exec('UPDATE posts SET bumped_at = NOW() WHERE id = ?', [$postId]);
+
     // Notify post owner (if not self-like)
     if ((int)$post['user_id'] !== (int)$user['id']) {
         db_insert(
