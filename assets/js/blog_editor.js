@@ -134,9 +134,11 @@
             imageBtn.disabled = false;
             if (data.ok) {
                 editor.focus();
-                // Insert image at cursor position
+                // Insert 160px-wide thumbnail linked to the original (EXIF-stripped) version
                 document.execCommand('insertHTML', false,
-                    '<img src="' + escAttr(data.url) + '" alt="" style="max-width:100%">');
+                    '<a href="' + escAttr(data.original_url) + '">'
+                    + '<img src="' + escAttr(data.url) + '" alt="" width="160">'
+                    + '</a>');
                 updatePlaceholder();
                 setStatus('Image inserted.', 'success');
                 clearStatusAfter(2000);
