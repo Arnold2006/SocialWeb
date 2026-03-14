@@ -18,21 +18,7 @@
 declare(strict_types=1);
 require_once dirname(dirname(__DIR__)) . '/includes/bootstrap.php';
 
-header('Content-Type: application/json');
-
-if (!is_logged_in()) {
-    echo json_encode(['ok' => false, 'error' => 'Not logged in']);
-    exit;
-}
-
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    echo json_encode(['ok' => false, 'error' => 'Method not allowed']);
-    exit;
-}
-
-csrf_verify();
-
-$user    = current_user();
+$user    = json_api_guard('POST');
 $mediaId = sanitise_int($_POST['media_id'] ?? 0);
 
 if ($mediaId < 1) {
@@ -60,12 +46,7 @@ if ($existing) {
     $liked = true;
 
     // Notify media owner (if not self-like)
-    if ((int)$media['user_id'] !== (int)$user['id']) {
-        db_insert(
-            'INSERT INTO notifications (user_id, type, from_user_id, ref_id) VALUES (?, "like", ?, ?)',
-            [(int)$media['user_id'], (int)$user['id'], $mediaId]
-        );
-    }
+    notify_user((int)$media['user_id'], 'like', (int)$user['id'], $mediaId);
 }
 
 $likeCount = (int) db_val('SELECT COUNT(*) FROM likes WHERE media_id = ?', [$mediaId]);

@@ -18,14 +18,7 @@
 declare(strict_types=1);
 require_once dirname(dirname(__DIR__)) . '/includes/bootstrap.php';
 
-header('Content-Type: application/json');
-
-if (!is_logged_in()) {
-    echo json_encode(['ok' => false, 'count' => 0]);
-    exit;
-}
-
-$user   = current_user();
+$user   = json_api_guard('GET');
 $uid    = (int) $user['id'];
 $notifs = (int) db_val('SELECT COUNT(*) FROM notifications WHERE user_id = ? AND is_read = 0', [$uid]);
 $msgs   = (int) db_val(
