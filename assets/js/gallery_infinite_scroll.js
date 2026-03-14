@@ -112,6 +112,11 @@
                     offset += newItems.length;
                     grid.dataset.offset = String(offset);
 
+                    // Re-run masonry layout to place new items without gaps
+                    if (typeof window.masonryLayout === 'function') {
+                        window.masonryLayout(grid);
+                    }
+
                     // Wire up lazy medium-res upgrade and lightbox on new items
                     newItems.forEach(function (item) {
                         if (typeof window.lazyObserveImages === 'function') {
