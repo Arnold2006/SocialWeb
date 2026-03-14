@@ -60,6 +60,20 @@
         items.forEach(function (item) {
             item.style.position = 'absolute';
             item.style.width    = colWidth + 'px';
+
+            // Explicitly set aspect-ratio on images with known dimensions.
+            // Some browsers only compute the intrinsic height of a
+            // `loading="lazy"` image after it has been fetched; forcing
+            // aspect-ratio via CSS ensures the layout always uses the correct
+            // height even for images that are still off-screen.
+            var img = item.querySelector('img[width][height]');
+            if (img) {
+                var w = parseInt(img.getAttribute('width'),  10);
+                var h = parseInt(img.getAttribute('height'), 10);
+                if (w > 0 && h > 0) {
+                    img.style.aspectRatio = w + '/' + h;
+                }
+            }
         });
 
         // ── Pass 2: read heights (one synchronous reflow) ──
