@@ -46,7 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'INSERT INTO messages (sender_id, receiver_id, subject, content) VALUES (?, ?, ?, ?)',
                     [$uid, $receiverId, $subject, $content]
                 );
-                notify_user($receiverId, 'message', $uid, $newMsgId);
+                notify_user($receiverId, 'message', $uid, (int) $newMsgId);
                 flash_set('success', 'Message sent.');
             }
         }
