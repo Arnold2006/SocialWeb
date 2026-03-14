@@ -1436,22 +1436,20 @@ textarea { resize: vertical; min-height: 80px; }
 }
 
 .media-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 0.75rem;
-    align-items: start;
+    column-count: 4;
+    column-gap: 0.75rem;
 }
 
 @media (max-width: 900px) {
-    .media-grid { grid-template-columns: repeat(3, 1fr); }
+    .media-grid { column-count: 3; }
 }
 
 @media (max-width: 600px) {
-    .media-grid { grid-template-columns: repeat(2, 1fr); }
+    .media-grid { column-count: 2; }
 }
 
 .media-grid .empty-state {
-    grid-column: 1 / -1;
+    column-span: all;
 }
 
 .media-load-sentinel {
@@ -1489,6 +1487,12 @@ textarea { resize: vertical; min-height: 80px; }
     background: var(--color-bg);
     border: 1px solid var(--color-border);
     overflow: hidden;
+    break-inside: avoid;
+    page-break-inside: avoid;
+    display: inline-block;
+    width: 100%;
+    vertical-align: top;
+    margin-bottom: 0.75rem;
 }
 
 .media-item img {
@@ -2161,11 +2165,17 @@ textarea { resize: vertical; min-height: 80px; }
 .lightbox-btn:hover { background: rgba(255,255,255,.25); }
 
 /* ── Lazy image loading ──────────────────────────────────────── */
-.lazy-image {
-    opacity: 0;
-    transition: opacity 0.4s ease;
+/* Thumbnails display immediately; medium-res upgrades silently in background */
+.lazy-image { display: block; }
+
+/* Batch reveal for items loaded by infinite scroll */
+@keyframes media-item-reveal {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
 }
-.lazy-image.loaded { opacity: 1; }
+.media-item-new {
+    animation: media-item-reveal 0.35s ease forwards;
+}
 
 /* ── Empty state ─────────────────────────────────────────────── */
 .empty-state {
