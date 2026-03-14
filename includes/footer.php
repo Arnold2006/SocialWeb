@@ -95,6 +95,10 @@ $_footerUser = current_user();
                 <h4>💬 Multi-Chat Dock</h4>
                 <p>Open the Chat at the bottom right. You can select multiple members to talk to; each conversation will spawn its own private window, allowing you to multitask side-by-side.</p>
             </div>
+            <div>
+                <h4>✍️ Personal Blog</h4>
+                <p>Every member gets their own blog. Write long-form posts with the <strong>rich-text editor</strong> &mdash; add headings, links, lists, and images. Blog posts also appear in the newsfeed so your community never misses a story.</p>
+            </div>
         </div>
         <div class="info-modal-footer-box">
             <p class="info-modal-footer-title">🛡️ Your Privacy is Hardcoded</p>
