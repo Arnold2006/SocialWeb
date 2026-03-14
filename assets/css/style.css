@@ -1485,6 +1485,16 @@ textarea { resize: vertical; min-height: 80px; }
 }
 .media-item:hover img { transform: scale(1.06); }
 
+/* Clip the hover-scale transform to the card boundary.
+   overflow: hidden alone does not always clip composited children
+   (transform creates a new compositing layer); wrapping the image
+   in a block with its own overflow: hidden fixes this in all browsers. */
+.media-item .lightbox-trigger {
+    display: block;
+    overflow: hidden;
+    line-height: 0;
+}
+
 .media-item .media-delete-form {
     position: absolute;
     top: 4px; right: 4px;
@@ -1510,6 +1520,7 @@ textarea { resize: vertical; min-height: 80px; }
 /* Video thumbnail in media grid */
 .video-thumb-wrap {
     display: block;
+    overflow: hidden;
     position: relative;
     line-height: 0;
 }

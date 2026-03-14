@@ -105,6 +105,22 @@
 
         layout(grid);
         window.addEventListener('resize', onResize);
+
+        // Re-run layout as lazy images finish loading.  Some browsers only
+        // compute the intrinsic height of a `loading="lazy"` image once it
+        // has actually been fetched, so the first layout pass may use a height
+        // of 0 for images that are off-screen.  Listening for each image's
+        // load event (debounced) keeps the grid correct without extra cost.
+        var layoutTimer = null;
+        function scheduleLayout() {
+            clearTimeout(layoutTimer);
+            layoutTimer = setTimeout(function () { layout(grid); }, 50);
+        }
+        Array.from(grid.querySelectorAll('img')).forEach(function (img) {
+            if (!img.complete) {
+                img.addEventListener('load', scheduleLayout, { once: true });
+            }
+        });
     }
 
     if (document.readyState === 'loading') {
