@@ -671,8 +671,9 @@ function create_album_upload_post(
             $mosaicMediaId = (int) db_insert(
                 'INSERT INTO media
                     (user_id, album_id, type, file_hash, storage_path,
-                     large_path, medium_path, thumb_path, size, mime_type)
-                 VALUES (?, ?, "image", ?, ?, ?, ?, ?, ?, "image/webp")',
+                     large_path, medium_path, thumb_path, size, mime_type,
+                     width, height)
+                 VALUES (?, ?, "image", ?, ?, ?, ?, ?, ?, "image/webp", 600, 600)',
                 [
                     $userId,
                     $albumId,

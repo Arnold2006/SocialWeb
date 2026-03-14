@@ -536,8 +536,8 @@ textarea { resize: vertical; min-height: 80px; }
 
 .post-img {
     max-width: 100%;
-    max-height: 250px;
-    object-fit: cover;
+    height: auto;
+    display: block;
     border-radius: var(--radius-md);
     cursor: pointer;
     transition: opacity var(--transition);
