@@ -415,6 +415,7 @@ include SITE_ROOT . '/includes/header.php';
 
 </div><!-- /.two-col-layout -->
 <?php if ($albumId > 0): ?>
+<script src="<?= ASSETS_URL ?>/js/masonry_layout.js"></script>
 <script src="<?= ASSETS_URL ?>/js/gallery_infinite_scroll.js"></script>
 <?php endif; ?>
 

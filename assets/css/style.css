@@ -1436,20 +1436,7 @@ textarea { resize: vertical; min-height: 80px; }
 }
 
 .media-grid {
-    column-count: 4;
-    column-gap: 0.75rem;
-}
-
-@media (max-width: 900px) {
-    .media-grid { column-count: 3; }
-}
-
-@media (max-width: 600px) {
-    .media-grid { column-count: 2; }
-}
-
-.media-grid .empty-state {
-    column-span: all;
+    position: relative;  /* Container for absolute-positioned items in JS-driven masonry layout */
 }
 
 .media-load-sentinel {
@@ -1482,17 +1469,12 @@ textarea { resize: vertical; min-height: 80px; }
 }
 
 .media-item {
-    position: relative;
+    position: absolute;  /* placed by masonry_layout.js */
     border-radius: var(--radius-md);
     background: var(--color-bg);
     border: 1px solid var(--color-border);
     overflow: hidden;
-    break-inside: avoid;
-    page-break-inside: avoid;
-    display: inline-block;
-    width: 100%;
-    vertical-align: top;
-    margin-bottom: 0.75rem;
+    box-sizing: border-box;
 }
 
 .media-item img {
