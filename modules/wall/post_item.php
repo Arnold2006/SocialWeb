@@ -59,6 +59,10 @@ $moreComments = (int)$post['comment_count'] > 3;
         <a href="<?= e(SITE_URL . '/pages/gallery.php?user_id=' . (int)$post['user_id'] . '&album=' . (int)$post['album_id']) ?>"
            class="post-album-link">View Album →</a>
         <?php endif; ?>
+        <?php if (($post['post_type'] ?? 'user') === 'blog_post' && !empty($post['blog_post_id'])): ?>
+        <a href="<?= e(SITE_URL . '/pages/blog.php?user_id=' . (int)$post['user_id'] . '#blog-post-' . (int)$post['blog_post_id']) ?>"
+           class="post-blog-link">Read post →</a>
+        <?php endif; ?>
     </div>
 
     <?php if ($postMedia): ?>

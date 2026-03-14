@@ -122,6 +122,30 @@ function sanitise_html(string $html, int $maxBytes = 0): string
 }
 
 /**
+ * Return true when a DOMElement's sole meaningful child is an <img> element.
+ * Pure-whitespace text nodes are ignored.  Used to distinguish image links
+ * (which should remain active) from plain text links (which should not).
+ *
+ * @internal
+ */
+function _sanitise_is_image_only_link(DOMNode $node): bool
+{
+    $meaningfulChild = null;
+    $meaningfulCount = 0;
+    foreach ($node->childNodes as $child) {
+        if ($child->nodeType === XML_TEXT_NODE && trim($child->nodeValue) === '') {
+            continue;
+        }
+        $meaningfulChild = $child;
+        $meaningfulCount++;
+    }
+    return $meaningfulCount === 1
+        && $meaningfulChild !== null
+        && $meaningfulChild->nodeType === XML_ELEMENT_NODE
+        && strtolower($meaningfulChild->nodeName) === 'img';
+}
+
+/**
  * Recursively sanitise a DOM node's children (internal helper).
  *
  * @internal
@@ -197,6 +221,13 @@ function _sanitise_html_node(
             } else {
                 $node->setAttribute('rel', 'noopener noreferrer nofollow');
                 $node->setAttribute('target', '_blank');
+            }
+
+            // Inserted text links must not be active: only <a> tags whose sole
+            // non-empty child is a local <img> (i.e. image links to the original)
+            // retain their href.  All other links have href stripped.
+            if ($node->hasAttribute('href') && !_sanitise_is_image_only_link($node)) {
+                $node->removeAttribute('href');
             }
         }
 

@@ -71,8 +71,9 @@ CREATE TABLE IF NOT EXISTS `posts` (
   `updated_at` DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   `bumped_at`  DATETIME DEFAULT NULL,                 -- updated on new comment or like for feed ordering
   `is_deleted` TINYINT(1) NOT NULL DEFAULT 0,
-  `post_type`  ENUM('user','album_upload') NOT NULL DEFAULT 'user',
+  `post_type`  ENUM('user','album_upload','blog_post') NOT NULL DEFAULT 'user',
   `album_id`   INT UNSIGNED DEFAULT NULL,             -- set for album_upload system posts
+  `blog_post_id` INT UNSIGNED DEFAULT NULL,           -- set for blog_post system posts
   PRIMARY KEY (`id`),
   KEY `idx_user_id` (`user_id`),
   KEY `idx_created_at` (`created_at`),

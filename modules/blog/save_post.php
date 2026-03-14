@@ -61,5 +61,13 @@ if ($postId > 0) {
         'INSERT INTO blog_posts (user_id, title, content) VALUES (?, ?, ?)',
         [(int)$user['id'], $title, $content]
     );
+
+    // Create a wall post so the new blog entry appears in the activity feed
+    db_insert(
+        'INSERT INTO posts (user_id, content, post_type, blog_post_id) VALUES (?, ?, \'blog_post\', ?)',
+        [(int)$user['id'], 'Published a new blog post: ' . $title, (int)$newId]
+    );
+    cache_invalidate_wall();
+
     echo json_encode(['ok' => true, 'post_id' => (int)$newId]);
 }

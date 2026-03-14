@@ -78,6 +78,7 @@ if (!$media) {
     exit;
 }
 
-$url = get_media_url($media, 'large');
+$url         = get_media_url($media, 'large');
+$originalUrl = get_media_url($media, 'original');
 
-echo json_encode(['ok' => true, 'url' => $url, 'media_id' => $result['media_id']]);
+echo json_encode(['ok' => true, 'url' => $url, 'original_url' => $originalUrl, 'media_id' => $result['media_id']]);
