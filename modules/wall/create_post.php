@@ -1,4 +1,16 @@
 <?php
+/*
+ * Private Community Website Software
+ * Copyright (c) 2026 Ole Rasmussen
+ *
+ * Free to use, copy, modify, fork, and distribute.
+ *
+ * NOT allowed:
+ * - Selling this software
+ * - Redistributing it for profit
+ *
+ * Provided "AS IS" without warranty.
+ */
 /**
  * create_post.php — Handle wall post creation (POST handler)
  */
