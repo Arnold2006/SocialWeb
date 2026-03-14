@@ -62,6 +62,176 @@ function sanitise_string(string $input, int $maxLength = 0): string
 }
 
 /**
+ * Sanitise HTML from a rich-text editor using a whitelist approach.
+ *
+ * Allowed tags: p, br, b, strong, i, em, u, s, del, h2, h3, h4,
+ *               ul, ol, li, blockquote, a, img, div, span.
+ * Allowed attributes are per-tag (see $allowedAttrs below).
+ * - <a href> must be http/https; rel/target are added automatically.
+ * - <img src> must point within SITE_URL/uploads/ (local only).
+ * All other tags are unwrapped (children kept, tag removed).
+ * All other attributes are stripped.
+ *
+ * @param string $html     Raw HTML from a contenteditable/rich-text field
+ * @param int    $maxBytes Byte limit before processing (0 = no limit)
+ * @return string          Clean, safe HTML
+ */
+function sanitise_html(string $html, int $maxBytes = 0): string
+{
+    if ($html === '') {
+        return '';
+    }
+
+    if ($maxBytes > 0 && strlen($html) > $maxBytes) {
+        $html = mb_substr($html, 0, $maxBytes);
+    }
+
+    $allowedTags = [
+        'p', 'br', 'b', 'strong', 'i', 'em', 'u', 's', 'del', 'strike',
+        'h2', 'h3', 'h4', 'ul', 'ol', 'li', 'blockquote',
+        'a', 'img', 'div', 'span',
+    ];
+
+    $allowedAttrs = [
+        'a'   => ['href', 'title'],
+        'img' => ['src', 'alt', 'width', 'height'],
+    ];
+
+    $dom = new DOMDocument('1.0', 'UTF-8');
+    libxml_use_internal_errors(true);
+    $dom->loadHTML(
+        '<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body>'
+        . $html
+        . '</body></html>'
+    );
+    libxml_clear_errors();
+
+    $body = $dom->getElementsByTagName('body')->item(0);
+    if (!$body) {
+        return '';
+    }
+
+    _sanitise_html_node($body, $dom, $allowedTags, $allowedAttrs);
+
+    $out = '';
+    foreach ($body->childNodes as $child) {
+        $out .= $dom->saveHTML($child);
+    }
+
+    return trim($out);
+}
+
+/**
+ * Recursively sanitise a DOM node's children (internal helper).
+ *
+ * @internal
+ */
+function _sanitise_html_node(
+    DOMNode $parent,
+    DOMDocument $dom,
+    array $allowedTags,
+    array $allowedAttrs
+): void {
+    $toProcess = [];
+    foreach ($parent->childNodes as $node) {
+        $toProcess[] = $node;
+    }
+
+    foreach ($toProcess as $node) {
+        if ($node->nodeType === XML_TEXT_NODE
+            || $node->nodeType === XML_CDATA_SECTION_NODE
+        ) {
+            continue; // text nodes are safe
+        }
+
+        if ($node->nodeType !== XML_ELEMENT_NODE) {
+            // Remove comments, processing instructions, etc.
+            if ($node->parentNode === $parent) {
+                $parent->removeChild($node);
+            }
+            continue;
+        }
+
+        $tag = strtolower($node->nodeName);
+
+        if (!in_array($tag, $allowedTags, true)) {
+            // Unwrap: keep children, remove the tag itself
+            $children = [];
+            foreach ($node->childNodes as $child) {
+                $children[] = $child;
+            }
+            foreach ($children as $child) {
+                $parent->insertBefore($child, $node);
+            }
+            if ($node->parentNode === $parent) {
+                $parent->removeChild($node);
+            }
+            // Recurse into the now-inlined children
+            foreach ($children as $child) {
+                if ($child->nodeType === XML_ELEMENT_NODE) {
+                    _sanitise_html_node($child, $dom, $allowedTags, $allowedAttrs);
+                }
+            }
+            continue;
+        }
+
+        // Strip disallowed attributes
+        $attrNames = [];
+        if ($node->hasAttributes()) {
+            foreach ($node->attributes as $attr) {
+                $attrNames[] = $attr->nodeName;
+            }
+        }
+        $permitted = $allowedAttrs[$tag] ?? [];
+        foreach ($attrNames as $attrName) {
+            if (!in_array($attrName, $permitted, true)) {
+                $node->removeAttribute($attrName);
+            }
+        }
+
+        // Validate and harden <a href>
+        if ($tag === 'a') {
+            $href = $node->getAttribute('href');
+            if (!preg_match('/^https?:\/\//i', $href)) {
+                $node->removeAttribute('href');
+            } else {
+                $node->setAttribute('rel', 'noopener noreferrer nofollow');
+                $node->setAttribute('target', '_blank');
+            }
+        }
+
+        // Validate <img src> — only allow local uploads via parse_url
+        if ($tag === 'img') {
+            $src      = $node->getAttribute('src');
+            $parsed   = parse_url($src);
+            $siteBase = parse_url(SITE_URL);
+
+            $srcScheme = strtolower($parsed['scheme']  ?? '');
+            $srcHost   = strtolower($parsed['host']    ?? '');
+            $srcPath   = $parsed['path'] ?? '';
+            $siteHost  = strtolower($siteBase['host']  ?? '');
+            $sitePath  = rtrim($siteBase['path'] ?? '', '/');
+
+            $uploadsPath = $sitePath . '/uploads/';
+            $isLocal     = in_array($srcScheme, ['http', 'https'], true)
+                        && $srcHost === $siteHost
+                        && str_starts_with($srcPath, $uploadsPath);
+
+            if (!$isLocal) {
+                // Remove the element entirely
+                if ($node->parentNode === $parent) {
+                    $parent->removeChild($node);
+                }
+                continue;
+            }
+        }
+
+        // Recurse into allowed element
+        _sanitise_html_node($node, $dom, $allowedTags, $allowedAttrs);
+    }
+}
+
+/**
  * Convert http/https URLs in raw text into safe clickable links, while also
  * HTML-escaping all content.
  *

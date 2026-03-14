@@ -132,6 +132,10 @@ include SITE_ROOT . '/includes/header.php';
         <a href="<?= e(SITE_URL . '/pages/gallery.php?user_id=' . $profileId) ?>"
            class="btn btn-sm btn-secondary profile-gallery-btn">View Gallery</a>
 
+        <!-- Blog link -->
+        <a href="<?= e(SITE_URL . '/pages/blog.php?user_id=' . $profileId) ?>"
+           class="btn btn-sm btn-secondary profile-gallery-btn">View Blog</a>
+
         <!-- Plugin profile extensions -->
         <?php foreach ($plugins['profile_extensions'] as $ext): ?>
             <?php $ext($profileId); ?>
