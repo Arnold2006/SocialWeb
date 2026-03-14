@@ -2727,6 +2727,12 @@ textarea { resize: vertical; min-height: 80px; }
     padding: 0 4px;
     font-size: 0.7rem;
     line-height: 18px;
+    animation: badge-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes badge-pulse {
+    0%, 100% { transform: scale(1); }
+    50%       { transform: scale(1.25); }
 }
 
 /* ── Message list ─────────────────────────────────────────── */

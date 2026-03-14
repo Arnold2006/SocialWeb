@@ -434,6 +434,8 @@
     async function markRead(convId) {
         try {
             await apiPost(siteUrl + '/chat/mark_read.php', { conversation_id: convId });
+            // Immediately refresh badge so the indicator clears as soon as messages are read
+            pollBadge();
         } catch (_) { /* silent */ }
     }
 
