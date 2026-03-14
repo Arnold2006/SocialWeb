@@ -18,13 +18,7 @@
 declare(strict_types=1);
 require_once dirname(dirname(__DIR__)) . '/includes/bootstrap.php';
 
-header('Content-Type: application/json');
-
-if (!is_logged_in()) {
-    echo json_encode(['ok' => false, 'error' => 'Not logged in']);
-    exit;
-}
-
+$user    = json_api_guard('GET');
 $mediaId = sanitise_int($_GET['media_id'] ?? 0);
 
 if ($mediaId < 1) {
@@ -37,8 +31,6 @@ if ($media === null) {
     echo json_encode(['ok' => false, 'error' => 'Media not found']);
     exit;
 }
-
-$user = current_user();
 
 $comments = db_query(
     'SELECT c.id, c.content, c.created_at, u.id AS user_id, u.username, u.avatar_path

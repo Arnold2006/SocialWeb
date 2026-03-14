@@ -33,21 +33,7 @@
 declare(strict_types=1);
 require_once dirname(__DIR__) . '/includes/bootstrap.php';
 
-header('Content-Type: application/json');
-
-if (!is_logged_in()) {
-    echo json_encode(['ok' => false, 'error' => 'Not logged in']);
-    exit;
-}
-
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    echo json_encode(['ok' => false, 'error' => 'Method not allowed']);
-    exit;
-}
-
-csrf_verify();
-
-$user = current_user();
+$user = json_api_guard('POST');
 $uid  = (int) $user['id'];
 
 $receiverId = sanitise_int($_POST['receiver_id'] ?? 0);
@@ -150,10 +136,7 @@ db_exec(
 );
 
 // Notify the receiver
-db_insert(
-    'INSERT INTO notifications (user_id, type, from_user_id, ref_id) VALUES (?, "message", ?, ?)',
-    [$receiverId, $uid, $convId]
-);
+notify_user($receiverId, 'message', $uid, $convId);
 
 // Return the newly created message
 $msg = db_row(

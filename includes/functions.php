@@ -233,3 +233,53 @@ function active_theme(): string
     $theme = site_setting('site_theme', 'blue-red');
     return in_array($theme, valid_themes(), true) ? $theme : 'blue-red';
 }
+
+/**
+ * Guard for JSON API endpoints.
+ *
+ * Sets the Content-Type header, verifies the user is logged in, checks the
+ * request method, and (for POST) verifies the CSRF token.  Exits with a JSON
+ * error response if any check fails.
+ *
+ * @param string $method  Expected HTTP method ('POST' or 'GET')
+ * @return array          The current user row
+ */
+function json_api_guard(string $method = 'POST'): array
+{
+    header('Content-Type: application/json');
+
+    if (!is_logged_in()) {
+        http_response_code(401);
+        die(json_encode(['ok' => false, 'error' => 'Not logged in']));
+    }
+
+    if ($_SERVER['REQUEST_METHOD'] !== strtoupper($method)) {
+        http_response_code(405);
+        die(json_encode(['ok' => false, 'error' => 'Method not allowed']));
+    }
+
+    if (strtoupper($method) === 'POST') {
+        csrf_verify();
+    }
+
+    return current_user();
+}
+
+/**
+ * Create a notification for a user, skipping self-notifications.
+ *
+ * @param int    $recipientId  User to notify
+ * @param string $type         Notification type (e.g. 'like', 'comment', 'message')
+ * @param int    $fromUserId   ID of the user performing the action
+ * @param int    $refId        Reference ID (post, comment, conversation, etc.)
+ */
+function notify_user(int $recipientId, string $type, int $fromUserId, int $refId): void
+{
+    if ($recipientId === $fromUserId) {
+        return;
+    }
+    db_insert(
+        'INSERT INTO notifications (user_id, type, from_user_id, ref_id) VALUES (?, ?, ?, ?)',
+        [$recipientId, $type, $fromUserId, $refId]
+    );
+}

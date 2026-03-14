@@ -46,10 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'INSERT INTO messages (sender_id, receiver_id, subject, content) VALUES (?, ?, ?, ?)',
                     [$uid, $receiverId, $subject, $content]
                 );
-                db_insert(
-                    'INSERT INTO notifications (user_id, type, from_user_id, ref_id) VALUES (?, "message", ?, ?)',
-                    [$receiverId, $uid, $newMsgId]
-                );
+                notify_user($receiverId, 'message', $uid, $newMsgId);
                 flash_set('success', 'Message sent.');
             }
         }

@@ -33,14 +33,7 @@
 declare(strict_types=1);
 require_once dirname(__DIR__) . '/includes/bootstrap.php';
 
-header('Content-Type: application/json');
-
-if (!is_logged_in()) {
-    echo json_encode(['ok' => false, 'error' => 'Not logged in']);
-    exit;
-}
-
-$user       = current_user();
+$user       = json_api_guard('GET');
 $uid        = (int) $user['id'];
 $convId     = sanitise_int($_GET['conversation_id'] ?? 0);
 $receiverId = sanitise_int($_GET['receiver_id']      ?? 0);
