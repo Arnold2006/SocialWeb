@@ -1,13 +1,12 @@
 /**
- * progressive_loader.js — Progressive image loading
+ * progressive_loader.js — Lazy medium-res upgrade
  *
- * Images with class "lazy-image" and a data-src attribute will:
- *  1. Load the small src (from src attribute) immediately
- *  2. Lazy-load the larger image (data-src) when in viewport
- *  3. Fade in once the full image is loaded, staggered one by one
- *     so the grid builds up gently rather than all at once.
+ * Thumbnails are shown immediately (src attribute).
+ * When a lazy image enters the viewport the medium-resolution version
+ * (data-src) is fetched in the background and swapped in silently,
+ * matching the Oxwall approach: load first, then display — no stutter.
  *
- * Uses IntersectionObserver for performance.
+ * Uses IntersectionObserver for performance; falls back to immediate load.
  */
 
 'use strict';
@@ -15,68 +14,45 @@
 (function () {
     const LAZY_CLASS   = 'lazy-image';
     const LOADED_CLASS = 'loaded';
-    const STAGGER_MS   = 70;   // delay between consecutive image reveals
-    const STAGGER_MAX  = 700;  // cap so late images don't wait too long
 
-    /** Swap src to the high-res version and mark as loaded */
-    function loadFullImage(img) {
+    /** Preload medium-res in background then swap src silently */
+    function upgradeImage(img) {
         const fullSrc = img.dataset.src;
         if (!fullSrc || img.classList.contains(LOADED_CLASS)) return;
 
-        const loader  = new Image();
-        loader.onload = () => {
-            img.src = fullSrc;
-            img.classList.add(LOADED_CLASS);
-            delete img.dataset.src;
-        };
-        loader.onerror = () => {
-            // Fallback: still show small image as loaded
-            img.classList.add(LOADED_CLASS);
-        };
-        loader.src = fullSrc;
+        // Mark early so repeated observer firings are no-ops
+        img.classList.add(LOADED_CLASS);
+        delete img.dataset.src;
+
+        // Defer starting the fetch by one tick (Oxwall-style) so the browser
+        // can finish painting the already-visible thumbnail before the network
+        // request begins.  The actual src swap only happens inside onload once
+        // the full image has downloaded — never sooner.
+        setTimeout(function () {
+            var loader = new Image();
+            loader.onload = function () { img.src = fullSrc; };
+            // On error we already show the thumbnail — nothing more to do
+            loader.src = fullSrc;
+        }, 1);
     }
 
-    /** Load all images that don't have data-src (i.e. already at full res) */
-    function markNoLazyAsLoaded() {
-        document.querySelectorAll('.' + LAZY_CLASS).forEach(img => {
-            if (!img.dataset.src) {
-                img.classList.add(LOADED_CLASS);
-            }
-        });
-    }
-
-    /** Shared IntersectionObserver instance (created once, reused for all lazy images) */
-    let sharedObserver = null;
+    /** Shared observer instance */
+    var sharedObserver = null;
 
     function getObserver() {
         if (sharedObserver) return sharedObserver;
         if (!('IntersectionObserver' in window)) return null;
         sharedObserver = new IntersectionObserver(
-            (entries, obs) => {
-                // Collect all intersecting images from this batch
-                const intersecting = entries
-                    .filter(e => e.isIntersecting)
-                    .map(e => ({ img: e.target, rect: e.boundingClientRect }));
-
-                // Sort top-to-bottom then left-to-right so images flow in naturally.
-                // Use a small epsilon for the top comparison to handle floating-point imprecision.
-                intersecting.sort((a, b) => {
-                    const topDiff = a.rect.top - b.rect.top;
-                    return Math.abs(topDiff) > 0.5 ? topDiff : a.rect.left - b.rect.left;
-                });
-
-                intersecting.forEach(({ img }, i) => {
-                    obs.unobserve(img);
-                    const delay = Math.min(i * STAGGER_MS, STAGGER_MAX);
-                    if (delay === 0) {
-                        loadFullImage(img);
-                    } else {
-                        setTimeout(() => loadFullImage(img), delay);
+            function (entries, obs) {
+                entries.forEach(function (entry) {
+                    if (entry.isIntersecting) {
+                        obs.unobserve(entry.target);
+                        upgradeImage(entry.target);
                     }
                 });
             },
             {
-                rootMargin: '200px 0px',  // Start loading 200px before entering viewport
+                rootMargin: '200px 0px',
                 threshold: 0.01,
             }
         );
@@ -85,40 +61,29 @@
 
     /**
      * Observe all unloaded lazy images within the given container (or the whole
-     * document when no container is provided).  Safe to call multiple times —
-     * already-loaded images (no data-src) are skipped automatically.
+     * document when no container is provided). Safe to call multiple times.
      */
     function observeImages(container) {
-        const ctx = container || document;
-        const lazyImages = ctx.querySelectorAll('.' + LAZY_CLASS + '[data-src]');
+        var ctx = container || document;
+        var lazyImages = ctx.querySelectorAll('.' + LAZY_CLASS + '[data-src]');
         if (lazyImages.length === 0) return;
 
-        const observer = getObserver();
+        var observer = getObserver();
         if (!observer) {
-            // Fallback: load all immediately
-            lazyImages.forEach(loadFullImage);
+            // Fallback: upgrade all immediately
+            lazyImages.forEach(upgradeImage);
             return;
         }
 
-        lazyImages.forEach(img => observer.observe(img));
-    }
-
-    /** Set up IntersectionObserver for lazy images */
-    function initLazyLoader() {
-        observeImages(document);
+        lazyImages.forEach(function (img) { observer.observe(img); });
     }
 
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => {
-            markNoLazyAsLoaded();
-            initLazyLoader();
-        });
+        document.addEventListener('DOMContentLoaded', function () { observeImages(document); });
     } else {
-        markNoLazyAsLoaded();
-        initLazyLoader();
+        observeImages(document);
     }
 
-    // Public API: allow other scripts to observe lazy images in dynamically
-    // added content (e.g. "Load More" posts).
+    // Public API for dynamically added content (infinite scroll, etc.)
     window.lazyObserveImages = observeImages;
 })();

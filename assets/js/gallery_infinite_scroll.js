@@ -1,8 +1,14 @@
 /**
- * gallery_infinite_scroll.js — Infinite scroll for album media grid.
+ * gallery_infinite_scroll.js — Smooth infinite scroll for album media grid.
+ *
+ * Inspired by the Oxwall photo plugin approach:
+ *   - Thumbnails are preloaded in the background before being inserted into
+ *     the DOM, so items appear fully rendered instead of blank → smooth.
+ *   - All items in a fetched batch reveal together with one gentle animation
+ *     rather than a per-item stagger, removing the "jerk" feeling.
  *
  * Watches a sentinel element at the bottom of the media grid.
- * When the sentinel enters the viewport the next batch of 25 media items
+ * When the sentinel enters the viewport the next batch of media items
  * is fetched automatically and appended to the grid.
  */
 
@@ -15,7 +21,6 @@
 
     if (!grid || !sentinel) return;
 
-    // Album metadata stored as data attributes on the grid element
     const albumId = grid.dataset.albumId;
     const userId  = grid.dataset.userId;
     let offset    = parseInt(grid.dataset.offset || '0', 10);
@@ -24,18 +29,51 @@
 
     const baseUrl = document.querySelector('meta[name="site-url"]')?.content || '';
 
-    function showSpinner() {
-        if (spinner) spinner.style.display = 'flex';
-    }
-
-    function hideSpinner() {
-        if (spinner) spinner.style.display = 'none';
-    }
+    function showSpinner() { if (spinner) spinner.style.display = 'flex'; }
+    function hideSpinner() { if (spinner) spinner.style.display = 'none'; }
 
     function removeSentinel() {
         sentinel.remove();
         if (spinner) spinner.remove();
         if (obs) obs.disconnect();
+    }
+
+    /**
+     * Preload all thumbnail images in a batch of new DOM items before they
+     * are appended to the page.  Resolves once every thumbnail has either
+     * loaded or errored.  A 2-second safety timeout prevents stalling when a
+     * thumbnail is unreachable.
+     */
+    function preloadThumbnails(items) {
+        var srcs = [];
+        items.forEach(function (item) {
+            var img = item.querySelector('img[src]');
+            if (img && img.src) srcs.push(img.src);
+        });
+
+        if (srcs.length === 0) return Promise.resolve();
+
+        return new Promise(function (resolve) {
+            var remaining = srcs.length;
+            var timer = null;
+
+            function done() {
+                if (--remaining <= 0) {
+                    clearTimeout(timer);
+                    resolve();
+                }
+            }
+
+            srcs.forEach(function (src) {
+                var loader = new Image();
+                loader.onload  = done;
+                loader.onerror = done;
+                loader.src     = src;
+            });
+
+            // Safety net: never block the append for more than 2 s
+            timer = setTimeout(resolve, 2000);
+        });
     }
 
     async function loadMore() {
@@ -56,30 +94,38 @@
             const result = await resp.json();
 
             if (result.ok && result.html) {
-                const countBefore = grid.querySelectorAll('.media-item').length;
-                grid.insertAdjacentHTML('beforeend', result.html);
-                offset += grid.querySelectorAll('.media-item').length - countBefore;
+                // Parse the HTML into real DOM nodes
+                const temp = document.createElement('div');
+                temp.innerHTML = result.html;
+                const newItems = Array.from(temp.querySelectorAll('.media-item'));
 
-                // Initialise lazy image loading and lightbox on new items
-                const allItems = grid.querySelectorAll('.media-item');
-                const newItems = Array.from(allItems).slice(countBefore);
-                newItems.forEach(function (item) {
-                    if (typeof window.lazyObserveImages === 'function') {
-                        window.lazyObserveImages(item);
-                    }
-                    if (typeof window.lightboxBindNew === 'function') {
-                        window.lightboxBindNew(item);
-                    }
-                });
+                if (newItems.length > 0) {
+                    // Preload thumbnails before showing — no blank-box flicker
+                    await preloadThumbnails(newItems);
 
-                // Update the grid's offset attribute for consistency
-                grid.dataset.offset = String(offset);
+                    // Append and mark for the batch-reveal animation
+                    newItems.forEach(function (item) {
+                        item.classList.add('media-item-new');
+                        grid.appendChild(item);
+                    });
+
+                    offset += newItems.length;
+                    grid.dataset.offset = String(offset);
+
+                    // Wire up lazy medium-res upgrade and lightbox on new items
+                    newItems.forEach(function (item) {
+                        if (typeof window.lazyObserveImages === 'function') {
+                            window.lazyObserveImages(item);
+                        }
+                        if (typeof window.lightboxBindNew === 'function') {
+                            window.lightboxBindNew(item);
+                        }
+                    });
+                }
             }
 
             hasMore = !!(result.ok && result.has_more);
-            if (!hasMore) {
-                removeSentinel();
-            }
+            if (!hasMore) removeSentinel();
         } catch (err) {
             console.error('Gallery infinite scroll error:', err);
         } finally {
@@ -91,7 +137,6 @@
     var obs = null;
 
     if (!('IntersectionObserver' in window)) {
-        // Fallback: load all remaining items immediately
         loadMore();
         return;
     }
@@ -99,9 +144,7 @@
     obs = new IntersectionObserver(
         function (entries) {
             entries.forEach(function (entry) {
-                if (entry.isIntersecting) {
-                    loadMore();
-                }
+                if (entry.isIntersecting) loadMore();
             });
         },
         { rootMargin: '300px 0px', threshold: 0 }
