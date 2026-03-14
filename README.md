@@ -244,6 +244,14 @@ INSERT INTO plugins (name, slug, version, is_enabled)
 VALUES ('My Plugin', 'my_plugin', '1.0.0', 1);
 ```
 
+## License
+
+This project is free to use, modify, fork and distribute.
+
+You may **NOT** sell this software or redistribute it for profit.
+
+See [LICENSE](LICENSE) for full terms.
+
 ## Blog
 
 Each user has a personal blog accessible from their profile page.
