@@ -137,6 +137,16 @@
             loading = false;
             hideSpinner();
         }
+
+        // If the sentinel is still within the trigger zone after this batch
+        // (i.e. not enough items were loaded to push it out of view), kick off
+        // the next page immediately so the user doesn't need to scroll further.
+        if (!loading && hasMore && sentinel) {
+            const rect = sentinel.getBoundingClientRect();
+            if (rect.top < window.innerHeight + 300) {
+                setTimeout(loadMore, 0);
+            }
+        }
     }
 
     var obs = null;
