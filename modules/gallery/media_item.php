@@ -22,6 +22,7 @@ declare(strict_types=1);
              alt="" class="lazy-image" loading="lazy"
              <?php if (!empty($media['width']) && !empty($media['height'])): ?>
              width="<?= (int)$media['width'] ?>" height="<?= (int)$media['height'] ?>"
+             style="aspect-ratio: <?= (int)$media['width'] ?>/<?= (int)$media['height'] ?>"
              <?php endif; ?>>
     </a>
     <?php if ($isCover): ?>

@@ -2164,7 +2164,7 @@ textarea { resize: vertical; min-height: 80px; }
 /* Batch reveal for items loaded by infinite scroll */
 @keyframes media-item-reveal {
     from { opacity: 0; transform: translateY(6px); }
-    to   { opacity: 1; transform: translateY(0); }
+    to   { opacity: 1; transform: none; }
 }
 .media-item-new {
     animation: media-item-reveal 0.35s ease forwards;
