@@ -87,7 +87,8 @@ include SITE_ROOT . '/includes/header.php';
                 case 'message': ?>
                 <p><strong><?= e($n['from_username'] ?? 'Someone') ?></strong> sent you a message.</p>
                 <?php if ($n['from_user_id']): ?>
-                <a href="<?= e(SITE_URL . '/pages/messages.php?with=' . (int)$n['from_user_id']) ?>">View message</a>
+                <button type="button" class="notif-chat-btn"
+                        onclick="ChatWidget.startChat(<?= json_encode((int)$n['from_user_id']) ?>, <?= json_encode($n['from_username'] ?? '') ?>, <?= json_encode(avatar_url(['avatar_path' => $n['from_avatar'] ?? null])) ?>)">Open chat</button>
                 <?php endif; ?>
                 <?php break;
             endswitch; ?>

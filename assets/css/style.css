@@ -1804,6 +1804,14 @@ textarea { resize: vertical; min-height: 80px; }
 .notif-body { flex: 1; font-size: 0.9rem; }
 .notif-body p { margin-bottom: 3px; }
 .notif-body a { font-size: 0.82rem; color: var(--color-info); }
+.notif-body .notif-chat-btn {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    font-size: 0.82rem;
+    color: var(--color-info);
+}
 
 .notif-time {
     font-size: 0.75rem;
