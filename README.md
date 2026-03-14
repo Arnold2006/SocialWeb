@@ -10,6 +10,7 @@ An invite-only social network platform built with PHP 8.3, MySQL/MariaDB, and va
 - **Private Messaging** — Inbox, threaded conversations, unread indicators
 - **Gallery** — Albums, image/video uploads, lightbox viewer, progressive loading
 - **Shoutbox** — Real-time AJAX polling in the sidebar
+- **Blog** — Personal blogs with a rich-text editor, drag-and-drop image uploads, and activity-feed integration
 - **Notifications** — Likes, comments, friend requests, messages
 - **Admin Panel** — User management, invite management, content moderation, media management
 - **Plugin System** — Drop-in plugins can add sidebar widgets, wall widgets, menu items, and profile extensions
@@ -128,8 +129,8 @@ sudo systemctl restart php-fpm
 │   ├── schema.sql      Full database schema
 │   └── migrations/     Incremental SQL migration scripts
 ├── includes/           Shared PHP includes (header, footer, functions)
-├── modules/            Feature modules (wall, profile, gallery, etc.)
-├── pages/              Public-facing pages
+├── modules/            Feature modules (wall, profile, gallery, blog, etc.)
+├── pages/              Public-facing pages (includes blog.php)
 ├── plugins/            Drop-in plugin directory
 ├── uploads/            User-uploaded content
 │   ├── avatars/        Avatar sizes: small/medium/large
@@ -242,3 +243,39 @@ Then enable it in the database:
 INSERT INTO plugins (name, slug, version, is_enabled)
 VALUES ('My Plugin', 'my_plugin', '1.0.0', 1);
 ```
+
+## Blog
+
+Each user has a personal blog accessible from their profile page.
+
+### Features
+
+- **Rich-text editor** — Formatting toolbar supports bold, italic, underline, strikethrough, headings (H2/H3), ordered/unordered lists, blockquotes, and hyperlink insertion
+- **Image uploads** — Insert images via drag-and-drop or the toolbar button; images are EXIF-stripped and resized server-side, then stored in a dedicated *Blog* gallery album
+- **Activity-feed integration** — Publishing a new post creates a wall entry of type `blog_post` so it appears in the news feed for followers
+- **Edit & delete** — Authors can edit or soft-delete their own posts; admins can delete any post
+- **Pagination** — Posts are listed newest-first, 10 per page
+
+### Accessing the blog
+
+| URL | Description |
+|-----|-------------|
+| `/pages/blog.php` | Your own blog (defaults to the logged-in user) |
+| `/pages/blog.php?user_id=N` | Blog of user with ID *N* |
+| `/pages/blog.php?user_id=N&page=P` | Page *P* of user *N*'s blog |
+
+A **View Blog** button also appears on every user profile page.
+
+### Database schema
+
+The blog uses the `blog_posts` table created by migration `009_add_blog.sql`:
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | `INT UNSIGNED` | Primary key |
+| `user_id` | `INT UNSIGNED` | Author |
+| `title` | `VARCHAR(255)` | Post title |
+| `content` | `MEDIUMTEXT` | Sanitised HTML content |
+| `created_at` | `DATETIME` | Publication timestamp |
+| `updated_at` | `DATETIME` | Last-edited timestamp (auto-updated) |
+| `is_deleted` | `TINYINT(1)` | Soft-delete flag |
