@@ -140,7 +140,22 @@ include SITE_ROOT . '/includes/header.php';
         <?php if (empty($posts)): ?>
             <p class="empty-state">No blog posts yet.</p>
         <?php else: ?>
-            <?php foreach ($posts as $post): ?>
+            <?php foreach ($posts as $post):
+                $blogComments = db_query(
+                    'SELECT c.*, u.username, u.avatar_path
+                     FROM comments c
+                     JOIN users u ON u.id = c.user_id
+                     WHERE c.blog_post_id = ? AND c.is_deleted = 0
+                     ORDER BY c.created_at ASC
+                     LIMIT 3',
+                    [(int)$post['id']]
+                );
+                $blogCommentCount = (int)db_val(
+                    'SELECT COUNT(*) FROM comments WHERE blog_post_id = ? AND is_deleted = 0',
+                    [(int)$post['id']]
+                );
+                $moreComments = $blogCommentCount > 3;
+            ?>
             <article class="blog-post card" id="blog-post-<?= (int)$post['id'] ?>">
                 <header class="blog-post-header">
                     <h2 class="blog-post-title"><?= e($post['title']) ?></h2>
@@ -154,15 +169,50 @@ include SITE_ROOT . '/includes/header.php';
                 <div class="blog-post-content">
                     <?= sanitise_html($post['content']) ?>
                 </div>
-                <?php if ($isOwn): ?>
                 <footer class="blog-post-footer">
+                    <?php if ($isOwn): ?>
                     <button type="button" class="btn btn-secondary btn-xs blog-edit-btn"
                             data-post-id="<?= (int)$post['id'] ?>"
                             data-title="<?= e($post['title']) ?>">Edit</button>
                     <button type="button" class="btn btn-danger btn-xs blog-delete-btn"
                             data-post-id="<?= (int)$post['id'] ?>">Delete</button>
+                    <?php endif; ?>
+                    <button class="btn-comment" data-blog-post-id="<?= (int)$post['id'] ?>">
+                        💬 <span class="blog-comment-count"><?= $blogCommentCount ?></span>
+                    </button>
                 </footer>
-                <?php endif; ?>
+
+                <!-- Comments section -->
+                <div class="comments-section" id="blog-comments-<?= (int)$post['id'] ?>">
+                    <?php foreach ($blogComments as $comment): ?>
+                    <div class="comment-item" id="comment-<?= (int)$comment['id'] ?>">
+                        <a href="<?= e(SITE_URL . '/pages/profile.php?id=' . (int)$comment['user_id']) ?>">
+                            <img src="<?= e(avatar_url($comment, 'small')) ?>"
+                                 alt="<?= e($comment['username']) ?>"
+                                 class="avatar avatar-small" width="28" height="28" loading="lazy">
+                        </a>
+                        <div class="comment-body">
+                            <a href="<?= e(SITE_URL . '/pages/profile.php?id=' . (int)$comment['user_id']) ?>"
+                               class="comment-author"><?= e($comment['username']) ?></a>
+                            <span class="comment-time"><?= e(time_ago($comment['created_at'])) ?></span>
+                            <p class="comment-text"><?= nl2br(linkify(smilify($comment['content']))) ?></p>
+                        </div>
+                    </div>
+                    <?php endforeach; ?>
+
+                    <?php if ($moreComments): ?>
+                    <p class="load-more-comments-note">
+                        <?= $blogCommentCount ?> comments total — oldest 3 shown
+                    </p>
+                    <?php endif; ?>
+
+                    <form class="blog-comment-form" data-blog-post-id="<?= (int)$post['id'] ?>">
+                        <?= csrf_field() ?>
+                        <input type="text" name="content" placeholder="Write a comment…"
+                               maxlength="1000" autocomplete="off" required>
+                        <button type="submit" class="btn btn-sm">Post</button>
+                    </form>
+                </div>
             </article>
             <?php endforeach; ?>
         <?php endif; ?>

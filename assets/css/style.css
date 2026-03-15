@@ -624,10 +624,23 @@ textarea { resize: vertical; min-height: 80px; }
 }
 .comment-form input { flex: 1; }
 
+.blog-comment-form {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+}
+.blog-comment-form input { flex: 1; }
+
 .load-more-comments {
     font-size: 0.82rem;
     color: var(--color-info);
     display: block;
+    margin-bottom: 0.5rem;
+}
+
+.load-more-comments-note {
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
     margin-bottom: 0.5rem;
 }
 

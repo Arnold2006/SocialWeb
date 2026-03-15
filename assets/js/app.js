@@ -358,6 +358,67 @@ document.addEventListener('submit', async (e) => {
     }
 });
 
+// ── Blog post comment form (AJAX) ─────────────────────────────────────────────
+
+document.addEventListener('submit', async (e) => {
+    const form = e.target.closest('.blog-comment-form');
+    if (!form) return;
+
+    e.preventDefault();
+
+    const blogPostId = form.dataset.blogPostId;
+    const input      = form.querySelector('input[name="content"]');
+    const content    = input ? input.value.trim() : '';
+    if (!content) return;
+
+    const baseUrl = document.querySelector('meta[name="site-url"]')?.content || '';
+    const data    = new URLSearchParams({
+        csrf_token:   getCsrfToken(),
+        blog_post_id: blogPostId,
+        content,
+    });
+
+    try {
+        const result = await apiPost(baseUrl + '/modules/blog/add_comment.php', data);
+
+        if (result.ok) {
+            const section = document.getElementById('blog-comments-' + blogPostId);
+            if (section) {
+                const commentHtml = `
+                <div class="comment-item" id="comment-${parseInt(result.comment_id, 10)}">
+                    <a href="${escapeHtml(result.profile_url)}">
+                        <img src="${escapeHtml(result.avatar)}" alt=""
+                             class="avatar avatar-small" width="28" height="28" loading="lazy">
+                    </a>
+                    <div class="comment-body">
+                        <a href="${escapeHtml(result.profile_url)}" class="comment-author">
+                            ${escapeHtml(result.username)}
+                        </a>
+                        <span class="comment-time">${escapeHtml(result.time_ago)}</span>
+                        <p class="comment-text">${linkifyHtml(smilifyText(result.content))}</p>
+                    </div>
+                </div>`;
+                const commentForm = section.querySelector('.blog-comment-form');
+                if (commentForm) {
+                    commentForm.insertAdjacentHTML('beforebegin', commentHtml);
+                } else {
+                    section.insertAdjacentHTML('beforeend', commentHtml);
+                }
+            }
+            // Update comment count badge
+            const countEl = document.querySelector(`.btn-comment[data-blog-post-id="${blogPostId}"] .blog-comment-count`);
+            if (countEl) {
+                countEl.textContent = (parseInt(countEl.textContent, 10) || 0) + 1;
+            }
+            if (input) input.value = '';
+        } else {
+            alert('Error: ' + (result.error || 'Could not post comment'));
+        }
+    } catch (err) {
+        console.error('Blog comment failed:', err);
+    }
+});
+
 // ── Image preview before upload ───────────────────────────────────────────────
 
 const postImageInput = document.getElementById('post-image');

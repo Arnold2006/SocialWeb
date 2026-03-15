@@ -351,6 +351,8 @@
         const now   = new Date();
         const dateStr = now.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
+        const csrfVal = getCsrf();
+
         const article = document.createElement('article');
         article.className = 'blog-post card';
         article.id        = 'blog-post-' + postId;
@@ -365,7 +367,17 @@
             + ' data-post-id="' + postId + '" data-title="' + escAttr(title) + '">Edit</button>'
             + '<button type="button" class="btn btn-danger btn-xs blog-delete-btn"'
             + ' data-post-id="' + postId + '">Delete</button>'
-            + '</footer>';
+            + '<button class="btn-comment" data-blog-post-id="' + postId + '">'
+            + '💬 <span class="blog-comment-count">0</span>'
+            + '</button>'
+            + '</footer>'
+            + '<div class="comments-section" id="blog-comments-' + postId + '">'
+            + '<form class="blog-comment-form" data-blog-post-id="' + postId + '">'
+            + '<input type="hidden" name="csrf_token" value="' + escAttr(csrfVal) + '">'
+            + '<input type="text" name="content" placeholder="Write a comment\u2026" maxlength="1000" autocomplete="off" required>'
+            + '<button type="submit" class="btn btn-sm">Post</button>'
+            + '</form>'
+            + '</div>';
 
         list.insertBefore(article, list.firstChild);
     }
