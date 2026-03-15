@@ -126,6 +126,7 @@
         commentInput.type = 'text';
         commentInput.placeholder = 'Write a comment\u2026';
         commentInput.maxLength = 1000;
+        commentInput.autocomplete = 'off';
         commentInput.setAttribute('aria-label', 'Comment text');
 
         const commentSubmit = document.createElement('button');
@@ -135,6 +136,9 @@
 
         commentForm.appendChild(csrfInput);
         commentForm.appendChild(commentInput);
+        if (typeof createSmileyPicker === 'function') {
+            commentForm.appendChild(createSmileyPicker(commentInput));
+        }
         commentForm.appendChild(commentSubmit);
 
         commentForm.addEventListener('submit', (e) => {
@@ -311,6 +315,7 @@
     function appendComment(c) {
         const item = document.createElement('div');
         item.className = 'lightbox-comment-item';
+        const smilified = (typeof smilifyText === 'function') ? smilifyText(c.content) : c.content;
         item.innerHTML =
             '<a href="' + escapeHtml(c.profile_url) + '" class="lightbox-comment-avatar">' +
                 '<img src="' + escapeHtml(c.avatar) + '" alt="" class="avatar avatar-small" width="28" height="28" loading="lazy">' +
@@ -318,7 +323,7 @@
             '<div class="lightbox-comment-body">' +
                 '<a href="' + escapeHtml(c.profile_url) + '" class="lightbox-comment-author">' + escapeHtml(c.username) + '</a>' +
                 '<span class="lightbox-comment-time">' + escapeHtml(c.time_ago) + '</span>' +
-                '<p class="lightbox-comment-text">' + escapeHtml(c.content) + '</p>' +
+                '<p class="lightbox-comment-text">' + escapeHtml(smilified) + '</p>' +
             '</div>';
         commentsList.appendChild(item);
         commentsList.scrollTop = commentsList.scrollHeight;

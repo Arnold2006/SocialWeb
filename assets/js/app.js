@@ -1509,4 +1509,9 @@ if (avatarInput && cropContainer && cropCanvas) {
             formGroup.appendChild(createSmileyPicker(composeBody));
         }
     }
+
+    // Wall comment forms
+    document.querySelectorAll('.comment-form input[name="content"]').forEach((input) => {
+        input.insertAdjacentElement('afterend', createSmileyPicker(input));
+    });
 }());
