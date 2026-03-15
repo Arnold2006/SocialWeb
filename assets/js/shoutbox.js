@@ -72,7 +72,7 @@
                     <a href="${escapeHtml(m.profile_url)}">${escapeHtml(m.username)}</a>
                 </span>
                 <span class="shout-time">${escapeHtml(m.time_ago)}</span>
-                <p class="shout-text">${linkifyHtml(m.message)}</p>
+                <p class="shout-text">${linkifyHtml(smilifyText(m.message))}</p>
             </div>
         `).join('');
 

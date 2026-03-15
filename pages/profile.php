@@ -114,7 +114,7 @@ include SITE_ROOT . '/includes/header.php';
         <p class="profile-joined">Joined <?= e(date('M Y', strtotime($profileUser['created_at']))) ?></p>
 
         <?php if (!empty($profileUser['bio'])): ?>
-        <p class="profile-bio"><?= nl2br(linkify($profileUser['bio'])) ?></p>
+        <p class="profile-bio"><?= nl2br(linkify(smilify($profileUser['bio']))) ?></p>
         <?php endif; ?>
 
 

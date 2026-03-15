@@ -312,6 +312,51 @@ function linkify(string $rawText): string
 }
 
 /**
+ * Replace common text emoticons with Unicode emoji.
+ *
+ * Smileys are recognised only when surrounded by whitespace or located at the
+ * start/end of the string, so they are never accidentally matched inside a
+ * word or URL.  Longer patterns are listed first so they take priority over
+ * their shorter sub-strings (e.g. ':-)'  beats  ':)').
+ *
+ * Call this on raw (unescaped) user text *before* passing the result to
+ * linkify() so that the Unicode emoji characters are safely HTML-escaped as
+ * part of the normal rendering pipeline.
+ *
+ * @param string $text Raw (unescaped) user text
+ * @return string Text with emoticons replaced by Unicode emoji
+ */
+function smilify(string $text): string
+{
+    static $map = [
+        // 4-char and longer patterns first to avoid partial matches
+        'O:-)' => '😇', 'O:)'  => '😇',
+        '>:-)' => '😈', '>:)'  => '😈',
+        '>:-(' => '😠', '>:('  => '😠',
+        "B-)"  => '😎',
+        ":-)"  => '😊', ":-D"  => '😀', ":-("  => '😞',
+        ";-)"  => '😉', ":-P"  => '😛', ":-p"  => '😛',
+        ":-O"  => '😮', ":-o"  => '😮', ":-*"  => '😘',
+        ":-/"  => '😕', ":-|"  => '😐',
+        ":'-(" => '😢', ":'("  => '😢',
+        // 2-char patterns
+        ':)'   => '😊', ':D'   => '😀', ':('   => '😞',
+        ';)'   => '😉', ':P'   => '😛', ':p'   => '😛',
+        ':O'   => '😮', ':o'   => '😮', ':*'   => '😘',
+        ':/'   => '😕', ':|'   => '😐',
+        'B)'   => '😎', '<3'   => '❤️',
+    ];
+    static $pattern = null;
+
+    if ($pattern === null) {
+        $parts   = array_map(fn($s) => preg_quote($s, '/'), array_keys($map));
+        $pattern = '/(?<!\S)(' . implode('|', $parts) . ')(?!\S)/u';
+    }
+
+    return preg_replace_callback($pattern, fn($m) => $map[$m[1]] ?? $m[1], $text) ?? $text;
+}
+
+/**
  * Sanitise an email address.
  * Returns empty string if invalid.
  */

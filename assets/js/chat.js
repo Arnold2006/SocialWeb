@@ -106,7 +106,7 @@
 
         if (msg.message_text) {
             bubble += '<p class="chat-bubble-text">'
-                + linkify(msg.message_text).replace(/\n/g, '<br>')
+                + linkify(smilifyText(msg.message_text)).replace(/\n/g, '<br>')
                 + '</p>';
         }
 
