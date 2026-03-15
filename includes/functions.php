@@ -205,6 +205,38 @@ function unread_chat_count(): int
 }
 
 /**
+ * Count forums that have unread threads for the current user.
+ */
+function unread_forum_count(): int
+{
+    $user = current_user();
+    if (!$user) return 0;
+    return (int) db_val(
+        'SELECT COUNT(DISTINCT t.forum_id)
+         FROM   forum_threads t
+         LEFT   JOIN forum_reads fr ON fr.thread_id = t.id AND fr.user_id = ?
+         WHERE  t.is_deleted = 0
+           AND  (fr.read_at IS NULL OR t.last_post_at > fr.read_at)',
+        [$user['id']]
+    );
+}
+
+/**
+ * Mark a forum thread as read for the current user (upsert).
+ */
+function mark_thread_read(int $threadId): void
+{
+    $user = current_user();
+    if (!$user) return;
+    db_exec(
+        'INSERT INTO forum_reads (user_id, thread_id, read_at)
+         VALUES (?, ?, NOW())
+         ON DUPLICATE KEY UPDATE read_at = NOW()',
+        [$user['id'], $threadId]
+    );
+}
+
+/**
  * Get site setting from DB.
  */
 function site_setting(string $key, string $default = ''): string

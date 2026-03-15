@@ -59,6 +59,22 @@
             }
         });
 
+        // Update forum badge in nav
+        const forumLinks = document.querySelectorAll('a[href*="/forum/index.php"]');
+        forumLinks.forEach(link => {
+            let badge = link.querySelector('.badge');
+            if (data.forum > 0) {
+                if (!badge) {
+                    badge = document.createElement('span');
+                    badge.className = 'badge';
+                    link.appendChild(badge);
+                }
+                badge.textContent = data.forum;
+            } else if (badge) {
+                badge.remove();
+            }
+        });
+
         // Update page title with notification count
         const totalUnread = data.notifications + data.messages;
         if (totalUnread > 0) {
