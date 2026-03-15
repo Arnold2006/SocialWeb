@@ -29,6 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $forumId = (int)($_POST['forum_id'] ?? 0);
     $title   = trim($_POST['title'] ?? '');
     $content = trim($_POST['content'] ?? '');
+    $mediaId = (int)($_POST['media_id'] ?? 0);
     $errors  = [];
 
     if ($forumId <= 0) {
@@ -48,6 +49,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = 'Post content is required.';
     }
 
+    // Validate media_id belongs to this user (if provided)
+    if ($mediaId > 0) {
+        $mediaCheck = db_row(
+            'SELECT id FROM media WHERE id = ? AND user_id = ? AND type = ? AND is_deleted = 0',
+            [$mediaId, (int)$user['id'], 'image']
+        );
+        if (!$mediaCheck) {
+            $mediaId = 0;
+        }
+    }
+
     if (empty($errors)) {
         $threadId = (int)db_insert(
             'INSERT INTO forum_threads (forum_id, user_id, title, created_at, last_post_at, reply_count)
@@ -55,9 +67,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             [$forumId, (int)$user['id'], $title]
         );
         db_insert(
-            'INSERT INTO forum_posts (thread_id, user_id, content, created_at)
-             VALUES (?, ?, ?, NOW())',
-            [$threadId, (int)$user['id'], $content]
+            'INSERT INTO forum_posts (thread_id, user_id, content, media_id, created_at)
+             VALUES (?, ?, ?, ?, NOW())',
+            [$threadId, (int)$user['id'], $content, $mediaId > 0 ? $mediaId : null]
         );
         flash_set('success', 'Thread created successfully.');
         redirect(SITE_URL . '/forum/thread.php?id=' . $threadId);
@@ -86,10 +98,21 @@ foreach ($categories as $row) {
 
 $pageTitle = 'New Thread — Forum';
 
+$pageScript = ASSETS_URL . '/js/forum.js';
+
 include SITE_ROOT . '/includes/header.php';
 ?>
 
-<div class="forum-layout">
+<div class="two-col-layout">
+
+    <!-- ── Left Column ─────────────────────────────────────── -->
+    <aside class="col-left">
+        <?php include SITE_ROOT . '/includes/sidebar_widgets.php'; ?>
+    </aside>
+
+    <!-- ── Right Column ────────────────────────────────────── -->
+    <main class="col-right">
+    <div class="forum-layout">
 
     <nav class="forum-breadcrumb">
         <a href="<?= SITE_URL ?>/forum/index.php">Forum</a>
@@ -104,6 +127,7 @@ include SITE_ROOT . '/includes/header.php';
     <div class="forum-form-wrap">
         <form method="post" action="<?= SITE_URL ?>/forum/new_thread.php">
             <?= csrf_field() ?>
+            <input type="hidden" name="media_id" id="forum-media-id" value="">
 
             <div class="form-group">
                 <label for="forum_id">Forum</label>
@@ -134,6 +158,13 @@ include SITE_ROOT . '/includes/header.php';
                           placeholder="Write your post here…"><?= isset($_POST['content']) ? e($_POST['content']) : '' ?></textarea>
             </div>
 
+            <div class="forum-image-picker-wrap">
+                <button type="button" class="btn btn-sm btn-secondary forum-pick-image-btn">
+                    🖼️ Add Image from Gallery
+                </button>
+                <div id="forum-image-preview" class="forum-image-preview"></div>
+            </div>
+
             <div class="form-actions">
                 <button type="submit" class="btn btn-primary">Post Thread</button>
                 <a href="<?= $forumId > 0 ? e(SITE_URL . '/forum/forum.php?id=' . $forumId) : e(SITE_URL . '/forum/index.php') ?>"
@@ -142,6 +173,9 @@ include SITE_ROOT . '/includes/header.php';
         </form>
     </div>
 
-</div>
+    </div><!-- /.forum-layout -->
+    </main>
+
+</div><!-- /.two-col-layout -->
 
 <?php include SITE_ROOT . '/includes/footer.php'; ?>
