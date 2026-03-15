@@ -96,8 +96,17 @@ const smilifyText = (function () {
 
 // ── Smiley Picker ─────────────────────────────────────────────────────────────
 
-/** Insert text at the cursor position (or end) in a textarea / text input */
+/** Insert text at the cursor position (or end) in a textarea / text input / contenteditable */
 function insertAtCursor(el, text) {
+    if (el.isContentEditable) {
+        el.focus();
+        // execCommand is deprecated but remains the most concise cross-browser
+        // approach for text insertion in contenteditable elements without
+        // external dependencies — consistent with the blog editor's own usage.
+        document.execCommand('insertText', false, text);
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+        return;
+    }
     const start = el.selectionStart != null ? el.selectionStart : el.value.length;
     const end   = el.selectionEnd   != null ? el.selectionEnd   : el.value.length;
     el.value    = el.value.slice(0, start) + text + el.value.slice(end);
@@ -180,7 +189,7 @@ function createSmileyPicker(inputEl) {
         opt.appendChild(codeSpan);
 
         opt.addEventListener('click', () => {
-            insertAtCursor(inputEl, ' ' + code + ' ');
+            insertAtCursor(inputEl, ' ' + (inputEl.isContentEditable ? emoji : code) + ' ');
             dropdown.classList.add('hidden');
             btn.setAttribute('aria-expanded', 'false');
             inputEl.focus();
@@ -310,7 +319,7 @@ document.addEventListener('submit', async (e) => {
         const result = await apiPost(baseUrl + '/modules/wall/add_comment.php', data);
 
         if (result.ok) {
-            // Append new comment
+            // Insert new comment before the comment form so it appears above the input
             const section = document.getElementById('comments-' + postId);
             if (section) {
                 const commentHtml = `
@@ -327,7 +336,12 @@ document.addEventListener('submit', async (e) => {
                         <p class="comment-text">${linkifyHtml(smilifyText(result.content))}</p>
                     </div>
                 </div>`;
-                section.insertAdjacentHTML('beforeend', commentHtml);
+                const commentForm = section.querySelector('.comment-form');
+                if (commentForm) {
+                    commentForm.insertAdjacentHTML('beforebegin', commentHtml);
+                } else {
+                    section.insertAdjacentHTML('beforeend', commentHtml);
+                }
             }
             // Update comment count
             const commentBtn = document.querySelector(`.btn-comment[data-post-id="${postId}"]`);
