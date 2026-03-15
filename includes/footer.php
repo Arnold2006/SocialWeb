@@ -151,6 +151,9 @@ $_footerUser = current_user();
 <?php if ($_footerUser): ?>
 <script src="<?= ASSETS_URL ?>/js/chat.js"></script>
 <?php endif; ?>
+<?php if (!empty($pageScript ?? '')): ?>
+<script src="<?= e($pageScript) ?>"></script>
+<?php endif; ?>
 
 </body>
 </html>

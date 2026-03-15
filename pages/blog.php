@@ -183,7 +183,6 @@ include SITE_ROOT . '/includes/header.php';
 </div><!-- /.two-col-layout -->
 
 <?php if ($isOwn): ?>
-<script src="<?= ASSETS_URL ?>/js/blog_editor.js"></script>
+<?php $pageScript = ASSETS_URL . '/js/blog_editor.js'; ?>
 <?php endif; ?>
-
 <?php include SITE_ROOT . '/includes/footer.php'; ?>
