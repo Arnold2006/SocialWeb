@@ -201,6 +201,16 @@ function createSmileyPicker(inputEl) {
         e.stopPropagation();
         const hidden = dropdown.classList.toggle('hidden');
         btn.setAttribute('aria-expanded', String(!hidden));
+        if (!hidden) {
+            const rect = btn.getBoundingClientRect();
+            dropdown.style.position = 'fixed';
+            dropdown.style.top    = 'auto';
+            dropdown.style.left   = 'auto';
+            dropdown.style.bottom = (window.innerHeight - rect.top + 6) + 'px';
+            dropdown.style.right  = (window.innerWidth  - rect.right)  + 'px';
+        } else {
+            dropdown.style.cssText = '';
+        }
     });
 
     wrap.appendChild(btn);

@@ -3392,9 +3392,11 @@ textarea { resize: vertical; min-height: 80px; }
 }
 
 .smiley-dropdown {
+    /* Default layout; JS overrides to position:fixed with viewport coordinates
+       at open time so the dropdown escapes any overflow:hidden ancestor. */
     position: absolute;
     bottom: calc(100% + 6px);
-    left: 0;
+    right: 0;
     background: var(--color-surface);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
@@ -3403,7 +3405,7 @@ textarea { resize: vertical; min-height: 80px; }
     display: grid;
     grid-template-columns: repeat(5, 1fr);
     gap: 0.2rem;
-    z-index: 300;
+    z-index: 10000;
     min-width: 210px;
 }
 
