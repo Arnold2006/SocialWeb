@@ -42,7 +42,7 @@ $commentId = db_insert(
 db_exec('UPDATE posts SET bumped_at = NOW() WHERE id = ?', [$postId]);
 
 // Notify post owner
-notify_user((int)$post['user_id'], 'comment', (int)$user['id'], (int)$commentId);
+notify_user((int)$post['user_id'], 'comment', (int)$user['id'], (int)$postId);
 
 cache_invalidate_wall();
 
