@@ -34,5 +34,13 @@ $chat   = (int) db_val(
        AND  cm.is_read   = 0',
     [$uid, $uid, $uid]
 );
+$forum  = (int) db_val(
+    'SELECT COUNT(DISTINCT t.forum_id)
+     FROM   forum_threads t
+     LEFT   JOIN forum_reads fr ON fr.thread_id = t.id AND fr.user_id = ?
+     WHERE  t.is_deleted = 0
+       AND  (fr.read_at IS NULL OR t.last_post_at > fr.read_at)',
+    [$uid]
+);
 
-echo json_encode(['ok' => true, 'notifications' => $notifs, 'messages' => $msgs, 'chat' => $chat]);
+echo json_encode(['ok' => true, 'notifications' => $notifs, 'messages' => $msgs, 'chat' => $chat, 'forum' => $forum]);

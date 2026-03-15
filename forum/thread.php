@@ -45,6 +45,11 @@ if (!$thread) {
 $pageTitle = e($thread['title']) . ' — Forum';
 $user      = current_user();
 
+// Mark this thread as read for the current user
+if ($user) {
+    mark_thread_read($threadId);
+}
+
 // Handle admin post deletion
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delete_post') {
     require_login();

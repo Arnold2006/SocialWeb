@@ -3696,6 +3696,22 @@ textarea { resize: vertical; min-height: 80px; }
 /* Admin forum form */
 .forum-admin-form { max-width: 700px; }
 
+/* ── Forum unread indicators ─────────────────────────────────── */
+.forum-item.has-unread .forum-title { font-weight: 700; }
+
+.thread-item.thread-unread .thread-title { font-weight: 700; color: var(--color-text); }
+
+.thread-unread-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--color-badge);
+    vertical-align: middle;
+    margin-left: 6px;
+    flex-shrink: 0;
+}
+
 /* Admin table row states */
 .row-deleted td { opacity: 0.55; }
 

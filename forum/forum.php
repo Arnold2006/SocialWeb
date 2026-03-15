@@ -41,17 +41,21 @@ if (!$forum) {
 
 $pageTitle = e($forum['title']) . ' — Forum';
 $user      = current_user();
+$userId    = $user ? (int)$user['id'] : 0;
 
 $page    = max(1, (int)($_GET['page'] ?? 1));
 $perPage = 20;
 $result  = paginate(
     'SELECT t.id, t.title, t.created_at, t.last_post_at, t.reply_count, t.is_locked,
-            u.id AS user_id, u.username AS author
+            u.id AS user_id, u.username AS author,
+            CASE WHEN ? > 0 AND (fr.read_at IS NULL OR t.last_post_at > fr.read_at)
+                 THEN 1 ELSE 0 END AS is_unread
      FROM   forum_threads t
      JOIN   users u ON u.id = t.user_id
+     LEFT   JOIN forum_reads fr ON fr.thread_id = t.id AND fr.user_id = ?
      WHERE  t.forum_id = ? AND t.is_deleted = 0
      ORDER  BY t.last_post_at DESC',
-    [$forumId],
+    [$userId, $userId, $forumId],
     $page,
     $perPage
 );
@@ -105,13 +109,16 @@ include SITE_ROOT . '/includes/header.php';
             <span class="hidden-sm">Last Post</span>
         </div>
         <?php foreach ($result['rows'] as $thread): ?>
-        <div class="thread-item<?= $thread['is_locked'] ? ' thread-locked' : '' ?>">
+        <div class="thread-item<?= $thread['is_locked'] ? ' thread-locked' : '' ?><?= $thread['is_unread'] ? ' thread-unread' : '' ?>">
             <div class="thread-title-col">
                 <?php if ($thread['is_locked']): ?>
                 <span class="thread-lock-icon" title="Locked">🔒</span>
                 <?php endif; ?>
                 <a href="<?= SITE_URL ?>/forum/thread.php?id=<?= (int)$thread['id'] ?>" class="thread-title">
                     <?= e($thread['title']) ?>
+                    <?php if ($thread['is_unread']): ?>
+                    <span class="thread-unread-dot" title="Unread posts"></span>
+                    <?php endif; ?>
                 </a>
                 <span class="muted thread-date hidden-sm"><?= e(date('M j, Y', strtotime($thread['created_at']))) ?></span>
             </div>

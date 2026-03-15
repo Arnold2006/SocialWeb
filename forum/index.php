@@ -20,6 +20,7 @@ require_once dirname(__DIR__) . '/includes/bootstrap.php';
 
 $pageTitle = 'Forum';
 $user      = current_user();
+$userId    = $user ? (int)$user['id'] : 0;
 
 $categories = db_query(
     'SELECT c.id, c.title, c.description
@@ -33,7 +34,10 @@ foreach ($categories as &$cat) {
                 COUNT(DISTINCT t.id) AS thread_count,
                 COUNT(DISTINCT p.id) AS post_count,
                 MAX(t.last_post_at)  AS last_post_at,
-                u.username           AS last_poster
+                u.username           AS last_poster,
+                SUM(CASE WHEN ? > 0 AND t.id IS NOT NULL
+                              AND (fr.read_at IS NULL OR t.last_post_at > fr.read_at)
+                         THEN 1 ELSE 0 END) AS unread_count
          FROM   forum_forums f
          LEFT   JOIN forum_threads t ON t.forum_id = f.id AND t.is_deleted = 0
          LEFT   JOIN forum_posts   p ON p.thread_id = t.id AND p.is_deleted = 0
@@ -44,10 +48,11 @@ foreach ($categories as &$cat) {
              ORDER  BY created_at DESC
          ) lp ON lp.thread_id = t.id
          LEFT   JOIN users u ON u.id = lp.user_id
+         LEFT   JOIN forum_reads fr ON fr.thread_id = t.id AND fr.user_id = ?
          WHERE  f.category_id = ?
          GROUP  BY f.id, f.title, f.description
          ORDER  BY f.sort_order ASC, f.id ASC',
-        [$cat['id']]
+        [$userId, $userId, $cat['id']]
     );
 }
 unset($cat);
@@ -91,11 +96,14 @@ include SITE_ROOT . '/includes/header.php';
         <?php else: ?>
         <div class="forum-list">
             <?php foreach ($cat['forums'] as $forum): ?>
-            <div class="forum-item">
-                <div class="forum-icon">💬</div>
+            <div class="forum-item<?= (int)$forum['unread_count'] > 0 ? ' has-unread' : '' ?>">
+                <div class="forum-icon"><?= (int)$forum['unread_count'] > 0 ? '🔵' : '💬' ?></div>
                 <div class="forum-info">
                     <a href="<?= SITE_URL ?>/forum/forum.php?id=<?= (int)$forum['id'] ?>" class="forum-title">
                         <?= e($forum['title']) ?>
+                        <?php if ((int)$forum['unread_count'] > 0): ?>
+                        <span class="badge"><?= (int)$forum['unread_count'] ?></span>
+                        <?php endif; ?>
                     </a>
                     <?php if ($forum['description']): ?>
                     <p class="forum-desc muted"><?= e($forum['description']) ?></p>
