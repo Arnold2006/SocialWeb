@@ -88,6 +88,11 @@ if (!isset($plugins)) {
                 ⚙️ How it Works
             </button>
         </li>
+        <li>
+            <button type="button" class="btn-link" data-modal="terms-modal">
+                📜 Terms of Use
+            </button>
+        </li>
     </ul>
 </div>
 
