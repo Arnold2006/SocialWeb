@@ -28,6 +28,7 @@ csrf_verify();
 $user     = current_user();
 $threadId = (int)($_POST['thread_id'] ?? 0);
 $content  = trim($_POST['content'] ?? '');
+$mediaId  = (int)($_POST['media_id'] ?? 0);
 
 if ($threadId <= 0) {
     flash_set('error', 'Invalid thread.');
@@ -52,9 +53,20 @@ if ($content === '') {
     redirect(SITE_URL . '/forum/thread.php?id=' . $threadId);
 }
 
+// Validate media_id belongs to this user (if provided)
+if ($mediaId > 0) {
+    $mediaCheck = db_row(
+        'SELECT id FROM media WHERE id = ? AND user_id = ? AND type = ? AND is_deleted = 0',
+        [$mediaId, (int)$user['id'], 'image']
+    );
+    if (!$mediaCheck) {
+        $mediaId = 0;
+    }
+}
+
 db_insert(
-    'INSERT INTO forum_posts (thread_id, user_id, content, created_at) VALUES (?, ?, ?, NOW())',
-    [$threadId, (int)$user['id'], $content]
+    'INSERT INTO forum_posts (thread_id, user_id, content, media_id, created_at) VALUES (?, ?, ?, ?, NOW())',
+    [$threadId, (int)$user['id'], $content, $mediaId > 0 ? $mediaId : null]
 );
 
 db_exec(

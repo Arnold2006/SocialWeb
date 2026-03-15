@@ -68,7 +68,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delet
 $page    = max(1, (int)($_GET['page'] ?? 1));
 $perPage = 20;
 $result  = paginate(
-    'SELECT p.id, p.content, p.created_at,
+    'SELECT p.id, p.content, p.media_id, p.created_at,
             u.id AS user_id, u.username, u.avatar_path
      FROM   forum_posts p
      JOIN   users u ON u.id = p.user_id
@@ -79,10 +79,21 @@ $result  = paginate(
     $perPage
 );
 
+$pageScript = ASSETS_URL . '/js/forum.js';
+
 include SITE_ROOT . '/includes/header.php';
 ?>
 
-<div class="forum-layout">
+<div class="two-col-layout">
+
+    <!-- ── Left Column ─────────────────────────────────────── -->
+    <aside class="col-left">
+        <?php include SITE_ROOT . '/includes/sidebar_widgets.php'; ?>
+    </aside>
+
+    <!-- ── Right Column ────────────────────────────────────── -->
+    <main class="col-right">
+    <div class="forum-layout">
 
     <!-- Breadcrumb -->
     <nav class="forum-breadcrumb">
@@ -108,6 +119,12 @@ include SITE_ROOT . '/includes/header.php';
 
     <div class="post-list">
         <?php foreach ($result['rows'] as $post): ?>
+        <?php
+        $postMedia = null;
+        if (!empty($post['media_id'])) {
+            $postMedia = db_row('SELECT * FROM media WHERE id = ? AND is_deleted = 0', [(int)$post['media_id']]);
+        }
+        ?>
         <div class="forum-post" id="post-<?= (int)$post['id'] ?>">
             <div class="forum-post-author">
                 <a href="<?= SITE_URL ?>/pages/profile.php?id=<?= (int)$post['user_id'] ?>">
@@ -134,6 +151,17 @@ include SITE_ROOT . '/includes/header.php';
                     <?php endif; ?>
                 </div>
                 <div class="forum-post-content"><?= nl2br(e($post['content'])) ?></div>
+                <?php if ($postMedia && $postMedia['type'] === 'image'): ?>
+                <div class="forum-post-image">
+                    <a href="<?= e(get_media_url($postMedia, 'original')) ?>" class="lightbox-trigger"
+                       data-src="<?= e(get_media_url($postMedia, 'large')) ?>">
+                        <img src="<?= e(get_media_url($postMedia, 'thumb')) ?>"
+                             alt="Post image"
+                             class="forum-post-thumb"
+                             loading="lazy">
+                    </a>
+                </div>
+                <?php endif; ?>
             </div>
         </div>
         <?php endforeach; ?>
@@ -142,6 +170,7 @@ include SITE_ROOT . '/includes/header.php';
     <?= pagination_links($result['page'], $result['pages'], SITE_URL . '/forum/thread.php?id=' . $threadId) ?>
 
     <?php endif; ?>
+    <div id="post-end"></div>
 
     <!-- Reply form -->
     <?php if ($user && !$thread['is_locked']): ?>
@@ -150,12 +179,21 @@ include SITE_ROOT . '/includes/header.php';
         <form method="post" action="<?= SITE_URL ?>/forum/reply.php">
             <?= csrf_field() ?>
             <input type="hidden" name="thread_id" value="<?= (int)$threadId ?>">
+            <input type="hidden" name="media_id" id="forum-media-id" value="">
             <div class="form-group">
                 <label for="content">Your reply</label>
                 <textarea id="content" name="content" rows="6" required
                           placeholder="Write your reply here…"></textarea>
             </div>
-            <button type="submit" class="btn btn-primary">Post Reply</button>
+            <div class="forum-image-picker-wrap">
+                <button type="button" class="btn btn-sm btn-secondary forum-pick-image-btn">
+                    🖼️ Add Image from Gallery
+                </button>
+                <div id="forum-image-preview" class="forum-image-preview"></div>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Post Reply</button>
+            </div>
         </form>
     </div>
     <?php elseif ($thread['is_locked']): ?>
@@ -164,7 +202,10 @@ include SITE_ROOT . '/includes/header.php';
     <p class="muted"><a href="<?= SITE_URL ?>/pages/login.php">Log in</a> to reply.</p>
     <?php endif; ?>
 
-</div>
+    </div><!-- /.forum-layout -->
+    </main>
+
+</div><!-- /.two-col-layout -->
 
 <?php include SITE_ROOT . '/includes/footer.php'; ?>
 

@@ -55,7 +55,16 @@ unset($cat);
 include SITE_ROOT . '/includes/header.php';
 ?>
 
-<div class="forum-layout">
+<div class="two-col-layout">
+
+    <!-- ── Left Column ─────────────────────────────────────── -->
+    <aside class="col-left">
+        <?php include SITE_ROOT . '/includes/sidebar_widgets.php'; ?>
+    </aside>
+
+    <!-- ── Right Column ────────────────────────────────────── -->
+    <main class="col-right">
+    <div class="forum-layout">
 
     <div class="forum-header">
         <h1>Forum</h1>
@@ -113,6 +122,9 @@ include SITE_ROOT . '/includes/header.php';
     </section>
     <?php endforeach; ?>
 
-</div>
+    </div><!-- /.forum-layout -->
+    </main>
+
+</div><!-- /.two-col-layout -->
 
 <?php include SITE_ROOT . '/includes/footer.php'; ?>
