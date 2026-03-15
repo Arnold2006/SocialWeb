@@ -94,6 +94,111 @@ const smilifyText = (function () {
     };
 }());
 
+// ── Smiley Picker ─────────────────────────────────────────────────────────────
+
+/** Insert text at the cursor position (or end) in a textarea / text input */
+function insertAtCursor(el, text) {
+    const start = el.selectionStart != null ? el.selectionStart : el.value.length;
+    const end   = el.selectionEnd   != null ? el.selectionEnd   : el.value.length;
+    el.value    = el.value.slice(0, start) + text + el.value.slice(end);
+    const pos   = start + text.length;
+    el.setSelectionRange(pos, pos);
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
+/* Single document-level listener that closes all open smiley dropdowns */
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('.smiley-picker-wrap')) {
+        document.querySelectorAll('.smiley-dropdown:not(.hidden)').forEach((d) => {
+            d.classList.add('hidden');
+            const pickerBtn = d.closest('.smiley-picker-wrap')
+                              && d.closest('.smiley-picker-wrap').querySelector('.smiley-picker-btn');
+            if (pickerBtn) pickerBtn.setAttribute('aria-expanded', 'false');
+        });
+    }
+});
+
+/**
+ * Build a smiley-picker button + dropdown and attach it to a text input/textarea.
+ * Clicking a smiley inserts its text code at the cursor position.
+ *
+ * @param {HTMLInputElement|HTMLTextAreaElement} inputEl
+ * @returns {HTMLSpanElement} Wrapper element containing the button and dropdown
+ */
+function createSmileyPicker(inputEl) {
+    const smileys = [
+        { code: ':-)',  emoji: '😊' },
+        { code: ':-D',  emoji: '😀' },
+        { code: ':-(',  emoji: '😞' },
+        { code: ';-)',  emoji: '😉' },
+        { code: ':-P',  emoji: '😛' },
+        { code: ':-O',  emoji: '😮' },
+        { code: ':-*',  emoji: '😘' },
+        { code: ':-/',  emoji: '😕' },
+        { code: ':-|',  emoji: '😐' },
+        { code: ":'(",  emoji: '😢' },
+        { code: 'B-)',  emoji: '😎' },
+        { code: '>:-)', emoji: '😈' },
+        { code: '>:-(', emoji: '😠' },
+        { code: 'O:-)', emoji: '😇' },
+        { code: '<3',   emoji: '❤️' },
+    ];
+
+    const wrap     = document.createElement('span');
+    wrap.className = 'smiley-picker-wrap';
+
+    const btn      = document.createElement('button');
+    btn.type       = 'button';
+    btn.className  = 'smiley-picker-btn';
+    btn.title      = 'Insert smiley';
+    btn.setAttribute('aria-label', 'Smiley picker');
+    btn.setAttribute('aria-haspopup', 'listbox');
+    btn.textContent = '😊';
+
+    const dropdown = document.createElement('div');
+    dropdown.className = 'smiley-dropdown hidden';
+    dropdown.setAttribute('role', 'listbox');
+    dropdown.setAttribute('aria-label', 'Smileys');
+
+    smileys.forEach(({ code, emoji }) => {
+        const opt     = document.createElement('button');
+        opt.type      = 'button';
+        opt.className = 'smiley-option';
+        opt.setAttribute('role', 'option');
+        opt.title     = code;
+
+        const emojiSpan = document.createElement('span');
+        emojiSpan.className = 'smiley-option-emoji';
+        emojiSpan.setAttribute('aria-hidden', 'true');
+        emojiSpan.textContent = emoji;
+
+        const codeSpan = document.createElement('span');
+        codeSpan.className = 'smiley-option-code';
+        codeSpan.textContent = code;
+
+        opt.appendChild(emojiSpan);
+        opt.appendChild(codeSpan);
+
+        opt.addEventListener('click', () => {
+            insertAtCursor(inputEl, ' ' + code + ' ');
+            dropdown.classList.add('hidden');
+            btn.setAttribute('aria-expanded', 'false');
+            inputEl.focus();
+        });
+        dropdown.appendChild(opt);
+    });
+
+    btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const hidden = dropdown.classList.toggle('hidden');
+        btn.setAttribute('aria-expanded', String(!hidden));
+    });
+
+    wrap.appendChild(btn);
+    wrap.appendChild(dropdown);
+    return wrap;
+}
+
 /** POST JSON (or FormData) to a URL, return parsed JSON */
 async function apiPost(url, data) {
     const body = data instanceof FormData ? data : new URLSearchParams(data);
@@ -1370,4 +1475,38 @@ if (avatarInput && cropContainer && cropCanvas) {
             btn.textContent = 'Load More';
         }
     });
+}());
+
+// ── Smiley Picker — auto-initialise ──────────────────────────────────────────
+
+(function () {
+    // Wall post composer
+    const postContent = document.getElementById('post-content');
+    if (postContent) {
+        const composerActions = document.querySelector('.composer-actions');
+        if (composerActions) {
+            composerActions.insertBefore(
+                createSmileyPicker(postContent),
+                composerActions.firstChild
+            );
+        }
+    }
+
+    // Shoutbox input
+    const shoutInput = document.getElementById('shout-input');
+    if (shoutInput) {
+        const shoutboxForm = document.getElementById('shoutbox-form');
+        if (shoutboxForm) {
+            shoutInput.insertAdjacentElement('afterend', createSmileyPicker(shoutInput));
+        }
+    }
+
+    // Private messages compose textarea
+    const composeBody = document.getElementById('compose-body');
+    if (composeBody) {
+        const formGroup = composeBody.closest('.form-group');
+        if (formGroup) {
+            formGroup.appendChild(createSmileyPicker(composeBody));
+        }
+    }
 }());
