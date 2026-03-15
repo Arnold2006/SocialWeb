@@ -368,6 +368,61 @@ document.addEventListener('submit', async (e) => {
     }
 });
 
+// ── Load all comments ("View all X comments" link) ───────────────────────────
+
+document.addEventListener('click', async (e) => {
+    const link = e.target.closest('.load-more-comments');
+    if (!link) return;
+
+    e.preventDefault();
+
+    const postId  = link.dataset.postId;
+    const baseUrl = document.querySelector('meta[name="site-url"]')?.content || '';
+
+    link.textContent = 'Loading\u2026';
+
+    try {
+        const resp   = await fetch(
+            baseUrl + '/modules/wall/get_comments.php?post_id=' + encodeURIComponent(postId),
+            { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } }
+        );
+        const result = await resp.json();
+
+        if (result.ok) {
+            const section = document.getElementById('comments-' + postId);
+            if (section) {
+                // Remove all existing comment items before re-rendering the full list
+                section.querySelectorAll('.comment-item').forEach(el => el.remove());
+
+                // Build HTML for all comments and insert before the "load more" link
+                const html = result.comments.map(c => `
+                <div class="comment-item" id="comment-${parseInt(c.id, 10)}">
+                    <a href="${escapeHtml(c.profile_url)}">
+                        <img src="${escapeHtml(c.avatar)}" alt=""
+                             class="avatar avatar-small" width="28" height="28" loading="lazy">
+                    </a>
+                    <div class="comment-body">
+                        <a href="${escapeHtml(c.profile_url)}" class="comment-author">
+                            ${escapeHtml(c.username)}
+                        </a>
+                        <span class="comment-time">${escapeHtml(c.time_ago)}</span>
+                        <p class="comment-text">${linkifyHtml(smilifyText(c.content))}</p>
+                    </div>
+                </div>`).join('');
+
+                link.insertAdjacentHTML('beforebegin', html);
+            }
+            // Remove the "View all" link — all comments are now visible
+            link.remove();
+        } else {
+            link.textContent = 'Could not load comments. Try again.';
+        }
+    } catch (err) {
+        console.error('Load comments failed:', err);
+        link.textContent = 'Could not load comments. Try again.';
+    }
+});
+
 // ── Blog post comment form (AJAX) ─────────────────────────────────────────────
 
 document.addEventListener('submit', async (e) => {
