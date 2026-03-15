@@ -142,6 +142,43 @@ $_footerUser = current_user();
     </div>
 </div>
 
+<!-- ── Terms of Use modal ─────────────────────────────────────── -->
+<div id="terms-modal" class="info-modal" style="display:none"
+     role="dialog" aria-modal="true" aria-labelledby="terms-modal-title">
+    <div class="info-modal-inner">
+        <button type="button" class="info-modal-close" aria-label="Close">&times;</button>
+        <h2 id="terms-modal-title">Terms of Use</h2>
+        <p>By accessing or using this site, you agree to the following terms.</p>
+        <div class="info-modal-grid">
+            <div>
+                <h4>1. Invite-Only Access</h4>
+                <p>This website is a private, invite-only community. Only users who have been invited may create an account or access the platform. Access may be revoked at any time by the site administrators.</p>
+            </div>
+            <div>
+                <h4>2. User Responsibility</h4>
+                <p>All content posted on this website, including text, comments, images, videos, or other media, is the sole responsibility of the user who posted it.</p>
+                <p>The website and its administrators are not responsible or liable for any user-generated content.</p>
+            </div>
+            <div>
+                <h4>3. Artistic Content</h4>
+                <p>This website is an art community. Artistic nudity in images or videos is allowed. Users should understand that such content may appear on the platform.</p>
+            </div>
+            <div>
+                <h4>4. Behavior</h4>
+                <p>Users are expected to behave in a civilized and respectful manner. Harassment, illegal activity, or abusive behavior may result in removal of content or termination of access.</p>
+            </div>
+            <div>
+                <h4>5. Administration Rights</h4>
+                <p>Because this is a private community, the administrators may remove content or revoke access at their discretion.</p>
+            </div>
+            <div>
+                <h4>6. Acceptance</h4>
+                <p>By using this website, you acknowledge and accept these terms.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- JavaScript modules (vanilla JS, local only) -->
 <script src="<?= ASSETS_URL ?>/js/app.js"></script>
 <script src="<?= ASSETS_URL ?>/js/shoutbox.js"></script>
