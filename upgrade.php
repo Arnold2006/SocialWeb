@@ -80,13 +80,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     // MySQL/MariaDB-specific error codes (this application targets MySQL/MariaDB only):
                     //   1060: Duplicate column name — ALTER TABLE ADD COLUMN on an existing column.
                     //   1050: Table already exists — CREATE TABLE on a table already present in schema.sql.
-                    // Both mean the structural change is already in the database.  We record the
+                    //   1091: Can't DROP; check constraint doesn't exist — DROP CONSTRAINT on a
+                    //         constraint that was never enforced (e.g. MySQL 5.7) or already removed.
+                    // All three mean the structural change is already in the database.  We record the
                     // migration as applied and remove the file.  All other exceptions (including
                     // non-PDOException types) are re-thrown as real errors.
                     $errCode = ($stmtEx instanceof \PDOException)
                         ? (int)($stmtEx->errorInfo[1] ?? 0)
                         : 0;
-                    if (!in_array($errCode, [1050, 1060], true)) {
+                    if (!in_array($errCode, [1050, 1060, 1091], true)) {
                         throw $stmtEx;
                     }
                 }
