@@ -3351,3 +3351,79 @@ textarea { resize: vertical; min-height: 80px; }
 .delete-download-link:hover {
     opacity: 0.85;
 }
+
+/* ── Smiley Picker ────────────────────────────────────────────── */
+.smiley-picker-wrap {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+}
+
+.smiley-picker-btn {
+    background: none;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: 1.1rem;
+    padding: 0.2rem 0.4rem;
+    color: var(--color-text-muted);
+    line-height: 1;
+    transition: background var(--transition), color var(--transition),
+                border-color var(--transition);
+}
+
+.smiley-picker-btn:hover {
+    background: var(--color-surface2);
+    color: var(--color-text);
+    border-color: var(--color-accent);
+}
+
+.smiley-dropdown {
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 0;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md);
+    padding: 0.4rem;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0.2rem;
+    z-index: 300;
+    min-width: 210px;
+}
+
+.smiley-dropdown.hidden {
+    display: none;
+}
+
+.smiley-option {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.3rem 0.2rem;
+    border-radius: var(--radius-sm);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.15rem;
+    transition: background var(--transition);
+}
+
+.smiley-option:hover {
+    background: var(--color-surface2);
+}
+
+.smiley-option-emoji {
+    font-size: 1.3rem;
+    line-height: 1;
+}
+
+.smiley-option-code {
+    font-size: 0.6rem;
+    color: var(--color-text-muted);
+    font-family: var(--font-mono);
+    line-height: 1;
+    white-space: nowrap;
+}

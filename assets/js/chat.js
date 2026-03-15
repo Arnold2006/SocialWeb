@@ -166,6 +166,13 @@
         ws.elInput      = div.querySelector('.chat-input');
         ws.elImageInput = div.querySelector('.chat-image-input');
 
+        /* Smiley picker — appended before the upload label */
+        if (typeof createSmileyPicker === 'function') {
+            const chatCompose   = div.querySelector('.chat-compose');
+            const uploadLabel   = div.querySelector('.chat-upload-label');
+            chatCompose.insertBefore(createSmileyPicker(ws.elInput), uploadLabel);
+        }
+
         /* Close button */
         div.querySelector('.chat-win-close-btn').addEventListener('click', e => {
             e.stopPropagation();
