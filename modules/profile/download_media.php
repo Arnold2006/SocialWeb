@@ -153,8 +153,7 @@ foreach ($entries as $entry) {
 }
 
 // Add a README so the user knows what they downloaded
-$siteName = site_setting('site_name', 'SocialWeb');
-$readme  = $siteName . ' — Media Export' . PHP_EOL;
+$readme  = SITE_NAME . ' — Media Export' . PHP_EOL;
 $readme .= 'User: ' . $user['username'] . PHP_EOL;
 $readme .= 'Exported: ' . gmdate('Y-m-d H:i:s') . ' UTC' . PHP_EOL . PHP_EOL;
 $readme .= 'Contents:' . PHP_EOL;
@@ -168,7 +167,7 @@ $zip->close();
 
 // ── Stream the ZIP to the browser ────────────────────────────────────────────
 
-$siteSlug = preg_replace('/[^\w]/', '_', $siteName);
+$siteSlug = preg_replace('/[^\w]/', '_', SITE_NAME);
 $filename = $siteSlug . '_export_' . preg_replace('/[^\w]/', '_', $user['username']) . '_' . gmdate('Ymd') . '.zip';
 $size     = filesize($tmpFile);
 
