@@ -282,7 +282,7 @@ include SITE_ROOT . '/includes/header.php';
                 </table>
             </div>
             <div class="mail-msg-body">
-                <?= nl2br(linkify($selectedMsg['content'])) ?>
+                <?= nl2br(linkify(smilify($selectedMsg['content']))) ?>
             </div>
         </div>
 

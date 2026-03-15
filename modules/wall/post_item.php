@@ -66,7 +66,7 @@ $moreComments = (int)$post['comment_count'] > 3;
     </div>
 
     <div class="post-content">
-        <?= nl2br(linkify($post['content'])) ?>
+        <?= nl2br(linkify(smilify($post['content']))) ?>
         <?php if (($post['post_type'] ?? 'user') === 'album_upload' && !empty($post['album_id'])): ?>
         <a href="<?= e(SITE_URL . '/pages/gallery.php?user_id=' . (int)$post['user_id'] . '&album=' . (int)$post['album_id']) ?>"
            class="post-album-link">View Album →</a>
@@ -121,7 +121,7 @@ $moreComments = (int)$post['comment_count'] > 3;
                 <a href="<?= e(SITE_URL . '/pages/profile.php?id=' . (int)$comment['user_id']) ?>"
                    class="comment-author"><?= e($comment['username']) ?></a>
                 <span class="comment-time"><?= e(time_ago($comment['created_at'])) ?></span>
-                <p class="comment-text"><?= nl2br(linkify($comment['content'])) ?></p>
+                <p class="comment-text"><?= nl2br(linkify(smilify($comment['content']))) ?></p>
             </div>
         </div>
         <?php endforeach; ?>

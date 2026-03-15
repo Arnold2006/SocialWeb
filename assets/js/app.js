@@ -60,6 +60,40 @@ function linkifyHtml(rawStr) {
     }).join('');
 }
 
+/**
+ * Replace common text emoticons with Unicode emoji.
+ * Only matches smileys surrounded by whitespace or at start/end of the string,
+ * so they are never accidentally matched inside a word or URL.
+ * Call this on raw (unescaped) text before passing to linkifyHtml().
+ *
+ * @param {string} str - Raw user text (not yet HTML-escaped)
+ * @returns {string}
+ */
+const smilifyText = (function () {
+    const map = {
+        'O:-)': '😇', 'O:)':  '😇',
+        '>:-)': '😈', '>:)':  '😈',
+        '>:-(': '😠', '>:(': '😠',
+        'B-)':  '😎',
+        ':-)':  '😊', ':-D': '😀', ':-(': '😞',
+        ';-)':  '😉', ':-P': '😛', ':-p': '😛',
+        ':-O':  '😮', ':-o': '😮', ':-*': '😘',
+        ':-/':  '😕', ':-|': '😐',
+        ":'-(": '😢', ":'(": '😢',
+        ':)':   '😊', ':D':  '😀', ':(': '😞',
+        ';)':   '😉', ':P':  '😛', ':p': '😛',
+        ':O':   '😮', ':o':  '😮', ':*': '😘',
+        ':/':   '😕', ':|':  '😐',
+        'B)':   '😎', '<3':  '❤️',
+    };
+    const parts = Object.keys(map).map(s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+    const re    = new RegExp('(?<!\\S)(' + parts.join('|') + ')(?!\\S)', 'gu');
+    return function (str) {
+        re.lastIndex = 0;
+        return String(str ?? '').replace(re, (_, s) => map[s] ?? s);
+    };
+}());
+
 /** POST JSON (or FormData) to a URL, return parsed JSON */
 async function apiPost(url, data) {
     const body = data instanceof FormData ? data : new URLSearchParams(data);
@@ -185,7 +219,7 @@ document.addEventListener('submit', async (e) => {
                             ${escapeHtml(result.username)}
                         </a>
                         <span class="comment-time">${escapeHtml(result.time_ago)}</span>
-                        <p class="comment-text">${linkifyHtml(result.content)}</p>
+                        <p class="comment-text">${linkifyHtml(smilifyText(result.content))}</p>
                     </div>
                 </div>`;
                 section.insertAdjacentHTML('beforeend', commentHtml);
