@@ -92,6 +92,8 @@ $siteTheme    = active_theme();
                    class="<?= (str_ends_with($_SERVER['PHP_SELF'] ?? '', 'profile.php')) ? 'active' : '' ?>">My Profile</a></li>
             <li><a href="<?= SITE_URL ?>/pages/photos.php"
                    class="<?= (str_ends_with($_SERVER['PHP_SELF'] ?? '', 'photos.php')) ? 'active' : '' ?>">Photos</a></li>
+            <li><a href="<?= SITE_URL ?>/forum/index.php"
+                   class="<?= str_contains($_SERVER['PHP_SELF'] ?? '', '/forum/') ? 'active' : '' ?>">Forum</a></li>
             <li>
                 <a href="<?= SITE_URL ?>/pages/messages.php"
                    class="<?= (str_ends_with($_SERVER['PHP_SELF'] ?? '', 'messages.php')) ? 'active' : '' ?>">

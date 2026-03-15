@@ -88,6 +88,7 @@ include SITE_ROOT . '/includes/header.php';
             <li><a href="<?= SITE_URL ?>/admin/settings.php">Site Settings</a></li>
             <li><a href="<?= SITE_URL ?>/admin/orphans.php">Orphan Cleanup</a></li>
             <li><a href="<?= SITE_URL ?>/upgrade.php">Database Upgrade</a></li>
+            <li><a href="<?= SITE_URL ?>/admin/forum/index.php">Forum Administration</a></li>
         </ul>
     </nav>
 
