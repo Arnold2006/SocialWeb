@@ -77,8 +77,8 @@ $albumId = isset($_GET['album_id']) ? sanitise_int($_GET['album_id']) : -1;
 
 // ── Level 3: media grid for a specific album (or unallocated media) ───────────
 if ($userId > 0 && $albumId >= 0) {
-    $user = db_row('SELECT id, username FROM users WHERE id = ?', [$userId]);
-    if (!$user) {
+    $targetUser = db_row('SELECT id, username FROM users WHERE id = ?', [$userId]);
+    if (!$targetUser) {
         flash_set('error', 'User not found.');
         redirect(SITE_URL . '/admin/media.php');
     }
@@ -132,8 +132,8 @@ if ($userId > 0 && $albumId >= 0) {
 
 // ── Level 2: albums for a specific user ──────────────────────────────────────
 } elseif ($userId > 0) {
-    $user = db_row('SELECT id, username FROM users WHERE id = ?', [$userId]);
-    if (!$user) {
+    $targetUser = db_row('SELECT id, username FROM users WHERE id = ?', [$userId]);
+    if (!$targetUser) {
         flash_set('error', 'User not found.');
         redirect(SITE_URL . '/admin/media.php');
     }
@@ -192,7 +192,7 @@ include SITE_ROOT . '/includes/header.php';
         <nav class="media-admin-breadcrumb">
             <a href="<?= SITE_URL ?>/admin/media.php">All Users</a>
             <?php if ($view === 'albums' || $view === 'media'): ?>
-                &rsaquo; <a href="<?= SITE_URL ?>/admin/media.php?user_id=<?= (int)$user['id'] ?>"><?= e($user['username']) ?></a>
+                &rsaquo; <a href="<?= SITE_URL ?>/admin/media.php?user_id=<?= (int)$targetUser['id'] ?>"><?= e($targetUser['username']) ?></a>
             <?php endif; ?>
             <?php if ($view === 'media'): ?>
                 &rsaquo; <span><?= e($albumTitle) ?></span>
@@ -249,7 +249,7 @@ include SITE_ROOT . '/includes/header.php';
                             <td><?= e($row['title']) ?></td>
                             <td><?= (int)$row['media_count'] ?></td>
                             <td>
-                                <a href="<?= SITE_URL ?>/admin/media.php?user_id=<?= (int)$user['id'] ?>&amp;album_id=<?= (int)$row['id'] ?>"
+                                <a href="<?= SITE_URL ?>/admin/media.php?user_id=<?= (int)$targetUser['id'] ?>&amp;album_id=<?= (int)$row['id'] ?>"
                                    class="btn btn-xs btn-secondary">View Media</a>
                             </td>
                         </tr>
@@ -259,7 +259,7 @@ include SITE_ROOT . '/includes/header.php';
                             <td><em>No Album</em></td>
                             <td><?= $unallocatedCount ?></td>
                             <td>
-                                <a href="<?= SITE_URL ?>/admin/media.php?user_id=<?= (int)$user['id'] ?>&amp;album_id=0"
+                                <a href="<?= SITE_URL ?>/admin/media.php?user_id=<?= (int)$targetUser['id'] ?>&amp;album_id=0"
                                    class="btn btn-xs btn-secondary">View Media</a>
                             </td>
                         </tr>
