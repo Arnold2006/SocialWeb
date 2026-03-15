@@ -294,6 +294,15 @@
 
     cancelBtn.addEventListener('click', resetEditor);
 
+    // ── Smiley picker ─────────────────────────────────────────────────────────
+
+    if (typeof createSmileyPicker === 'function') {
+        const sep = document.createElement('span');
+        sep.className = 'blog-tb-sep';
+        toolbar.appendChild(sep);
+        toolbar.appendChild(createSmileyPicker(editor));
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     function resetEditor() {
