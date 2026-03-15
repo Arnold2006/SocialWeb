@@ -63,10 +63,15 @@ function e(string $value): string
 
 /**
  * Sanitise a plain-text string (strip tags, trim).
+ *
+ * Uses a regex to remove HTML/XML tags (angle-bracket sequences whose first
+ * character is a letter, slash, or exclamation mark) while preserving
+ * non-tag sequences such as the <3 emoticon.  strip_tags() is intentionally
+ * avoided because it treats <3 as an unclosed tag and silently discards it.
  */
 function sanitise_string(string $input, int $maxLength = 0): string
 {
-    $value = trim(strip_tags($input));
+    $value = trim(preg_replace('/<[a-zA-Z\/!][^>]*>/u', '', $input) ?? '');
     if ($maxLength > 0) {
         $value = mb_substr($value, 0, $maxLength);
     }
