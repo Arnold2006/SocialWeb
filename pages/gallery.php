@@ -477,7 +477,7 @@ include SITE_ROOT . '/includes/header.php';
         </div>
 
         <?php if (!empty($currentAlbum['description'])): ?>
-        <p class="album-description"><?= nl2br(e($currentAlbum['description'])) ?></p>
+        <p class="album-description"><?= nl2br(linkify($currentAlbum['description'])) ?></p>
         <?php endif; ?>
 
         <?php if ($isOwn): ?>
