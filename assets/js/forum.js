@@ -289,15 +289,37 @@
         }
     });
 
+    /** Attach a smiley picker to all forum text areas on the current page */
+    function bindSmileyPickers() {
+        if (typeof createSmileyPicker !== 'function') return;
+
+        /* Main content textarea (new thread, reply, edit thread) */
+        var mainTextarea = document.getElementById('content');
+        if (mainTextarea && !mainTextarea.dataset.smileyBound) {
+            mainTextarea.dataset.smileyBound = '1';
+            mainTextarea.insertAdjacentElement('afterend', createSmileyPicker(mainTextarea));
+        }
+
+        /* Inline post-edit textareas (one per editable post) */
+        document.querySelectorAll('.forum-edit-textarea').forEach(function (ta) {
+            if (!ta.dataset.smileyBound) {
+                ta.dataset.smileyBound = '1';
+                ta.insertAdjacentElement('afterend', createSmileyPicker(ta));
+            }
+        });
+    }
+
     /* Init when DOM is ready */
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', function () {
             bindPickButtons();
             bindEditButtons();
+            bindSmileyPickers();
         });
     } else {
         bindPickButtons();
         bindEditButtons();
+        bindSmileyPickers();
     }
 
 })();
