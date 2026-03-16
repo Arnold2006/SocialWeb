@@ -170,11 +170,26 @@ CREATE TABLE IF NOT EXISTS `shoutbox` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
+-- Table: album_categories
+-- --------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `album_categories` (
+  `id`         INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `user_id`    INT UNSIGNED NOT NULL,
+  `title`      VARCHAR(255) NOT NULL,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `is_deleted` TINYINT(1) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `idx_user_id` (`user_id`),
+  KEY `idx_is_deleted` (`is_deleted`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
 -- Table: albums
 -- --------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `albums` (
   `id`          INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `user_id`     INT UNSIGNED NOT NULL,
+  `category_id` INT UNSIGNED DEFAULT NULL,            -- album_categories.id
   `title`       VARCHAR(255) NOT NULL,
   `description` TEXT DEFAULT NULL,
   `cover_id`    INT UNSIGNED DEFAULT NULL,            -- media cover image id
@@ -182,7 +197,8 @@ CREATE TABLE IF NOT EXISTS `albums` (
   `created_at`  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `is_deleted`  TINYINT(1) NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`),
-  KEY `idx_user_id` (`user_id`)
+  KEY `idx_user_id` (`user_id`),
+  KEY `idx_category_id` (`category_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
