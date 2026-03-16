@@ -50,6 +50,7 @@ if (!defined('ASSETS_URL'))  define('ASSETS_URL',  SITE_URL  . '/assets');
 if (!defined('MAX_UPLOAD_BYTES'))   define('MAX_UPLOAD_BYTES',   10 * 1024 * 1024);  // 10 MB images
 if (!defined('MAX_VIDEO_BYTES'))    define('MAX_VIDEO_BYTES',    50 * 1024 * 1024);  // 50 MB videos
 if (!defined('MAX_VIDEO_DURATION')) define('MAX_VIDEO_DURATION', 300);               // 300 seconds
+if (!defined('MAX_UPLOAD_FILES'))   define('MAX_UPLOAD_FILES',   20);                // files per request (PHP max_file_uploads)
 if (!defined('AVATAR_SIZE_LARGE'))  define('AVATAR_SIZE_LARGE',  256);
 if (!defined('AVATAR_SIZE_MEDIUM')) define('AVATAR_SIZE_MEDIUM', 128);
 if (!defined('AVATAR_SIZE_SMALL'))  define('AVATAR_SIZE_SMALL',   64);
