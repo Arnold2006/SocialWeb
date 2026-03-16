@@ -415,7 +415,7 @@ include SITE_ROOT . '/includes/header.php';
                     <?= csrf_field() ?>
                     <input type="hidden" name="action" value="remove_banner">
                     <button type="submit" class="btn btn-danger btn-sm"
-                            onclick="return confirm('Remove the banner image?')">
+                            data-confirm="Remove the banner image?">
                         Remove Banner
                     </button>
                 </form>
@@ -568,7 +568,7 @@ include SITE_ROOT . '/includes/header.php';
                                 <input type="hidden" name="action"  value="delete_font">
                                 <input type="hidden" name="font_id" value="<?= (int)$uf['id'] ?>">
                                 <button type="submit" class="btn btn-danger btn-sm"
-                                        onclick="return confirm('Delete font \u0022' + <?= json_encode($uf['name'], JSON_HEX_TAG | JSON_HEX_QUOT | JSON_HEX_APOS) ?> + '\u0022?')">Delete</button>
+                                        data-confirm="Delete font &quot;<?= e($uf['name']) ?>&quot;?">Delete</button>
                             </form>
                         </td>
                     </tr>

@@ -155,7 +155,7 @@ include SITE_ROOT . '/includes/header.php';
 
                             <!-- Copy invite link -->
                             <button type="button" class="btn btn-xs btn-secondary"
-                                    onclick="navigator.clipboard.writeText('<?= e(SITE_URL . '/pages/register.php?code=' . $inv['code']) ?>')">
+                                    data-copy="<?= e(SITE_URL . '/pages/register.php?code=' . $inv['code']) ?>">
                                 Copy Link
                             </button>
                         </td>

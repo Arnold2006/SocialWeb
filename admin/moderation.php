@@ -103,7 +103,7 @@ include SITE_ROOT . '/includes/header.php';
                                 <?= csrf_field() ?>
                                 <input type="hidden" name="action" value="delete_post">
                                 <input type="hidden" name="id" value="<?= (int)$p['id'] ?>">
-                                <button class="btn btn-xs btn-danger" onclick="return confirm('Delete post?')">Delete</button>
+                                <button class="btn btn-xs btn-danger" data-confirm="Delete post?">Delete</button>
                             </form>
                         </td>
                     </tr>
@@ -129,7 +129,7 @@ include SITE_ROOT . '/includes/header.php';
                                 <?= csrf_field() ?>
                                 <input type="hidden" name="action" value="delete_comment">
                                 <input type="hidden" name="id" value="<?= (int)$c['id'] ?>">
-                                <button class="btn btn-xs btn-danger" onclick="return confirm('Delete comment?')">Delete</button>
+                                <button class="btn btn-xs btn-danger" data-confirm="Delete comment?">Delete</button>
                             </form>
                         </td>
                     </tr>
@@ -154,7 +154,7 @@ include SITE_ROOT . '/includes/header.php';
                                 <?= csrf_field() ?>
                                 <input type="hidden" name="action" value="delete_shout">
                                 <input type="hidden" name="id" value="<?= (int)$s['id'] ?>">
-                                <button class="btn btn-xs btn-danger" onclick="return confirm('Delete shout?')">Delete</button>
+                                <button class="btn btn-xs btn-danger" data-confirm="Delete shout?">Delete</button>
                             </form>
                         </td>
                     </tr>

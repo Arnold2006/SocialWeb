@@ -192,7 +192,7 @@ include SITE_ROOT . '/includes/header.php';
                                 <input type="hidden" name="action" value="delete_thread">
                                 <input type="hidden" name="thread_id" value="<?= (int)$t['id'] ?>">
                                 <button type="submit" class="btn btn-xs btn-danger"
-                                        onclick="return confirm('Delete this thread?')">Delete</button>
+                                        data-confirm="Delete this thread?">Delete</button>
                             </form>
                             <?php else: ?>
                             <form method="post" action="<?= SITE_URL ?>/admin/forum/moderation.php" class="inline-form">
@@ -250,7 +250,7 @@ include SITE_ROOT . '/includes/header.php';
                                 <input type="hidden" name="thread_id" value="<?= $filterThreadId ?>">
                                 <?php endif; ?>
                                 <button type="submit" class="btn btn-xs btn-danger"
-                                        onclick="return confirm('Delete this post?')">Delete</button>
+                                        data-confirm="Delete this post?">Delete</button>
                             </form>
                             <?php else: ?>
                             <form method="post" action="<?= SITE_URL ?>/admin/forum/moderation.php<?= $filterThreadId > 0 ? '?thread_id=' . $filterThreadId : '' ?>" class="inline-form">

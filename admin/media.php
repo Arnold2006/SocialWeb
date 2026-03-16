@@ -304,7 +304,7 @@ include SITE_ROOT . '/includes/header.php';
                     <input type="hidden" name="media_id"         value="<?= (int)$media['id'] ?>">
                     <input type="hidden" name="return_user_id"   value="<?= (int)$userId ?>">
                     <input type="hidden" name="return_album_id"  value="<?= (int)$albumId ?>">
-                    <button class="btn btn-xs btn-danger" onclick="return confirm('Delete media?')">Delete</button>
+                    <button class="btn btn-xs btn-danger" data-confirm="Delete media?">Delete</button>
                 </form>
             </div>
             <?php endforeach; ?>
