@@ -287,19 +287,23 @@ function _sanitise_html_node(
  * splits the raw text on http/https URLs, HTML-escapes plain-text segments,
  * and wraps each URL in an <a> tag whose href is also properly HTML-escaped.
  * Only http:// and https:// schemes are linkified — javascript:, data:,
- * ftp:, etc. are never turned into links. Each link receives
- * rel="noopener noreferrer nofollow" (prevents tabnabbing and referrer
- * leakage) and target="_blank". URLs are always rendered as text anchors;
- * embedded content (images, audio, video) is never created regardless of the
- * URL's file extension.
+ * ftp:, etc. are never turned into links. External links receive
+ * rel="noopener noreferrer nofollow" and target="_blank". Internal links
+ * (those starting with SITE_URL) receive only rel="noopener" and open in the
+ * same tab. URLs are always rendered as text anchors; embedded content
+ * (images, audio, video) is never created regardless of the URL's file
+ * extension.
  *
  * @param string $rawText Raw (unescaped) user text
  * @return string HTML-safe text with http/https URLs wrapped in <a> tags
  */
 function linkify(string $rawText): string
 {
-    $parts  = preg_split('/(\bhttps?:\/\/\S+)/u', $rawText, -1, PREG_SPLIT_DELIM_CAPTURE);
-    $result = '';
+    $parts    = preg_split('/(\bhttps?:\/\/\S+)/u', $rawText, -1, PREG_SPLIT_DELIM_CAPTURE);
+    // Normalise: strip trailing slash so "SITE_URL/" and "SITE_URL/path" both match,
+    // but "SITE_URLOther" does not (we check for the slash boundary below).
+    $siteBase = defined('SITE_URL') ? rtrim(SITE_URL, '/') : '';
+    $result   = '';
     foreach ($parts as $i => $part) {
         if ($i % 2 === 0) {
             // Plain text segment — HTML-escape it
@@ -309,8 +313,16 @@ function linkify(string $rawText): string
             $url      = rtrim($part, '.,;:!?)\'"');
             $trailing = e(mb_substr($part, mb_strlen($url)));
             $escaped  = e($url);
-            $result  .= '<a href="' . $escaped . '" rel="noopener noreferrer nofollow" target="_blank">'
-                . $escaped . '</a>' . $trailing;
+            // Internal: URL is exactly the site root or starts with "SITE_URL/"
+            $isInternal = $siteBase !== ''
+                && (str_starts_with($url, $siteBase . '/') || $url === $siteBase);
+            if ($isInternal) {
+                $result .= '<a href="' . $escaped . '" rel="noopener">'
+                    . $escaped . '</a>' . $trailing;
+            } else {
+                $result .= '<a href="' . $escaped . '" rel="noopener noreferrer nofollow" target="_blank">'
+                    . $escaped . '</a>' . $trailing;
+            }
         }
     }
     return $result;

@@ -1043,6 +1043,11 @@ textarea { resize: vertical; min-height: 80px; }
     margin: 0 0 1.25rem;
     line-height: 1.6;
 }
+.album-description a {
+    color: var(--color-accent);
+    text-decoration: underline;
+}
+.album-description a:hover { color: var(--color-accent-hover); }
 
 .upload-form { margin-bottom: 1rem; }
 
