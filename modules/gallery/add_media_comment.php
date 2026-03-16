@@ -27,7 +27,7 @@ if ($mediaId < 1 || empty($content)) {
     exit;
 }
 
-$media = db_row('SELECT id, user_id FROM media WHERE id = ? AND is_deleted = 0', [$mediaId]);
+$media = db_row('SELECT id, user_id, album_id FROM media WHERE id = ? AND is_deleted = 0', [$mediaId]);
 if ($media === null) {
     echo json_encode(['ok' => false, 'error' => 'Media not found']);
     exit;
@@ -38,8 +38,16 @@ $commentId = db_insert(
     [$mediaId, (int)$user['id'], $content]
 );
 
-// Notify media owner (if not self-comment)
-notify_user((int)$media['user_id'], 'comment', (int)$user['id'], (int)$commentId);
+// Notify media owner (if not self-comment).
+// Use the wall-feed album-upload post ID so the notification links to index.php#post-{id}.
+// If multiple album-upload posts exist for the same album, use the most recent one.
+$feedPost = $media['album_id'] ? db_row(
+    'SELECT id FROM posts WHERE album_id = ? AND post_type = \'album_upload\' ORDER BY id DESC LIMIT 1',
+    [$media['album_id']]
+) : null;
+if ($feedPost) {
+    notify_user((int)$media['user_id'], 'comment', (int)$user['id'], (int)$feedPost['id']);
+}
 
 echo json_encode([
     'ok'          => true,
