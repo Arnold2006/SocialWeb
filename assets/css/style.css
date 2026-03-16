@@ -1038,6 +1038,12 @@ textarea { resize: vertical; min-height: 80px; }
     margin-bottom: 1rem;
 }
 
+.album-description {
+    color: var(--color-text-muted);
+    margin: 0 0 1.25rem;
+    line-height: 1.6;
+}
+
 .upload-form { margin-bottom: 1rem; }
 
 /* ── Dropzone ────────────────────────────────────────────────── */

@@ -113,6 +113,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwn) {
             redirect($galleryBase . '&album=' . $aId);
             break;
 
+        case 'edit_description':
+            $aId  = sanitise_int($_POST['album_id'] ?? 0);
+            $desc = sanitise_string($_POST['description'] ?? '', 2000);
+            if ($aId) {
+                db_exec(
+                    'UPDATE albums SET description = ? WHERE id = ? AND user_id = ?',
+                    [$desc ?: null, $aId, (int)$currentUser['id']]
+                );
+                flash_set('success', 'Album description updated.');
+            }
+            redirect($galleryBase . '&album=' . $aId);
+            break;
+
         case 'move_album':
             $aId       = sanitise_int($_POST['album_id'] ?? 0);
             $newCat    = sanitise_int($_POST['new_category_id'] ?? 0);
@@ -414,6 +427,9 @@ include SITE_ROOT . '/includes/header.php';
                 <!-- Rename album -->
                 <button type="button" class="btn btn-secondary btn-sm"
                         data-toggle="rename-album-form-<?= (int)$currentAlbum['id'] ?>">Rename</button>
+                <!-- Edit description -->
+                <button type="button" class="btn btn-secondary btn-sm"
+                        data-toggle="edit-description-form-<?= (int)$currentAlbum['id'] ?>">Edit Description</button>
                 <!-- Move album -->
                 <button type="button" class="btn btn-secondary btn-sm"
                         data-toggle="move-album-form-<?= (int)$currentAlbum['id'] ?>">Move to Category</button>
@@ -425,6 +441,17 @@ include SITE_ROOT . '/includes/header.php';
                     <input type="hidden" name="action" value="rename_album">
                     <input type="hidden" name="album_id" value="<?= (int)$currentAlbum['id'] ?>">
                     <input type="text" name="title" value="<?= e($currentAlbum['title']) ?>" required maxlength="255">
+                    <button type="submit" class="btn btn-primary btn-sm">Save</button>
+                </form>
+            </div>
+
+            <div id="edit-description-form-<?= (int)$currentAlbum['id'] ?>" class="hidden inline-form-row">
+                <form method="POST">
+                    <?= csrf_field() ?>
+                    <input type="hidden" name="action" value="edit_description">
+                    <input type="hidden" name="album_id" value="<?= (int)$currentAlbum['id'] ?>">
+                    <textarea name="description" maxlength="2000" rows="3"
+                              placeholder="Add a description…" style="width:100%;margin-bottom:0.5rem"><?= e($currentAlbum['description'] ?? '') ?></textarea>
                     <button type="submit" class="btn btn-primary btn-sm">Save</button>
                 </form>
             </div>
@@ -448,6 +475,10 @@ include SITE_ROOT . '/includes/header.php';
             </div>
             <?php endif; ?>
         </div>
+
+        <?php if (!empty($currentAlbum['description'])): ?>
+        <p class="album-description"><?= nl2br(e($currentAlbum['description'])) ?></p>
+        <?php endif; ?>
 
         <?php if ($isOwn): ?>
         <!-- Multi-file dropzone upload -->
