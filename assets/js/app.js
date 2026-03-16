@@ -484,6 +484,64 @@ document.addEventListener('submit', async (e) => {
     }
 });
 
+// ── Load more blog comments ───────────────────────────────────────────────────
+
+document.addEventListener('click', async (e) => {
+    const btn = e.target.closest('.load-more-blog-comments');
+    if (!btn) return;
+
+    e.preventDefault();
+
+    const blogPostId = btn.dataset.blogPostId;
+    const baseUrl    = document.querySelector('meta[name="site-url"]')?.content || '';
+
+    btn.disabled    = true;
+    btn.textContent = 'Loading\u2026';
+
+    try {
+        const resp   = await fetch(
+            baseUrl + '/modules/blog/get_comments.php?blog_post_id=' + encodeURIComponent(blogPostId),
+            { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } }
+        );
+        const result = await resp.json();
+
+        if (result.ok) {
+            const section = document.getElementById('blog-comments-' + blogPostId);
+            if (section) {
+                // Remove all existing comment items before re-rendering the full list
+                section.querySelectorAll('.comment-item').forEach(el => el.remove());
+
+                // Build HTML for all comments and insert before the "load more" button
+                const html = result.comments.map(c => `
+                <div class="comment-item" id="comment-${escapeHtml(c.id)}">
+                    <a href="${escapeHtml(c.profile_url)}">
+                        <img src="${escapeHtml(c.avatar)}" alt=""
+                             class="avatar avatar-small" width="28" height="28" loading="lazy">
+                    </a>
+                    <div class="comment-body">
+                        <a href="${escapeHtml(c.profile_url)}" class="comment-author">
+                            ${escapeHtml(c.username)}
+                        </a>
+                        <span class="comment-time">${escapeHtml(c.time_ago)}</span>
+                        <p class="comment-text">${linkifyHtml(smilifyText(c.content))}</p>
+                    </div>
+                </div>`).join('');
+
+                btn.insertAdjacentHTML('beforebegin', html);
+            }
+            // Remove the "Load more" button — all comments are now visible
+            btn.remove();
+        } else {
+            btn.disabled    = false;
+            btn.textContent = 'Could not load comments. Try again.';
+        }
+    } catch (err) {
+        console.error('Load blog comments failed:', err);
+        btn.disabled    = false;
+        btn.textContent = 'Could not load comments. Try again.';
+    }
+});
+
 // ── Image preview before upload ───────────────────────────────────────────────
 
 const postImageInput = document.getElementById('post-image');

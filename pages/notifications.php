@@ -96,6 +96,23 @@ include SITE_ROOT . '/includes/header.php';
                         data-chat-avatar="<?= e(avatar_url(['avatar_path' => $n['from_avatar'] ?? null])) ?>">Open chat</button>
                 <?php endif; ?>
                 <?php break;
+
+                case 'blog_comment': ?>
+                <p><strong><?= e($n['from_username'] ?? 'Someone') ?></strong> commented on your blog post.</p>
+                <?php if ($n['ref_id']):
+                    $blogCommentRow = db_row(
+                        'SELECT c.blog_post_id, bp.user_id AS blog_owner_id
+                         FROM comments c
+                         JOIN blog_posts bp ON bp.id = c.blog_post_id
+                         WHERE c.id = ? AND c.is_deleted = 0 AND bp.is_deleted = 0',
+                        [(int)$n['ref_id']]
+                    );
+                    if ($blogCommentRow):
+                ?>
+                <a href="<?= e(SITE_URL . '/pages/blog.php?user_id=' . (int)$blogCommentRow['blog_owner_id'] . '#comment-' . (int)$n['ref_id']) ?>">View comment</a>
+                <?php   endif;
+                endif; ?>
+                <?php break;
             endswitch; ?>
         </div>
         <time class="notif-time"><?= e(time_ago($n['created_at'])) ?></time>

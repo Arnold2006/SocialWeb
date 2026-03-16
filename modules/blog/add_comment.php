@@ -39,14 +39,8 @@ $commentId = db_insert(
 );
 
 // Notify blog post owner (if not self-comment).
-// Use the wall-feed post ID so the notification links to index.php#post-{id}.
-$feedPost = db_row(
-    'SELECT id FROM posts WHERE blog_post_id = ? AND post_type = \'blog_post\'',
-    [$blogPostId]
-);
-if ($feedPost) {
-    notify_user((int)$blogPost['user_id'], 'comment', (int)$user['id'], (int)$feedPost['id']);
-}
+// Use the comment ID as ref_id so the notification can link directly to the comment.
+notify_user((int)$blogPost['user_id'], 'blog_comment', (int)$user['id'], (int)$commentId);
 
 echo json_encode([
     'ok'          => true,
