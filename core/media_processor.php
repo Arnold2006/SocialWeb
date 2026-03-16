@@ -666,41 +666,14 @@ function create_album_upload_post(
         return;
     }
 
-    // Fetch up to 4 image records from the batch for mosaic generation
+    // Count image records from the batch to determine content type
     $placeholders = implode(',', array_fill(0, count($mediaIds), '?'));
-    $imageMedia   = db_query(
-        "SELECT * FROM media
-         WHERE id IN ($placeholders) AND type = 'image' AND is_deleted = 0
-         LIMIT 4",
+    $imageCount   = (int) db_val(
+        "SELECT COUNT(*) FROM media
+         WHERE id IN ($placeholders) AND type = 'image' AND is_deleted = 0",
         $mediaIds
     );
 
-    $mosaicMediaId = null;
-    if (!empty($imageMedia)) {
-        $mosaicResult = generate_album_mosaic($imageMedia);
-        if ($mosaicResult['ok']) {
-            $mosaicPath    = $mosaicResult['mosaic_path'];
-            $mosaicMediaId = (int) db_insert(
-                'INSERT INTO media
-                    (user_id, album_id, type, file_hash, storage_path,
-                     large_path, medium_path, thumb_path, size, mime_type,
-                     width, height)
-                 VALUES (?, ?, "image", ?, ?, ?, ?, ?, ?, "image/webp", 600, 600)',
-                [
-                    $userId,
-                    $albumId,
-                    hash_file('sha256', $mosaicPath),
-                    $mosaicPath,
-                    $mosaicPath,
-                    $mosaicPath,
-                    $mosaicPath,
-                    filesize($mosaicPath),
-                ]
-            );
-        }
-    }
-
-    $imageCount = count($imageMedia);
     $videoCount = $uploadCount - $imageCount;
 
     if ($imageCount > 0 && $videoCount > 0) {
@@ -728,8 +701,8 @@ function create_album_upload_post(
 
     db_insert(
         'INSERT INTO posts (user_id, content, media_id, post_type, album_id)
-         VALUES (?, ?, ?, "album_upload", ?)',
-        [$userId, $content, $mosaicMediaId, $albumId]
+         VALUES (?, ?, NULL, "album_upload", ?)',
+        [$userId, $content, $albumId]
     );
 
     cache_invalidate_wall();
