@@ -201,9 +201,11 @@ include SITE_ROOT . '/includes/header.php';
                     <?php endforeach; ?>
 
                     <?php if ($moreComments): ?>
-                    <p class="load-more-comments-note">
-                        <?= $blogCommentCount ?> comments total — oldest 3 shown
-                    </p>
+                    <button type="button" class="load-more-blog-comments"
+                            data-blog-post-id="<?= (int)$post['id'] ?>"
+                            data-loaded="3">
+                        Load <?= $blogCommentCount - 3 ?> more comment<?= ($blogCommentCount - 3 !== 1) ? 's' : '' ?>
+                    </button>
                     <?php endif; ?>
 
                     <form class="blog-comment-form" data-blog-post-id="<?= (int)$post['id'] ?>">
