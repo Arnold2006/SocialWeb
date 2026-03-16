@@ -3660,6 +3660,27 @@ textarea { resize: vertical; min-height: 80px; }
     font-size: 0.95rem;
 }
 
+/* Inline post edit form */
+.forum-post-edit-form {
+    margin-top: 0.5rem;
+}
+.forum-edit-textarea {
+    width: 100%;
+    box-sizing: border-box;
+    background: var(--color-surface2);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    color: var(--color-text);
+    padding: 0.5rem 0.75rem;
+    font-size: 0.95rem;
+    resize: vertical;
+    font-family: inherit;
+}
+.forum-edit-textarea:focus {
+    outline: none;
+    border-color: var(--color-accent);
+}
+
 /* Reply form */
 .forum-reply-form {
     background: var(--color-surface);

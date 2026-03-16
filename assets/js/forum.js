@@ -255,6 +255,33 @@
         });
     }
 
+    /** Bind click handlers for inline post edit/cancel buttons */
+    function bindEditButtons() {
+        document.addEventListener('click', function (e) {
+            /* Edit button: show edit form, hide content */
+            if (e.target && e.target.classList.contains('forum-edit-btn')) {
+                var postId = e.target.dataset.postId;
+                var contentEl = document.getElementById('post-content-' + postId);
+                var editEl    = document.getElementById('post-edit-'    + postId);
+                if (contentEl) contentEl.style.display = 'none';
+                if (editEl)    editEl.style.display    = '';
+                if (editEl) {
+                    var ta = editEl.querySelector('textarea');
+                    if (ta) ta.focus();
+                }
+            }
+
+            /* Cancel button: hide edit form, show content */
+            if (e.target && e.target.classList.contains('forum-edit-cancel-btn')) {
+                var postId = e.target.dataset.postId;
+                var contentEl = document.getElementById('post-content-' + postId);
+                var editEl    = document.getElementById('post-edit-'    + postId);
+                if (editEl)    editEl.style.display    = 'none';
+                if (contentEl) contentEl.style.display = '';
+            }
+        });
+    }
+
     /* Keyboard: close on Escape */
     document.addEventListener('keydown', function (e) {
         if (e.key === 'Escape' && overlay && overlay.style.display !== 'none') {
@@ -264,9 +291,13 @@
 
     /* Init when DOM is ready */
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', bindPickButtons);
+        document.addEventListener('DOMContentLoaded', function () {
+            bindPickButtons();
+            bindEditButtons();
+        });
     } else {
         bindPickButtons();
+        bindEditButtons();
     }
 
 })();
