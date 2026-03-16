@@ -50,22 +50,59 @@ if ($user) {
     mark_thread_read($threadId);
 }
 
-// Handle admin post deletion
+// Handle post deletion (owner or admin)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delete_post') {
     require_login();
-    require_admin();
     csrf_verify();
 
     $postId   = (int)($_POST['post_id'] ?? 0);
     $backPage = max(1, (int)($_POST['back_page'] ?? 1));
     if ($postId > 0) {
-        db_exec(
-            'UPDATE forum_posts SET is_deleted = 1 WHERE id = ? AND thread_id = ?',
+        $postRow = db_row(
+            'SELECT id, user_id FROM forum_posts WHERE id = ? AND thread_id = ? AND is_deleted = 0',
             [$postId, $threadId]
         );
-        $count = (int)db_val('SELECT COUNT(*) FROM forum_posts WHERE thread_id = ? AND is_deleted = 0', [$threadId]);
-        db_exec('UPDATE forum_threads SET reply_count = ? WHERE id = ?', [max(0, $count - 1), $threadId]);
-        flash_set('success', 'Post deleted.');
+        if ($postRow && ((int)$postRow['user_id'] === (int)$user['id'] || is_admin())) {
+            db_exec(
+                'UPDATE forum_posts SET is_deleted = 1 WHERE id = ? AND thread_id = ?',
+                [$postId, $threadId]
+            );
+            $count = (int)db_val('SELECT COUNT(*) FROM forum_posts WHERE thread_id = ? AND is_deleted = 0', [$threadId]);
+            db_exec('UPDATE forum_threads SET reply_count = ? WHERE id = ?', [max(0, $count - 1), $threadId]);
+            flash_set('success', 'Post deleted.');
+        } else {
+            flash_set('error', 'Permission denied.');
+        }
+    }
+    redirect(SITE_URL . '/forum/thread.php?id=' . $threadId . '&page=' . $backPage);
+}
+
+// Handle post editing (owner or admin)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'edit_post') {
+    require_login();
+    csrf_verify();
+
+    $postId  = (int)($_POST['post_id'] ?? 0);
+    $content = trim($_POST['content'] ?? '');
+    $backPage = max(1, (int)($_POST['back_page'] ?? 1));
+
+    if ($postId > 0 && $content !== '') {
+        $postRow = db_row(
+            'SELECT id, user_id FROM forum_posts WHERE id = ? AND thread_id = ? AND is_deleted = 0',
+            [$postId, $threadId]
+        );
+        if ($postRow && ((int)$postRow['user_id'] === (int)$user['id'] || is_admin())) {
+            db_exec(
+                'UPDATE forum_posts SET content = ?, edited_at = NOW() WHERE id = ? AND thread_id = ?',
+                [$content, $postId, $threadId]
+            );
+            flash_set('success', 'Post updated.');
+            redirect(SITE_URL . '/forum/thread.php?id=' . $threadId . '&page=' . $backPage . '#post-' . $postId);
+        } else {
+            flash_set('error', 'Permission denied.');
+        }
+    } elseif ($content === '') {
+        flash_set('error', 'Post content cannot be empty.');
     }
     redirect(SITE_URL . '/forum/thread.php?id=' . $threadId . '&page=' . $backPage);
 }
@@ -73,7 +110,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delet
 $page    = max(1, (int)($_GET['page'] ?? 1));
 $perPage = 20;
 $result  = paginate(
-    'SELECT p.id, p.content, p.media_id, p.created_at,
+    'SELECT p.id, p.content, p.media_id, p.created_at, p.edited_at,
             u.id AS user_id, u.username, u.avatar_path
      FROM   forum_posts p
      JOIN   users u ON u.id = p.user_id
@@ -144,7 +181,12 @@ include SITE_ROOT . '/includes/header.php';
             <div class="forum-post-body">
                 <div class="forum-post-meta">
                     <span class="muted"><?= e(time_ago($post['created_at'])) ?></span>
-                    <?php if (is_admin()): ?>
+                    <?php if (!empty($post['edited_at'])): ?>
+                    <span class="muted forum-post-edited" title="Edited <?= e(time_ago($post['edited_at'])) ?>">(edited)</span>
+                    <?php endif; ?>
+                    <?php if ($user && ((int)$post['user_id'] === (int)$user['id'] || is_admin())): ?>
+                    <button type="button" class="btn btn-xs btn-secondary forum-edit-btn"
+                            data-post-id="<?= (int)$post['id'] ?>">Edit</button>
                     <form method="post" action="<?= SITE_URL ?>/forum/thread.php?id=<?= (int)$threadId ?>" class="inline-form">
                         <?= csrf_field() ?>
                         <input type="hidden" name="action" value="delete_post">
@@ -155,7 +197,26 @@ include SITE_ROOT . '/includes/header.php';
                     </form>
                     <?php endif; ?>
                 </div>
-                <div class="forum-post-content"><?= nl2br(e($post['content'])) ?></div>
+                <div class="forum-post-content" id="post-content-<?= (int)$post['id'] ?>"><?= nl2br(e($post['content'])) ?></div>
+                <?php if ($user && ((int)$post['user_id'] === (int)$user['id'] || is_admin())): ?>
+                <div class="forum-post-edit-form" id="post-edit-<?= (int)$post['id'] ?>" style="display:none;">
+                    <form method="post" action="<?= SITE_URL ?>/forum/thread.php?id=<?= (int)$threadId ?>">
+                        <?= csrf_field() ?>
+                        <input type="hidden" name="action" value="edit_post">
+                        <input type="hidden" name="post_id" value="<?= (int)$post['id'] ?>">
+                        <input type="hidden" name="back_page" value="<?= $page ?>">
+                        <div class="form-group">
+                            <textarea name="content" rows="5" required
+                                      class="forum-edit-textarea"><?= e($post['content']) ?></textarea>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-sm btn-primary">Save</button>
+                            <button type="button" class="btn btn-sm btn-secondary forum-edit-cancel-btn"
+                                    data-post-id="<?= (int)$post['id'] ?>">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+                <?php endif; ?>
                 <?php if ($postMedia && $postMedia['type'] === 'image'): ?>
                 <div class="forum-post-image">
                     <a href="<?= e(get_media_url($postMedia, 'original')) ?>" class="lightbox-trigger"
