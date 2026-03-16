@@ -11,6 +11,7 @@ An invite-only social network platform built with PHP 8.3, MySQL/MariaDB, and va
 - **Gallery** — Albums, image/video uploads, lightbox viewer, progressive loading
 - **Shoutbox** — Real-time AJAX polling in the sidebar
 - **Blog** — Personal blogs with a rich-text editor, drag-and-drop image uploads, and activity-feed integration
+- **Forum** — Threaded discussion boards with categories, forums, thread locking, unread tracking, and image attachments
 - **Notifications** — Likes, comments, friend requests, messages
 - **Admin Panel** — User management, invite management, content moderation, media management
 - **Plugin System** — Drop-in plugins can add sidebar widgets, wall widgets, menu items, and profile extensions
@@ -129,6 +130,7 @@ sudo systemctl restart php-fpm
 │   ├── schema.sql      Full database schema
 │   └── migrations/     Incremental SQL migration scripts
 ├── includes/           Shared PHP includes (header, footer, functions)
+├── forum/              Forum pages (index, forum view, thread view, new thread, reply, edit)
 ├── modules/            Feature modules (wall, profile, gallery, blog, etc.)
 ├── pages/              Public-facing pages (includes blog.php)
 ├── plugins/            Drop-in plugin directory
@@ -287,3 +289,94 @@ The blog uses the `blog_posts` table created by migration `009_add_blog.sql`:
 | `created_at` | `DATETIME` | Publication timestamp |
 | `updated_at` | `DATETIME` | Last-edited timestamp (auto-updated) |
 | `is_deleted` | `TINYINT(1)` | Soft-delete flag |
+
+## Forum
+
+A threaded discussion board accessible from the main navigation.
+
+### Features
+
+- **Categories & forums** — Admins organise forums into top-level categories; each category holds one or more named forums
+- **Threads & replies** — Logged-in users can start new threads and post replies; posts support auto-linked URLs, smiley conversion, and optional image attachments from the user's gallery
+- **Thread locking** — Admins can lock threads to prevent further replies (🔒 icon shown)
+- **Unread tracking** — The forum index displays an unread counter (🔵) per forum; threads are automatically marked as read when opened
+- **Edit & delete** — Post authors and admins can edit or soft-delete threads and individual posts; edited posts show an "(edited)" indicator
+- **Pagination** — Thread lists and post lists are paginated (20 items per page)
+- **Admin panel** — Full category/forum management and a moderation dashboard (delete, restore, lock/unlock threads and posts)
+
+### Accessing the forum
+
+| URL | Description |
+|-----|-------------|
+| `/forum/` | Forum index — all categories and forums with unread counters |
+| `/forum/forum.php?id=N` | Thread list for forum *N* |
+| `/forum/thread.php?id=N` | Posts in thread *N* |
+| `/forum/new_thread.php` | Create a new thread (login required) |
+| `/forum/edit_thread.php?id=N` | Edit thread title and opening post (owner or admin) |
+
+### Admin panel routes
+
+| URL | Description |
+|-----|-------------|
+| `/admin/forum/` | Forum admin dashboard with recent-activity stats |
+| `/admin/forum/categories.php` | Create, edit, and delete categories |
+| `/admin/forum/forums.php` | Create, edit, and delete forums |
+| `/admin/forum/moderation.php` | Delete/restore threads and posts; lock/unlock threads |
+
+### Database schema
+
+The forum uses five tables created by migration `012_add_forum.sql` (with additions in `013_add_forum_post_media.sql`, `014_add_forum_reads.sql`, and `015_add_forum_post_edited_at.sql`):
+
+**`forum_categories`**
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | `INT UNSIGNED` | Primary key |
+| `title` | `VARCHAR(100)` | Category name |
+| `description` | `TEXT` | Optional description |
+| `sort_order` | `INT` | Display order |
+
+**`forum_forums`**
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | `INT UNSIGNED` | Primary key |
+| `category_id` | `INT UNSIGNED` | Parent category |
+| `title` | `VARCHAR(100)` | Forum name |
+| `description` | `TEXT` | Optional description |
+| `sort_order` | `INT` | Display order within category |
+
+**`forum_threads`**
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | `INT UNSIGNED` | Primary key |
+| `forum_id` | `INT UNSIGNED` | Parent forum |
+| `user_id` | `INT UNSIGNED` | Thread author |
+| `title` | `VARCHAR(200)` | Thread title |
+| `is_locked` | `TINYINT(1)` | Lock flag (1 = no new replies) |
+| `is_deleted` | `TINYINT(1)` | Soft-delete flag |
+| `created_at` | `DATETIME` | Creation timestamp |
+| `last_post_at` | `DATETIME` | Timestamp of most recent reply |
+| `reply_count` | `INT UNSIGNED` | Number of replies |
+
+**`forum_posts`**
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | `INT UNSIGNED` | Primary key |
+| `thread_id` | `INT UNSIGNED` | Parent thread |
+| `user_id` | `INT UNSIGNED` | Post author |
+| `content` | `TEXT` | Post body |
+| `media_id` | `INT UNSIGNED` | Optional attached image (from gallery) |
+| `is_deleted` | `TINYINT(1)` | Soft-delete flag |
+| `created_at` | `DATETIME` | Creation timestamp |
+| `edited_at` | `DATETIME` | Last-edited timestamp (NULL if never edited) |
+
+**`forum_reads`**
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `user_id` | `INT UNSIGNED` | Reader (composite PK with `thread_id`) |
+| `thread_id` | `INT UNSIGNED` | Thread that was read |
+| `read_at` | `DATETIME` | When the thread was last opened |
