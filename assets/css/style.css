@@ -3087,7 +3087,8 @@ textarea { resize: vertical; min-height: 80px; }
 
 /* Rendered content in editor & published posts */
 .blog-editor img,
-.blog-post-content img {
+.blog-post-content img,
+.forum-post-content img {
     max-width: 100%;
     height: auto;
     border-radius: var(--radius-sm);
@@ -3095,7 +3096,8 @@ textarea { resize: vertical; min-height: 80px; }
 }
 
 .blog-editor blockquote,
-.blog-post-content blockquote {
+.blog-post-content blockquote,
+.forum-post-content blockquote {
     border-left: 4px solid var(--color-accent);
     margin: 0.75rem 0;
     padding: 0.5rem 1rem;
@@ -3105,17 +3107,19 @@ textarea { resize: vertical; min-height: 80px; }
 }
 
 .blog-editor a,
-.blog-post-content a {
+.blog-post-content a,
+.forum-post-content a {
     color: var(--color-accent);
     text-decoration: underline;
 }
 
-.blog-editor h2, .blog-post-content h2 { font-size: 1.3rem; font-weight: 700; margin: 1rem 0 .4rem; }
-.blog-editor h3, .blog-post-content h3 { font-size: 1.1rem; font-weight: 700; margin: .9rem 0 .35rem; }
-.blog-editor h4, .blog-post-content h4 { font-size: 1rem;   font-weight: 600; margin: .8rem 0 .3rem; }
+.blog-editor h2, .blog-post-content h2, .forum-post-content h2 { font-size: 1.3rem; font-weight: 700; margin: 1rem 0 .4rem; }
+.blog-editor h3, .blog-post-content h3, .forum-post-content h3 { font-size: 1.1rem; font-weight: 700; margin: .9rem 0 .35rem; }
+.blog-editor h4, .blog-post-content h4, .forum-post-content h4 { font-size: 1rem;   font-weight: 600; margin: .8rem 0 .3rem; }
 
 .blog-editor ul, .blog-editor ol,
-.blog-post-content ul, .blog-post-content ol {
+.blog-post-content ul, .blog-post-content ol,
+.forum-post-content ul, .forum-post-content ol {
     margin: 0.5rem 0 0.5rem 1.5rem;
 }
 
@@ -3656,7 +3660,6 @@ textarea { resize: vertical; min-height: 80px; }
 .forum-post-content {
     line-height: 1.7;
     word-break: break-word;
-    white-space: pre-wrap;
     font-size: 0.95rem;
 }
 

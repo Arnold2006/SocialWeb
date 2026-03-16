@@ -48,6 +48,7 @@ if ($thread['is_locked']) {
     redirect(SITE_URL . '/forum/thread.php?id=' . $threadId);
 }
 
+$content = sanitise_html($content);
 if ($content === '') {
     flash_set('error', 'Reply content cannot be empty.');
     redirect(SITE_URL . '/forum/thread.php?id=' . $threadId);
