@@ -12,7 +12,8 @@
  * Provided "AS IS" without warranty.
  */
 /**
- * gallery.php — User gallery with albums and media
+ * gallery.php — User gallery with categories, albums, and media
+ * Structure: Gallery → Category → Album → Media
  */
 
 declare(strict_types=1);
@@ -22,6 +23,7 @@ require_login();
 
 $currentUser  = current_user();
 $galleryOwner = sanitise_int($_GET['user_id'] ?? (int)$currentUser['id']);
+$categoryId   = sanitise_int($_GET['cat'] ?? 0);
 $albumId      = sanitise_int($_GET['album'] ?? 0);
 $isOwn        = ((int)$currentUser['id'] === $galleryOwner);
 
@@ -33,40 +35,119 @@ if (!$owner) {
 
 $pageTitle = e($owner['username']) . "'s Gallery";
 
+// Helper: build gallery base URL
+$galleryBase = SITE_URL . '/pages/gallery.php?user_id=' . $galleryOwner;
+
 // Handle POST actions
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwn) {
     csrf_verify();
     $action = $_POST['action'] ?? '';
 
     switch ($action) {
-        case 'create_album':
+        case 'create_category':
             $title = sanitise_string($_POST['title'] ?? '', 255);
             if ($title) {
-                db_insert('INSERT INTO albums (user_id, title) VALUES (?, ?)', [(int)$currentUser['id'], $title]);
+                db_insert(
+                    'INSERT INTO album_categories (user_id, title) VALUES (?, ?)',
+                    [(int)$currentUser['id'], $title]
+                );
+                flash_set('success', 'Category created.');
+            }
+            redirect($galleryBase);
+            break;
+
+        case 'rename_category':
+            $cId   = sanitise_int($_POST['category_id'] ?? 0);
+            $title = sanitise_string($_POST['title'] ?? '', 255);
+            if ($title && $cId) {
+                db_exec(
+                    'UPDATE album_categories SET title = ? WHERE id = ? AND user_id = ?',
+                    [$title, $cId, (int)$currentUser['id']]
+                );
+                flash_set('success', 'Category renamed.');
+            }
+            redirect($galleryBase . '&cat=' . $cId);
+            break;
+
+        case 'delete_category':
+            $cId = sanitise_int($_POST['category_id'] ?? 0);
+            if ($cId) {
+                // Unlink albums from this category before deleting it
+                db_exec(
+                    'UPDATE albums SET category_id = NULL WHERE category_id = ? AND user_id = ?',
+                    [$cId, (int)$currentUser['id']]
+                );
+                db_exec(
+                    'UPDATE album_categories SET is_deleted = 1 WHERE id = ? AND user_id = ?',
+                    [$cId, (int)$currentUser['id']]
+                );
+                flash_set('success', 'Category deleted.');
+            }
+            redirect($galleryBase);
+            break;
+
+        case 'create_album':
+            $title = sanitise_string($_POST['title'] ?? '', 255);
+            $cId   = sanitise_int($_POST['category_id'] ?? 0);
+            if ($title) {
+                $catId = $cId ?: null;
+                db_insert(
+                    'INSERT INTO albums (user_id, category_id, title) VALUES (?, ?, ?)',
+                    [(int)$currentUser['id'], $catId, $title]
+                );
                 flash_set('success', 'Album created.');
             }
-            redirect(SITE_URL . '/pages/gallery.php?user_id=' . $galleryOwner);
+            redirect($cId ? $galleryBase . '&cat=' . $cId : $galleryBase);
             break;
 
         case 'rename_album':
             $aId   = sanitise_int($_POST['album_id'] ?? 0);
             $title = sanitise_string($_POST['title'] ?? '', 255);
-            db_exec(
-                'UPDATE albums SET title = ? WHERE id = ? AND user_id = ?',
-                [$title, $aId, (int)$currentUser['id']]
-            );
-            flash_set('success', 'Album renamed.');
-            redirect(SITE_URL . '/pages/gallery.php?user_id=' . $galleryOwner . '&album=' . $aId);
+            if ($aId && $title) {
+                db_exec(
+                    'UPDATE albums SET title = ? WHERE id = ? AND user_id = ?',
+                    [$title, $aId, (int)$currentUser['id']]
+                );
+                flash_set('success', 'Album renamed.');
+            }
+            redirect($galleryBase . '&album=' . $aId);
+            break;
+
+        case 'move_album':
+            $aId    = sanitise_int($_POST['album_id'] ?? 0);
+            $newCat = sanitise_int($_POST['new_category_id'] ?? 0);
+            if ($aId) {
+                $newCatId = $newCat ?: null;
+                // Verify the target category belongs to the owner (or is null)
+                if ($newCatId !== null) {
+                    $catCheck = db_row(
+                        'SELECT id FROM album_categories WHERE id = ? AND user_id = ? AND is_deleted = 0',
+                        [$newCatId, (int)$currentUser['id']]
+                    );
+                    if (!$catCheck) {
+                        $newCatId = null;
+                    }
+                }
+                db_exec(
+                    'UPDATE albums SET category_id = ? WHERE id = ? AND user_id = ?',
+                    [$newCatId, $aId, (int)$currentUser['id']]
+                );
+                flash_set('success', 'Album moved.');
+            }
+            redirect($galleryBase . '&album=' . $aId);
             break;
 
         case 'delete_album':
             $aId = sanitise_int($_POST['album_id'] ?? 0);
-            db_exec(
-                'UPDATE albums SET is_deleted = 1 WHERE id = ? AND user_id = ?',
-                [$aId, (int)$currentUser['id']]
-            );
-            flash_set('success', 'Album deleted.');
-            redirect(SITE_URL . '/pages/gallery.php?user_id=' . $galleryOwner);
+            $cId = sanitise_int($_POST['category_id'] ?? 0);
+            if ($aId) {
+                db_exec(
+                    'UPDATE albums SET is_deleted = 1 WHERE id = ? AND user_id = ?',
+                    [$aId, (int)$currentUser['id']]
+                );
+                flash_set('success', 'Album deleted.');
+            }
+            redirect($cId ? $galleryBase . '&cat=' . $cId : $galleryBase);
             break;
 
         case 'upload_media':
@@ -215,14 +296,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwn) {
     }
 }
 
-// Load albums
-$albums = db_query(
-    'SELECT a.*, (SELECT COUNT(*) FROM media WHERE album_id = a.id AND is_deleted = 0) AS media_count
-     FROM albums a
-     WHERE a.user_id = ? AND a.is_deleted = 0
-     ORDER BY a.created_at DESC',
+// Load categories for this gallery owner
+$categories = db_query(
+    'SELECT c.*,
+        (SELECT COUNT(*) FROM albums WHERE category_id = c.id AND is_deleted = 0) AS album_count
+     FROM album_categories c
+     WHERE c.user_id = ? AND c.is_deleted = 0
+     ORDER BY c.created_at ASC',
     [$galleryOwner]
 );
+
+// Load albums for the current category (or uncategorised when cat=0 is selected)
+$albums = [];
+if ($categoryId > 0) {
+    $albums = db_query(
+        'SELECT a.*, (SELECT COUNT(*) FROM media WHERE album_id = a.id AND is_deleted = 0) AS media_count
+         FROM albums a
+         WHERE a.user_id = ? AND a.category_id = ? AND a.is_deleted = 0
+         ORDER BY a.created_at DESC',
+        [$galleryOwner, $categoryId]
+    );
+}
 
 // Load media for selected album (first page only)
 $mediaItems  = [];
@@ -263,91 +357,89 @@ include SITE_ROOT . '/includes/header.php';
         <h1><?= e($owner['username']) ?>'s Gallery</h1>
     </div>
 
-    <!-- Create album form (owner only) -->
-    <?php if ($isOwn): ?>
-    <div class="gallery-actions">
-        <form method="POST" class="inline-form">
-            <?= csrf_field() ?>
-            <input type="hidden" name="action" value="create_album">
-            <input type="text" name="title" placeholder="New album name…" required maxlength="255">
-            <button type="submit" class="btn btn-primary btn-sm">Create Album</button>
-        </form>
-    </div>
-    <?php endif; ?>
-
-    <!-- Albums list -->
-    <?php if (empty($albumId)): ?>
-    <div class="albums-grid">
-        <?php if (empty($albums)): ?>
-        <p class="empty-state">No albums yet.</p>
-        <?php else: ?>
-            <?php foreach ($albums as $album): ?>
-            <div class="album-card">
-                <a href="<?= e(SITE_URL . '/pages/gallery.php?user_id=' . $galleryOwner . '&album=' . (int)$album['id']) ?>">
-                    <div class="album-cover">
-                        <?php
-                        // Resolve cover: explicit cropped path → cover_id media thumb → first image
-                        $coverUrl = null;
-                        if (!empty($album['cover_path'])) {
-                            $coverUrl = SITE_URL . $album['cover_path'];
-                        } elseif (!empty($album['cover_id'])) {
-                            $coverMedia = db_row(
-                                'SELECT thumb_path FROM media WHERE id = ? AND is_deleted = 0',
-                                [(int)$album['cover_id']]
-                            );
-                            if ($coverMedia && $coverMedia['thumb_path']) {
-                                $coverUrl = get_media_url($coverMedia, 'thumb');
-                            }
-                        }
-                        if (!$coverUrl) {
-                            $firstImg = db_row(
-                                'SELECT thumb_path FROM media WHERE album_id = ? AND is_deleted = 0 ORDER BY created_at ASC LIMIT 1',
-                                [(int)$album['id']]
-                            );
-                            if ($firstImg && $firstImg['thumb_path']) {
-                                $coverUrl = get_media_url($firstImg, 'thumb');
-                            }
-                        }
-                        ?>
-                        <?php if ($coverUrl): ?>
-                        <img src="<?= e($coverUrl) ?>" alt="" loading="lazy">
-                        <?php else: ?>
-                        <div class="album-cover-placeholder">📁</div>
-                        <?php endif; ?>
-                    </div>
-                    <h3 class="album-title"><?= e($album['title']) ?></h3>
-                    <p class="album-count"><?= (int)$album['media_count'] ?> items</p>
-                </a>
-                <?php if ($isOwn): ?>
-                <div class="album-actions">
-                    <form method="POST" class="inline-form">
-                        <?= csrf_field() ?>
-                        <input type="hidden" name="action" value="delete_album">
-                        <input type="hidden" name="album_id" value="<?= (int)$album['id'] ?>">
-                        <button type="submit" class="btn btn-danger btn-xs"
-                                onclick="return confirm('Delete album?')">Delete</button>
-                    </form>
-                </div>
-                <?php endif; ?>
-            </div>
-            <?php endforeach; ?>
+    <!-- Breadcrumb navigation -->
+    <nav class="gallery-breadcrumb" aria-label="Gallery navigation">
+        <?php
+        $currentAlbum    = null;
+        $currentCategory = null;
+        if ($albumId > 0) {
+            $currentAlbum = db_row('SELECT * FROM albums WHERE id = ? AND user_id = ? AND is_deleted = 0', [$albumId, $galleryOwner]);
+            if (!$currentAlbum) {
+                flash_set('error', 'Album not found.');
+                redirect($galleryBase);
+            }
+            if ($currentAlbum['category_id']) {
+                $currentCategory = db_row('SELECT * FROM album_categories WHERE id = ? AND is_deleted = 0', [(int)$currentAlbum['category_id']]);
+            }
+        } elseif ($categoryId > 0) {
+            $currentCategory = db_row('SELECT * FROM album_categories WHERE id = ? AND user_id = ? AND is_deleted = 0', [$categoryId, $galleryOwner]);
+            if (!$currentCategory) {
+                flash_set('error', 'Category not found.');
+                redirect($galleryBase);
+            }
+        }
+        ?>
+        <a href="<?= e($galleryBase) ?>">Gallery</a>
+        <?php if ($currentCategory): ?>
+        <span class="breadcrumb-sep">›</span>
+        <a href="<?= e($galleryBase . '&cat=' . (int)$currentCategory['id']) ?>"><?= e($currentCategory['title']) ?></a>
         <?php endif; ?>
-    </div>
+        <?php if ($currentAlbum): ?>
+        <span class="breadcrumb-sep">›</span>
+        <span><?= e($currentAlbum['title']) ?></span>
+        <?php endif; ?>
+    </nav>
 
-    <!-- Media inside album -->
-    <?php else: ?>
-    <?php
-    $currentAlbum = db_row('SELECT * FROM albums WHERE id = ? AND user_id = ? AND is_deleted = 0', [$albumId, $galleryOwner]);
-    if (!$currentAlbum) {
-        flash_set('error', 'Album not found.');
-        redirect(SITE_URL . '/pages/gallery.php?user_id=' . $galleryOwner);
-    }
-    ?>
+    <?php if ($albumId > 0 && $currentAlbum): ?>
+    <!-- ── Media view ─────────────────────────────────────────── -->
     <div class="album-view">
         <div class="album-view-header">
-            <a href="<?= e(SITE_URL . '/pages/gallery.php?user_id=' . $galleryOwner) ?>"
-               class="btn btn-secondary btn-sm">← Back to Albums</a>
+            <?php
+            $backUrl = $currentCategory
+                ? $galleryBase . '&cat=' . (int)$currentCategory['id']
+                : $galleryBase;
+            ?>
+            <a href="<?= e($backUrl) ?>" class="btn btn-secondary btn-sm">← Back</a>
             <h2><?= e($currentAlbum['title']) ?></h2>
+
+            <?php if ($isOwn): ?>
+            <div class="album-header-actions">
+                <!-- Rename album -->
+                <button type="button" class="btn btn-secondary btn-sm"
+                        onclick="document.getElementById('rename-album-form-<?= (int)$currentAlbum['id'] ?>').classList.toggle('hidden')">Rename</button>
+                <!-- Move album -->
+                <button type="button" class="btn btn-secondary btn-sm"
+                        onclick="document.getElementById('move-album-form-<?= (int)$currentAlbum['id'] ?>').classList.toggle('hidden')">Move to Category</button>
+            </div>
+
+            <div id="rename-album-form-<?= (int)$currentAlbum['id'] ?>" class="hidden inline-form-row">
+                <form method="POST" class="inline-form">
+                    <?= csrf_field() ?>
+                    <input type="hidden" name="action" value="rename_album">
+                    <input type="hidden" name="album_id" value="<?= (int)$currentAlbum['id'] ?>">
+                    <input type="text" name="title" value="<?= e($currentAlbum['title']) ?>" required maxlength="255">
+                    <button type="submit" class="btn btn-primary btn-sm">Save</button>
+                </form>
+            </div>
+
+            <div id="move-album-form-<?= (int)$currentAlbum['id'] ?>" class="hidden inline-form-row">
+                <form method="POST" class="inline-form">
+                    <?= csrf_field() ?>
+                    <input type="hidden" name="action" value="move_album">
+                    <input type="hidden" name="album_id" value="<?= (int)$currentAlbum['id'] ?>">
+                    <select name="new_category_id">
+                        <option value="0">(No category)</option>
+                        <?php foreach ($categories as $cat): ?>
+                        <option value="<?= (int)$cat['id'] ?>"
+                            <?= ((int)$currentAlbum['category_id'] === (int)$cat['id']) ? 'selected' : '' ?>>
+                            <?= e($cat['title']) ?>
+                        </option>
+                        <?php endforeach; ?>
+                    </select>
+                    <button type="submit" class="btn btn-primary btn-sm">Move</button>
+                </form>
+            </div>
+            <?php endif; ?>
         </div>
 
         <?php if ($isOwn): ?>
@@ -424,6 +516,168 @@ include SITE_ROOT . '/includes/header.php';
     </div>
     <?php endif; ?>
 
+    <?php elseif ($categoryId > 0 && $currentCategory): ?>
+    <!-- ── Albums in category ──────────────────────────────────── -->
+    <?php if ($isOwn): ?>
+    <div class="gallery-actions">
+        <form method="POST" class="inline-form">
+            <?= csrf_field() ?>
+            <input type="hidden" name="action" value="create_album">
+            <input type="hidden" name="category_id" value="<?= $categoryId ?>">
+            <input type="text" name="title" placeholder="New album name…" required maxlength="255">
+            <button type="submit" class="btn btn-primary btn-sm">Create Album</button>
+        </form>
+
+        <!-- Rename category -->
+        <button type="button" class="btn btn-secondary btn-sm"
+                onclick="document.getElementById('rename-cat-form').classList.toggle('hidden')">Rename Category</button>
+        <div id="rename-cat-form" class="hidden inline-form-row">
+            <form method="POST" class="inline-form">
+                <?= csrf_field() ?>
+                <input type="hidden" name="action" value="rename_category">
+                <input type="hidden" name="category_id" value="<?= $categoryId ?>">
+                <input type="text" name="title" value="<?= e($currentCategory['title']) ?>" required maxlength="255">
+                <button type="submit" class="btn btn-primary btn-sm">Save</button>
+            </form>
+        </div>
+
+        <!-- Delete category -->
+        <form method="POST" class="inline-form">
+            <?= csrf_field() ?>
+            <input type="hidden" name="action" value="delete_category">
+            <input type="hidden" name="category_id" value="<?= $categoryId ?>">
+            <button type="submit" class="btn btn-danger btn-sm"
+                    onclick="return confirm('Delete this category? Albums inside will become uncategorised.')">Delete Category</button>
+        </form>
+    </div>
+    <?php endif; ?>
+
+    <div class="albums-grid">
+        <?php if (empty($albums)): ?>
+        <p class="empty-state">No albums in this category yet.</p>
+        <?php else: ?>
+            <?php foreach ($albums as $album): ?>
+            <div class="album-card">
+                <a href="<?= e(SITE_URL . '/pages/gallery.php?user_id=' . $galleryOwner . '&album=' . (int)$album['id']) ?>">
+                    <div class="album-cover">
+                        <?php
+                        $coverUrl = null;
+                        if (!empty($album['cover_path'])) {
+                            $coverUrl = SITE_URL . $album['cover_path'];
+                        } elseif (!empty($album['cover_id'])) {
+                            $coverMedia = db_row(
+                                'SELECT thumb_path FROM media WHERE id = ? AND is_deleted = 0',
+                                [(int)$album['cover_id']]
+                            );
+                            if ($coverMedia && $coverMedia['thumb_path']) {
+                                $coverUrl = get_media_url($coverMedia, 'thumb');
+                            }
+                        }
+                        if (!$coverUrl) {
+                            $firstImg = db_row(
+                                'SELECT thumb_path FROM media WHERE album_id = ? AND is_deleted = 0 ORDER BY created_at ASC LIMIT 1',
+                                [(int)$album['id']]
+                            );
+                            if ($firstImg && $firstImg['thumb_path']) {
+                                $coverUrl = get_media_url($firstImg, 'thumb');
+                            }
+                        }
+                        ?>
+                        <?php if ($coverUrl): ?>
+                        <img src="<?= e($coverUrl) ?>" alt="" loading="lazy">
+                        <?php else: ?>
+                        <div class="album-cover-placeholder">📁</div>
+                        <?php endif; ?>
+                    </div>
+                    <h3 class="album-title"><?= e($album['title']) ?></h3>
+                    <p class="album-count"><?= (int)$album['media_count'] ?> items</p>
+                </a>
+                <?php if ($isOwn): ?>
+                <div class="album-actions">
+                    <form method="POST" class="inline-form">
+                        <?= csrf_field() ?>
+                        <input type="hidden" name="action" value="delete_album">
+                        <input type="hidden" name="album_id" value="<?= (int)$album['id'] ?>">
+                        <input type="hidden" name="category_id" value="<?= $categoryId ?>">
+                        <button type="submit" class="btn btn-danger btn-xs"
+                                onclick="return confirm('Delete album?')">Delete</button>
+                    </form>
+                </div>
+                <?php endif; ?>
+            </div>
+            <?php endforeach; ?>
+        <?php endif; ?>
+    </div>
+
+    <?php else: ?>
+    <!-- ── Categories view (top level) ────────────────────────── -->
+    <?php if ($isOwn): ?>
+    <div class="gallery-actions">
+        <form method="POST" class="inline-form">
+            <?= csrf_field() ?>
+            <input type="hidden" name="action" value="create_category">
+            <input type="text" name="title" placeholder="New category name…" required maxlength="255">
+            <button type="submit" class="btn btn-primary btn-sm">Create Category</button>
+        </form>
+    </div>
+    <?php endif; ?>
+
+    <div class="albums-grid">
+        <?php if (empty($categories)): ?>
+        <p class="empty-state">No categories yet.<?= $isOwn ? ' Create one above to get started.' : '' ?></p>
+        <?php else: ?>
+            <?php foreach ($categories as $cat): ?>
+            <div class="album-card">
+                <a href="<?= e($galleryBase . '&cat=' . (int)$cat['id']) ?>">
+                    <div class="album-cover">
+                        <?php
+                        // Show the first album cover image found in this category
+                        $catCover = null;
+                        $firstAlbum = db_row(
+                            'SELECT cover_path, cover_id, id FROM albums WHERE category_id = ? AND user_id = ? AND is_deleted = 0 ORDER BY created_at ASC LIMIT 1',
+                            [(int)$cat['id'], $galleryOwner]
+                        );
+                        if ($firstAlbum) {
+                            if (!empty($firstAlbum['cover_path'])) {
+                                $catCover = SITE_URL . $firstAlbum['cover_path'];
+                            } elseif (!empty($firstAlbum['cover_id'])) {
+                                $cm = db_row('SELECT thumb_path FROM media WHERE id = ? AND is_deleted = 0', [(int)$firstAlbum['cover_id']]);
+                                if ($cm && $cm['thumb_path']) {
+                                    $catCover = get_media_url($cm, 'thumb');
+                                }
+                            }
+                            if (!$catCover) {
+                                $fi = db_row('SELECT thumb_path FROM media WHERE album_id = ? AND is_deleted = 0 ORDER BY created_at ASC LIMIT 1', [(int)$firstAlbum['id']]);
+                                if ($fi && $fi['thumb_path']) {
+                                    $catCover = get_media_url($fi, 'thumb');
+                                }
+                            }
+                        }
+                        ?>
+                        <?php if ($catCover): ?>
+                        <img src="<?= e($catCover) ?>" alt="" loading="lazy">
+                        <?php else: ?>
+                        <div class="album-cover-placeholder">🗂️</div>
+                        <?php endif; ?>
+                    </div>
+                    <h3 class="album-title"><?= e($cat['title']) ?></h3>
+                    <p class="album-count"><?= (int)$cat['album_count'] ?> album<?= (int)$cat['album_count'] !== 1 ? 's' : '' ?></p>
+                </a>
+                <?php if ($isOwn): ?>
+                <div class="album-actions">
+                    <form method="POST" class="inline-form">
+                        <?= csrf_field() ?>
+                        <input type="hidden" name="action" value="delete_category">
+                        <input type="hidden" name="category_id" value="<?= (int)$cat['id'] ?>">
+                        <button type="submit" class="btn btn-danger btn-xs"
+                                onclick="return confirm('Delete this category? Albums inside will become uncategorised.')">Delete</button>
+                    </form>
+                </div>
+                <?php endif; ?>
+            </div>
+            <?php endforeach; ?>
+        <?php endif; ?>
+    </div>
     <?php endif; ?>
 
     </main>

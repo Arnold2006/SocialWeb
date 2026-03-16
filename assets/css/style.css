@@ -894,8 +894,43 @@ textarea { resize: vertical; min-height: 80px; }
 }
 
 .gallery-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
     margin-bottom: 1.25rem;
 }
+
+.gallery-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+    margin-bottom: 1rem;
+}
+.gallery-breadcrumb a {
+    color: var(--color-accent);
+    text-decoration: none;
+}
+.gallery-breadcrumb a:hover { text-decoration: underline; }
+.breadcrumb-sep { opacity: 0.5; }
+
+.album-header-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-left: auto;
+}
+
+.inline-form-row {
+    margin-top: 0.5rem;
+    padding: 0.75rem;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+}
+
+.hidden { display: none !important; }
 
 /* ── Photos page tabs ────────────────────────────────────────── */
 .photos-tabs {
@@ -985,6 +1020,7 @@ textarea { resize: vertical; min-height: 80px; }
 
 .album-view-header {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: 1rem;
     margin-bottom: 1rem;
