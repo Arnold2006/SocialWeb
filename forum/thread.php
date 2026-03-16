@@ -24,7 +24,7 @@ if ($threadId <= 0) {
 }
 
 $thread = db_row(
-    'SELECT t.id, t.title, t.is_locked, t.is_deleted, t.forum_id,
+    'SELECT t.id, t.title, t.is_locked, t.is_deleted, t.forum_id, t.user_id,
             f.title AS forum_title, f.category_id,
             c.title AS category_title
      FROM   forum_threads t
@@ -107,6 +107,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'edit_
     redirect(SITE_URL . '/forum/thread.php?id=' . $threadId . '&page=' . $backPage);
 }
 
+// Handle thread deletion (thread owner or admin)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delete_thread') {
+    require_login();
+    csrf_verify();
+
+    if ((int)$thread['user_id'] === (int)$user['id'] || is_admin()) {
+        db_exec('UPDATE forum_posts SET is_deleted = 1 WHERE thread_id = ?', [$threadId]);
+        db_exec('UPDATE forum_threads SET is_deleted = 1 WHERE id = ?', [$threadId]);
+        flash_set('success', 'Thread deleted.');
+        redirect(SITE_URL . '/forum/forum.php?id=' . (int)$thread['forum_id']);
+    } else {
+        flash_set('error', 'Permission denied.');
+        redirect(SITE_URL . '/forum/thread.php?id=' . $threadId);
+    }
+}
+
 $page    = max(1, (int)($_GET['page'] ?? 1));
 $perPage = 20;
 $result  = paginate(
@@ -153,6 +169,18 @@ include SITE_ROOT . '/includes/header.php';
             <?php if ($thread['is_locked']): ?><span title="Locked">🔒 </span><?php endif; ?>
             <?= e($thread['title']) ?>
         </h1>
+        <?php if ($user && ((int)$thread['user_id'] === (int)$user['id'] || is_admin())): ?>
+        <div class="forum-thread-actions">
+            <a href="<?= SITE_URL ?>/forum/edit_thread.php?id=<?= (int)$threadId ?>"
+               class="btn btn-sm btn-secondary">Edit Thread</a>
+            <form method="post" action="<?= SITE_URL ?>/forum/thread.php?id=<?= (int)$threadId ?>" class="inline-form">
+                <?= csrf_field() ?>
+                <input type="hidden" name="action" value="delete_thread">
+                <button type="submit" class="btn btn-sm btn-danger"
+                        onclick="return confirm('Delete this thread and all its posts?')">Delete Thread</button>
+            </form>
+        </div>
+        <?php endif; ?>
     </div>
 
     <?php if (empty($result['rows'])): ?>

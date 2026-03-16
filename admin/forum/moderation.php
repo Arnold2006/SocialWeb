@@ -29,6 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'delete_thread') {
         $id = (int)($_POST['thread_id'] ?? 0);
         if ($id > 0) {
+            db_exec('UPDATE forum_posts SET is_deleted = 1 WHERE thread_id = ?', [$id]);
             db_exec('UPDATE forum_threads SET is_deleted = 1 WHERE id = ?', [$id]);
             flash_set('success', 'Thread deleted.');
         }
