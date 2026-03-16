@@ -240,6 +240,175 @@
         }
     }
 
+    /** Return the CSRF token from any hidden input on the page */
+    function getCsrfToken() {
+        var input = document.querySelector('input[name="csrf_token"]');
+        return input ? input.value : '';
+    }
+
+    /** Escape an attribute value to prevent XSS in dynamic HTML */
+    function escAttr(str) {
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+    }
+
+    /**
+     * Upload a File to the blog image endpoint and insert the result inline
+     * into the given contenteditable editor div.
+     */
+    function uploadImageToEditor(file, editorDiv) {
+        var toolbar   = editorDiv.previousElementSibling;
+        var uploadBtn = toolbar ? toolbar.querySelector('.forum-editor-img-upload-btn') : null;
+        if (uploadBtn) uploadBtn.disabled = true;
+
+        var formData = new FormData();
+        formData.append('csrf_token', getCsrfToken());
+        formData.append('image', file);
+
+        fetch(baseUrl() + '/modules/blog/upload_image.php', {
+            method: 'POST',
+            body: formData,
+            credentials: 'same-origin',
+        })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+            if (uploadBtn) uploadBtn.disabled = false;
+            if (data.ok) {
+                editorDiv.focus();
+                document.execCommand('insertHTML', false,
+                    '<a href="' + escAttr(data.original_url) + '">'
+                    + '<img src="' + escAttr(data.url) + '" alt="" width="160">'
+                    + '</a>');
+                updateEditorPlaceholder(editorDiv);
+            } else {
+                alert('Image upload failed: ' + (data.error || 'Unknown error'));
+            }
+        })
+        .catch(function () {
+            if (uploadBtn) uploadBtn.disabled = false;
+            alert('Image upload failed.');
+        });
+    }
+
+    /** Update the CSS placeholder class for a contenteditable editor div */
+    function updateEditorPlaceholder(editorDiv) {
+        if (editorDiv.textContent.trim() === ''
+                && editorDiv.innerHTML.replace(/<br\s*\/?>/gi, '').trim() === '') {
+            editorDiv.classList.add('blog-editor--empty');
+        } else {
+            editorDiv.classList.remove('blog-editor--empty');
+        }
+    }
+
+    /**
+     * Initialise all .forum-editor contenteditable divs found on the page:
+     * binds toolbar formatting, link insertion, image upload, drag-and-drop,
+     * placeholder management, and the smiley picker.
+     * Also attaches a form-submit handler that copies the editor HTML into the
+     * hidden <textarea name="content"> before the form is sent.
+     */
+    function initForumEditors() {
+        document.querySelectorAll('.forum-editor').forEach(function (editorDiv) {
+            var toolbar = editorDiv.previousElementSibling;
+            if (!toolbar || !toolbar.classList.contains('forum-editor-toolbar')) return;
+
+            /* ── Toolbar formatting ─────────────────────────── */
+            toolbar.addEventListener('mousedown', function (e) {
+                var btn = e.target.closest('.blog-tb-btn[data-cmd]');
+                if (!btn) return;
+                e.preventDefault();
+                editorDiv.focus();
+                try {
+                    document.execCommand(btn.dataset.cmd, false, btn.dataset.val || null);
+                } catch (_) {}
+            });
+
+            /* ── Link insertion ─────────────────────────────── */
+            var linkBtn = toolbar.querySelector('.forum-editor-link-btn');
+            if (linkBtn) {
+                linkBtn.addEventListener('click', function () {
+                    editorDiv.focus();
+                    var sel          = window.getSelection();
+                    var selectedText = sel ? sel.toString() : '';
+                    var url          = prompt('Enter link URL (https://\u2026):', 'https://');
+                    if (!url || !/^https?:\/\//i.test(url)) return;
+                    try {
+                        if (selectedText) {
+                            document.execCommand('createLink', false, url);
+                        } else {
+                            document.execCommand('insertHTML', false,
+                                '<a href="' + escAttr(url) + '" rel="noopener noreferrer nofollow" target="_blank">'
+                                + escHtml(url) + '</a>');
+                        }
+                    } catch (_) {}
+                });
+            }
+
+            /* ── Image upload button ────────────────────────── */
+            var imgUploadBtn = toolbar.querySelector('.forum-editor-img-upload-btn');
+            var imgInput     = toolbar.querySelector('.forum-editor-img-input');
+            if (imgUploadBtn && imgInput) {
+                imgUploadBtn.addEventListener('click', function () { imgInput.click(); });
+                imgInput.addEventListener('change', function () {
+                    if (imgInput.files[0]) {
+                        uploadImageToEditor(imgInput.files[0], editorDiv);
+                        imgInput.value = '';
+                    }
+                });
+            }
+
+            /* ── Drag-and-drop image upload ─────────────────── */
+            editorDiv.addEventListener('dragover', function (e) { e.preventDefault(); });
+            editorDiv.addEventListener('drop', function (e) {
+                var items = e.dataTransfer && e.dataTransfer.items;
+                if (!items) return;
+                for (var i = 0; i < items.length; i++) {
+                    if (items[i].kind === 'file' && items[i].type.startsWith('image/')) {
+                        e.preventDefault();
+                        uploadImageToEditor(items[i].getAsFile(), editorDiv);
+                        return;
+                    }
+                }
+            });
+
+            /* ── Placeholder ────────────────────────────────── */
+            editorDiv.addEventListener('input', function () { updateEditorPlaceholder(editorDiv); });
+            updateEditorPlaceholder(editorDiv);
+
+            /* ── Smiley picker ──────────────────────────────── */
+            if (typeof createSmileyPicker === 'function' && !toolbar.dataset.smileyBound) {
+                toolbar.dataset.smileyBound = '1';
+                var sep = document.createElement('span');
+                sep.className = 'blog-tb-sep';
+                toolbar.appendChild(sep);
+                toolbar.appendChild(createSmileyPicker(editorDiv));
+            }
+        });
+
+        /* ── Sync each editor's HTML to the hidden textarea on submit ── */
+        document.querySelectorAll('form').forEach(function (form) {
+            var editorDiv       = form.querySelector('.forum-editor');
+            var hiddenTextarea  = form.querySelector('textarea[name="content"]');
+            if (!editorDiv || !hiddenTextarea) return;
+
+            form.addEventListener('submit', function (e) {
+                /* Prevent submission when the editor is empty */
+                if (editorDiv.textContent.trim() === ''
+                        && editorDiv.innerHTML.replace(/<br\s*\/?>/gi, '').trim() === '') {
+                    e.preventDefault();
+                    editorDiv.focus();
+                    editorDiv.classList.add('blog-editor--empty');
+                    return;
+                }
+                hiddenTextarea.value = editorDiv.innerHTML.trim();
+            });
+        });
+    }
+
     /** Bind click handlers to all .forum-pick-image-btn buttons on the page */
     function bindPickButtons() {
         document.querySelectorAll('.forum-pick-image-btn').forEach(function (btn) {
@@ -260,20 +429,26 @@
         document.addEventListener('click', function (e) {
             /* Edit button: show edit form, hide content */
             if (e.target && e.target.classList.contains('forum-edit-btn')) {
-                var postId = e.target.dataset.postId;
+                var postId    = e.target.dataset.postId;
                 var contentEl = document.getElementById('post-content-' + postId);
                 var editEl    = document.getElementById('post-edit-'    + postId);
                 if (contentEl) contentEl.style.display = 'none';
-                if (editEl)    editEl.style.display    = '';
                 if (editEl) {
-                    var ta = editEl.querySelector('textarea');
-                    if (ta) ta.focus();
+                    editEl.style.display = '';
+                    /* Focus the rich editor; fall back to textarea for safety */
+                    var editorDiv = editEl.querySelector('.forum-editor');
+                    if (editorDiv) {
+                        editorDiv.focus();
+                    } else {
+                        var ta = editEl.querySelector('textarea');
+                        if (ta) ta.focus();
+                    }
                 }
             }
 
             /* Cancel button: hide edit form, show content */
             if (e.target && e.target.classList.contains('forum-edit-cancel-btn')) {
-                var postId = e.target.dataset.postId;
+                var postId    = e.target.dataset.postId;
                 var contentEl = document.getElementById('post-content-' + postId);
                 var editEl    = document.getElementById('post-edit-'    + postId);
                 if (editEl)    editEl.style.display    = 'none';
@@ -289,34 +464,22 @@
         }
     });
 
-    /** Attach a smiley picker to all forum text areas on the current page */
+    /** Smiley pickers are now attached directly to each editor toolbar
+     *  in initForumEditors(); this function is kept for compatibility only. */
     function bindSmileyPickers() {
-        if (typeof createSmileyPicker !== 'function') return;
-
-        /* Main content textarea (new thread, reply, edit thread) */
-        var mainTextarea = document.getElementById('content');
-        if (mainTextarea && !mainTextarea.dataset.smileyBound) {
-            mainTextarea.dataset.smileyBound = '1';
-            mainTextarea.insertAdjacentElement('afterend', createSmileyPicker(mainTextarea));
-        }
-
-        /* Inline post-edit textareas (one per editable post) */
-        document.querySelectorAll('.forum-edit-textarea').forEach(function (ta) {
-            if (!ta.dataset.smileyBound) {
-                ta.dataset.smileyBound = '1';
-                ta.insertAdjacentElement('afterend', createSmileyPicker(ta));
-            }
-        });
+        /* intentionally empty — handled by initForumEditors() */
     }
 
     /* Init when DOM is ready */
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', function () {
+            initForumEditors();
             bindPickButtons();
             bindEditButtons();
             bindSmileyPickers();
         });
     } else {
+        initForumEditors();
         bindPickButtons();
         bindEditButtons();
         bindSmileyPickers();

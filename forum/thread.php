@@ -87,6 +87,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'edit_
     $backPage = max(1, (int)($_POST['back_page'] ?? 1));
 
     if ($postId > 0 && $content !== '') {
+        $content = sanitise_html($content);
         $postRow = db_row(
             'SELECT id, user_id FROM forum_posts WHERE id = ? AND thread_id = ? AND is_deleted = 0',
             [$postId, $threadId]
@@ -225,8 +226,20 @@ include SITE_ROOT . '/includes/header.php';
                     </form>
                     <?php endif; ?>
                 </div>
-                <div class="forum-post-content" id="post-content-<?= (int)$post['id'] ?>"><?= nl2br(linkify(smilify($post['content']))) ?></div>
-                <?php if ($user && ((int)$post['user_id'] === (int)$user['id'] || is_admin())): ?>
+                <div class="forum-post-content" id="post-content-<?= (int)$post['id'] ?>"><?php
+                    if (strip_tags($post['content']) !== $post['content']) {
+                        // HTML content from the rich editor
+                        echo sanitise_html($post['content']);
+                    } else {
+                        // Legacy plain-text content
+                        echo nl2br(linkify(smilify(e($post['content']))));
+                    }
+                ?></div>
+                <?php if ($user && ((int)$post['user_id'] === (int)$user['id'] || is_admin())):
+                    $editHtml = (strip_tags($post['content']) !== $post['content'])
+                        ? sanitise_html($post['content'])
+                        : nl2br(e($post['content']));
+                ?>
                 <div class="forum-post-edit-form" id="post-edit-<?= (int)$post['id'] ?>" style="display:none;">
                     <form method="post" action="<?= SITE_URL ?>/forum/thread.php?id=<?= (int)$threadId ?>">
                         <?= csrf_field() ?>
@@ -234,8 +247,26 @@ include SITE_ROOT . '/includes/header.php';
                         <input type="hidden" name="post_id" value="<?= (int)$post['id'] ?>">
                         <input type="hidden" name="back_page" value="<?= $page ?>">
                         <div class="form-group">
-                            <textarea name="content" rows="5" required
-                                      class="forum-edit-textarea"><?= e($post['content']) ?></textarea>
+                            <div class="blog-toolbar forum-editor-toolbar" role="toolbar" aria-label="Text formatting">
+                                <button type="button" class="blog-tb-btn" data-cmd="bold" title="Bold"><b>B</b></button>
+                                <button type="button" class="blog-tb-btn" data-cmd="italic" title="Italic"><i>I</i></button>
+                                <button type="button" class="blog-tb-btn" data-cmd="underline" title="Underline"><u>U</u></button>
+                                <button type="button" class="blog-tb-btn" data-cmd="strikeThrough" title="Strikethrough"><s>S</s></button>
+                                <span class="blog-tb-sep"></span>
+                                <button type="button" class="blog-tb-btn" data-cmd="insertUnorderedList" title="Bullet list">&#8226;&#8212;</button>
+                                <button type="button" class="blog-tb-btn" data-cmd="insertOrderedList"   title="Numbered list">1&#8212;</button>
+                                <button type="button" class="blog-tb-btn" data-cmd="formatBlock" data-val="blockquote" title="Blockquote">&#10078;</button>
+                                <span class="blog-tb-sep"></span>
+                                <button type="button" class="blog-tb-btn forum-editor-link-btn" title="Insert link">&#128279;</button>
+                                <button type="button" class="blog-tb-btn forum-editor-img-upload-btn" title="Upload image">&#128247;</button>
+                                <input type="file" accept="image/*" class="sr-only forum-editor-img-input">
+                            </div>
+                            <div class="blog-editor forum-editor"
+                                 contenteditable="true"
+                                 role="textbox"
+                                 aria-multiline="true"
+                                 data-placeholder="Edit your post…"><?= $editHtml ?></div>
+                            <textarea name="content" class="sr-only" aria-hidden="true" tabindex="-1"></textarea>
                         </div>
                         <div class="form-actions">
                             <button type="submit" class="btn btn-sm btn-primary">Save</button>
@@ -275,9 +306,31 @@ include SITE_ROOT . '/includes/header.php';
             <input type="hidden" name="thread_id" value="<?= (int)$threadId ?>">
             <input type="hidden" name="media_id" id="forum-media-id" value="">
             <div class="form-group">
-                <label for="content">Your reply</label>
-                <textarea id="content" name="content" rows="6" required
-                          placeholder="Write your reply here…"></textarea>
+                <label>Your reply</label>
+                <div class="blog-toolbar forum-editor-toolbar" role="toolbar" aria-label="Text formatting">
+                    <button type="button" class="blog-tb-btn" data-cmd="bold" title="Bold"><b>B</b></button>
+                    <button type="button" class="blog-tb-btn" data-cmd="italic" title="Italic"><i>I</i></button>
+                    <button type="button" class="blog-tb-btn" data-cmd="underline" title="Underline"><u>U</u></button>
+                    <button type="button" class="blog-tb-btn" data-cmd="strikeThrough" title="Strikethrough"><s>S</s></button>
+                    <span class="blog-tb-sep"></span>
+                    <button type="button" class="blog-tb-btn" data-cmd="formatBlock" data-val="h2" title="Heading 2">H2</button>
+                    <button type="button" class="blog-tb-btn" data-cmd="formatBlock" data-val="h3" title="Heading 3">H3</button>
+                    <span class="blog-tb-sep"></span>
+                    <button type="button" class="blog-tb-btn" data-cmd="insertUnorderedList" title="Bullet list">&#8226;&#8212;</button>
+                    <button type="button" class="blog-tb-btn" data-cmd="insertOrderedList"   title="Numbered list">1&#8212;</button>
+                    <button type="button" class="blog-tb-btn" data-cmd="formatBlock" data-val="blockquote" title="Blockquote">&#10078;</button>
+                    <span class="blog-tb-sep"></span>
+                    <button type="button" class="blog-tb-btn forum-editor-link-btn" title="Insert link">&#128279;</button>
+                    <button type="button" class="blog-tb-btn forum-editor-img-upload-btn" title="Upload image">&#128247;</button>
+                    <input type="file" accept="image/*" class="sr-only forum-editor-img-input">
+                </div>
+                <div class="blog-editor forum-editor"
+                     contenteditable="true"
+                     role="textbox"
+                     aria-multiline="true"
+                     aria-label="Reply content"
+                     data-placeholder="Write your reply here…"></div>
+                <textarea name="content" class="sr-only" aria-hidden="true" tabindex="-1"></textarea>
             </div>
             <div class="forum-image-picker-wrap">
                 <button type="button" class="btn btn-sm btn-secondary forum-pick-image-btn">

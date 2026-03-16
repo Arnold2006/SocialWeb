@@ -47,6 +47,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     if ($content === '') {
         $errors[] = 'Post content is required.';
+    } else {
+        $content = sanitise_html($content);
+        if ($content === '') {
+            $errors[] = 'Post content is required.';
+        }
     }
 
     // Validate media_id belongs to this user (if provided)
@@ -153,9 +158,31 @@ include SITE_ROOT . '/includes/header.php';
             </div>
 
             <div class="form-group">
-                <label for="content">Your Post</label>
-                <textarea id="content" name="content" rows="10" required
-                          placeholder="Write your post here…"><?= isset($_POST['content']) ? e($_POST['content']) : '' ?></textarea>
+                <label>Your Post</label>
+                <div class="blog-toolbar forum-editor-toolbar" role="toolbar" aria-label="Text formatting">
+                    <button type="button" class="blog-tb-btn" data-cmd="bold" title="Bold"><b>B</b></button>
+                    <button type="button" class="blog-tb-btn" data-cmd="italic" title="Italic"><i>I</i></button>
+                    <button type="button" class="blog-tb-btn" data-cmd="underline" title="Underline"><u>U</u></button>
+                    <button type="button" class="blog-tb-btn" data-cmd="strikeThrough" title="Strikethrough"><s>S</s></button>
+                    <span class="blog-tb-sep"></span>
+                    <button type="button" class="blog-tb-btn" data-cmd="formatBlock" data-val="h2" title="Heading 2">H2</button>
+                    <button type="button" class="blog-tb-btn" data-cmd="formatBlock" data-val="h3" title="Heading 3">H3</button>
+                    <span class="blog-tb-sep"></span>
+                    <button type="button" class="blog-tb-btn" data-cmd="insertUnorderedList" title="Bullet list">&#8226;&#8212;</button>
+                    <button type="button" class="blog-tb-btn" data-cmd="insertOrderedList"   title="Numbered list">1&#8212;</button>
+                    <button type="button" class="blog-tb-btn" data-cmd="formatBlock" data-val="blockquote" title="Blockquote">&#10078;</button>
+                    <span class="blog-tb-sep"></span>
+                    <button type="button" class="blog-tb-btn forum-editor-link-btn" title="Insert link">&#128279;</button>
+                    <button type="button" class="blog-tb-btn forum-editor-img-upload-btn" title="Upload image">&#128247;</button>
+                    <input type="file" accept="image/*" class="sr-only forum-editor-img-input">
+                </div>
+                <div class="blog-editor forum-editor"
+                     contenteditable="true"
+                     role="textbox"
+                     aria-multiline="true"
+                     aria-label="Post content"
+                     data-placeholder="Write your post here…"><?= isset($_POST['content']) ? sanitise_html($_POST['content']) : '' ?></div>
+                <textarea name="content" class="sr-only" aria-hidden="true" tabindex="-1"></textarea>
             </div>
 
             <div class="forum-image-picker-wrap">
