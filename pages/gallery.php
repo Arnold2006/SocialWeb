@@ -70,9 +70,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwn) {
             break;
 
         case 'upload_media':
-            $isAjax   = !empty($_SERVER['HTTP_X_REQUESTED_WITH'])
-                        && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
-            $aId      = sanitise_int($_POST['album_id'] ?? 0);
+            $isAjax     = !empty($_SERVER['HTTP_X_REQUESTED_WITH'])
+                          && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
+            $aId        = sanitise_int($_POST['album_id'] ?? 0);
+            // When JS sends multiple batches, only create the wall post on the last one
+            $createPost = ($_POST['create_post'] ?? '1') !== '0';
             $uploaded = 0;
             $errors   = [];
             $uploadedMediaIds = [];
@@ -112,7 +114,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwn) {
             }
 
             // Create a system wall post announcing the upload
-            if ($uploaded > 0 && $aId > 0 && !empty($uploadedMediaIds)) {
+            if ($uploaded > 0 && $aId > 0 && !empty($uploadedMediaIds) && $createPost) {
                 $uploadAlbum = db_row(
                     'SELECT title FROM albums WHERE id = ? AND user_id = ? AND is_deleted = 0',
                     [$aId, (int)$currentUser['id']]
@@ -357,7 +359,8 @@ include SITE_ROOT . '/includes/header.php';
                 <p class="muted">JPG, PNG, GIF, WebP, MP4, WebM · Max <?= (int)(MAX_UPLOAD_BYTES / 1024 / 1024) ?> MB per file · Multiple files allowed</p>
             </div>
             <div class="dropzone-previews" id="dropzone-previews"></div>
-            <form method="POST" enctype="multipart/form-data" id="gallery-upload-form">
+            <form method="POST" enctype="multipart/form-data" id="gallery-upload-form"
+                  data-batch-size="<?= MAX_UPLOAD_FILES ?>">
                 <?= csrf_field() ?>
                 <input type="hidden" name="action" value="upload_media">
                 <input type="hidden" name="album_id" value="<?= $albumId ?>">

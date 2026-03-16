@@ -809,83 +809,118 @@ if (avatarInput && cropContainer && cropCanvas) {
         if (el) el.style.display = 'none';
     }
 
-    // On form submit, upload via XHR to show real progress
+    // On form submit, upload via XHR in batches to work around PHP's
+    // max_file_uploads limit (default: 20). Each batch is sent sequentially
+    // and the wall post is only created after the final batch completes.
     uploadForm.addEventListener('submit', (e) => {
         e.preventDefault();
         if (selectedFiles.length === 0) return;
 
-        const dt = new DataTransfer();
-        selectedFiles.forEach((f) => dt.items.add(f));
-        fileInput.files = dt.files;
+        const BATCH_SIZE   = parseInt(uploadForm.dataset.batchSize || '20', 10);
+        const batches      = [];
+        for (let i = 0; i < selectedFiles.length; i += BATCH_SIZE) {
+            batches.push(selectedFiles.slice(i, i + BATCH_SIZE));
+        }
 
-        const formData    = new FormData(uploadForm);
-        const totalFiles  = selectedFiles.length;
-        const fileWord    = (n) => n + ' file' + (n !== 1 ? 's' : '');
+        const totalFiles   = selectedFiles.length;
+        const totalBatches = batches.length;
+        const batchPortion = 100 / totalBatches;  // % of the bar each batch covers
+        const fileWord     = (n) => n + ' file' + (n !== 1 ? 's' : '');
 
         setProgress(0, 'Preparing ' + fileWord(totalFiles) + '…', 'upload');
         if (uploadBtn) uploadBtn.disabled = true;
 
-        const xhr = new XMLHttpRequest();
-        xhr.open('POST', window.location.href, true);
-        xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+        let batchIndex       = 0;
+        let totalUploaded    = 0;
+        let allErrors        = [];
+        let finalRedirectUrl = window.location.href;
 
-        // Track whether the server has already responded (to avoid overwriting the
-        // final state with a late-firing processing animation timer).
-        let serverDone = false;
-        let processingTimer = null;
-
-        xhr.upload.addEventListener('progress', (ev) => {
-            if (ev.lengthComputable) {
-                // Map real upload progress to 0–60 % of the bar
-                const ratio = ev.loaded / ev.total;
-                const pct   = Math.round(ratio * 60);
-                setProgress(pct, 'Uploading ' + fileWord(totalFiles) + '… ' + Math.round(ratio * 100) + '%', 'upload');
-            }
-        });
-
-        // All bytes sent — server is now scrubbing and resizing
-        xhr.upload.addEventListener('load', () => {
-            if (serverDone) return;
-            setProgress(PCT_SCRUB_START, 'Scrubbing metadata…', 'scrub');
-            processingTimer = setTimeout(() => {
-                if (!serverDone) {
-                    setProgress(PCT_RESIZE_START, 'Resizing images…', 'resize');
-                }
-            }, SCRUB_DELAY_MS);
-        });
-
-        xhr.addEventListener('load', () => {
-            serverDone = true;
-            if (processingTimer) clearTimeout(processingTimer);
-
-            let redirectUrl = window.location.href;
-            try {
-                const data = JSON.parse(xhr.responseText);
-                redirectUrl = data.redirect || redirectUrl;
+        function uploadBatch() {
+            if (batchIndex >= totalBatches) {
                 const msgs = [];
-                if (data.uploaded > 0) {
-                    msgs.push(fileWord(data.uploaded) + ' uploaded successfully.');
-                }
-                if (data.errors && data.errors.length > 0) {
-                    msgs.push(...data.errors);
-                }
+                if (totalUploaded > 0) msgs.push(fileWord(totalUploaded) + ' uploaded successfully.');
+                if (allErrors.length > 0) msgs.push(...allErrors);
                 setProgress(100, msgs.length > 0 ? msgs.join(' ') : 'Done.', 'done');
-            } catch (_) {
-                // Server returned non-JSON; fall back to the current page
-                setProgress(100, 'Done.', 'done');
+                setTimeout(() => { window.location.href = finalRedirectUrl; }, 800);
+                return;
             }
-            setTimeout(() => { window.location.href = redirectUrl; }, 800);
-        });
 
-        xhr.addEventListener('error', () => {
-            serverDone = true;
-            if (processingTimer) clearTimeout(processingTimer);
-            hideProgress();
-            if (uploadBtn) uploadBtn.disabled = false;
-            alert('Upload failed. Please try again.');
-        });
+            const batch       = batches[batchIndex];
+            const isLastBatch = batchIndex === totalBatches - 1;
+            const batchStart  = batchIndex * batchPortion;
 
-        xhr.send(formData);
+            const dt = new DataTransfer();
+            batch.forEach((f) => dt.items.add(f));
+            fileInput.files = dt.files;
+
+            const formData = new FormData(uploadForm);
+            // Tell the server to create the wall post only on the last batch
+            formData.set('create_post', isLastBatch ? '1' : '0');
+
+            const batchLabel = totalBatches > 1
+                ? ' (' + (batchIndex + 1) + '/' + totalBatches + ')'
+                : '';
+
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', window.location.href, true);
+            xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+
+            // Track whether the server has already responded (to avoid overwriting the
+            // final state with a late-firing processing animation timer).
+            let serverDone    = false;
+            let processingTimer = null;
+
+            xhr.upload.addEventListener('progress', (ev) => {
+                if (ev.lengthComputable) {
+                    // Map real upload progress to 0–60 % of this batch's portion of the bar
+                    const ratio = ev.loaded / ev.total;
+                    const pct   = Math.round(batchStart + batchPortion * ratio * 0.60);
+                    setProgress(pct, 'Uploading' + batchLabel + '… ' + Math.round(ratio * 100) + '%', 'upload');
+                }
+            });
+
+            // All bytes sent — server is now scrubbing and resizing
+            xhr.upload.addEventListener('load', () => {
+                if (serverDone) return;
+                const pct = Math.round(batchStart + batchPortion * PCT_SCRUB_START / 100);
+                setProgress(pct, 'Scrubbing metadata…', isLastBatch ? 'scrub' : 'upload');
+                processingTimer = setTimeout(() => {
+                    if (!serverDone) {
+                        const pct2 = Math.round(batchStart + batchPortion * PCT_RESIZE_START / 100);
+                        setProgress(pct2, 'Resizing images…', isLastBatch ? 'resize' : 'upload');
+                    }
+                }, SCRUB_DELAY_MS);
+            });
+
+            xhr.addEventListener('load', () => {
+                serverDone = true;
+                if (processingTimer) clearTimeout(processingTimer);
+
+                try {
+                    const data = JSON.parse(xhr.responseText);
+                    totalUploaded    += (data.uploaded || 0);
+                    finalRedirectUrl  = data.redirect || finalRedirectUrl;
+                    if (data.errors && data.errors.length > 0) allErrors.push(...data.errors);
+                } catch (_) {
+                    // Server returned non-JSON; continue with next batch
+                }
+
+                batchIndex++;
+                uploadBatch();
+            });
+
+            xhr.addEventListener('error', () => {
+                serverDone = true;
+                if (processingTimer) clearTimeout(processingTimer);
+                hideProgress();
+                if (uploadBtn) uploadBtn.disabled = false;
+                alert('Upload failed. Please try again.');
+            });
+
+            xhr.send(formData);
+        }
+
+        uploadBatch();
     });
 })();
 
