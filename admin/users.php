@@ -128,7 +128,7 @@ include SITE_ROOT . '/includes/header.php';
                             <button name="action" value="ban" class="btn btn-xs btn-danger">Ban</button>
                             <?php endif; ?>
                             <button name="action" value="delete" class="btn btn-xs btn-danger"
-                                    onclick="return confirm('Delete user and all content?')">Delete</button>
+                                    data-confirm="Delete user and all content?">Delete</button>
                         </form>
                         <?php else: ?>
                         <span class="muted">You</span>

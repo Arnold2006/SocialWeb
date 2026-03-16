@@ -178,7 +178,7 @@ include SITE_ROOT . '/includes/header.php';
                 <?= csrf_field() ?>
                 <input type="hidden" name="action" value="delete_thread">
                 <button type="submit" class="btn btn-sm btn-danger"
-                        onclick="return confirm('Delete this thread and all its posts?')">Delete Thread</button>
+                        data-confirm="Delete this thread and all its posts?">Delete Thread</button>
             </form>
         </div>
         <?php endif; ?>
@@ -222,7 +222,7 @@ include SITE_ROOT . '/includes/header.php';
                         <input type="hidden" name="post_id" value="<?= (int)$post['id'] ?>">
                         <input type="hidden" name="back_page" value="<?= $page ?>">
                         <button type="submit" class="btn btn-xs btn-danger"
-                                onclick="return confirm('Delete this post?')">Delete</button>
+                                data-confirm="Delete this post?">Delete</button>
                     </form>
                     <?php endif; ?>
                 </div>

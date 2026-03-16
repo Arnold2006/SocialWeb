@@ -1652,6 +1652,47 @@ if (avatarInput && cropContainer && cropCanvas) {
     });
 }());
 
+// ── Toggle visibility via data-toggle ────────────────────────────────────────
+// <button data-toggle="elementId"> toggles the 'hidden' class on the target element.
+document.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-toggle]');
+    if (!btn) return;
+    const target = document.getElementById(btn.dataset.toggle);
+    if (target) target.classList.toggle('hidden');
+});
+
+// ── Confirmation dialogs via data-confirm ─────────────────────────────────────
+// <button data-confirm="message"> shows a confirm dialog before form submission.
+document.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-confirm]');
+    if (!btn) return;
+    if (!confirm(btn.dataset.confirm)) {
+        e.preventDefault();
+    }
+});
+
+// ── Clipboard copy via data-copy ──────────────────────────────────────────────
+// <button data-copy="text"> copies text to the clipboard.
+document.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-copy]');
+    if (!btn) return;
+    navigator.clipboard.writeText(btn.dataset.copy).catch(() => {});
+});
+
+// ── Chat widget trigger via data-chat-user-id ─────────────────────────────────
+// <button data-chat-user-id="…" data-chat-username="…" data-chat-avatar="…">
+document.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-chat-user-id]');
+    if (!btn) return;
+    if (typeof ChatWidget !== 'undefined') {
+        ChatWidget.startChat(
+            parseInt(btn.dataset.chatUserId, 10),
+            btn.dataset.chatUsername || '',
+            btn.dataset.chatAvatar   || ''
+        );
+    }
+});
+
 // ── Smiley Picker — auto-initialise ──────────────────────────────────────────
 
 (function () {

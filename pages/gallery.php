@@ -114,8 +114,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwn) {
             break;
 
         case 'move_album':
-            $aId    = sanitise_int($_POST['album_id'] ?? 0);
-            $newCat = sanitise_int($_POST['new_category_id'] ?? 0);
+            $aId       = sanitise_int($_POST['album_id'] ?? 0);
+            $newCat    = sanitise_int($_POST['new_category_id'] ?? 0);
+            $sourceCat = sanitise_int($_POST['source_category_id'] ?? 0);
             if ($aId) {
                 $newCatId = $newCat ?: null;
                 // Verify the target category belongs to the owner (or is null)
@@ -134,7 +135,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwn) {
                 );
                 flash_set('success', 'Album moved.');
             }
-            redirect($galleryBase . '&album=' . $aId);
+            // Redirect back to the source category if triggered from albums grid,
+            // otherwise redirect to the album detail view.
+            if ($sourceCat) {
+                redirect($galleryBase . '&cat=' . $sourceCat);
+            } else {
+                redirect($galleryBase . '&album=' . $aId);
+            }
             break;
 
         case 'delete_album':
@@ -406,10 +413,10 @@ include SITE_ROOT . '/includes/header.php';
             <div class="album-header-actions">
                 <!-- Rename album -->
                 <button type="button" class="btn btn-secondary btn-sm"
-                        onclick="document.getElementById('rename-album-form-<?= (int)$currentAlbum['id'] ?>').classList.toggle('hidden')">Rename</button>
+                        data-toggle="rename-album-form-<?= (int)$currentAlbum['id'] ?>">Rename</button>
                 <!-- Move album -->
                 <button type="button" class="btn btn-secondary btn-sm"
-                        onclick="document.getElementById('move-album-form-<?= (int)$currentAlbum['id'] ?>').classList.toggle('hidden')">Move to Category</button>
+                        data-toggle="move-album-form-<?= (int)$currentAlbum['id'] ?>">Move to Category</button>
             </div>
 
             <div id="rename-album-form-<?= (int)$currentAlbum['id'] ?>" class="hidden inline-form-row">
@@ -530,7 +537,7 @@ include SITE_ROOT . '/includes/header.php';
 
         <!-- Rename category -->
         <button type="button" class="btn btn-secondary btn-sm"
-                onclick="document.getElementById('rename-cat-form').classList.toggle('hidden')">Rename Category</button>
+                data-toggle="rename-cat-form">Rename Category</button>
         <div id="rename-cat-form" class="hidden inline-form-row">
             <form method="POST" class="inline-form">
                 <?= csrf_field() ?>
@@ -547,7 +554,7 @@ include SITE_ROOT . '/includes/header.php';
             <input type="hidden" name="action" value="delete_category">
             <input type="hidden" name="category_id" value="<?= $categoryId ?>">
             <button type="submit" class="btn btn-danger btn-sm"
-                    onclick="return confirm('Delete this category? Albums inside will become uncategorised.')">Delete Category</button>
+                    data-confirm="Delete this category? Albums inside will become uncategorised.">Delete Category</button>
         </form>
     </div>
     <?php endif; ?>
@@ -594,13 +601,35 @@ include SITE_ROOT . '/includes/header.php';
                 </a>
                 <?php if ($isOwn): ?>
                 <div class="album-actions">
+                    <!-- Move album -->
+                    <button type="button" class="btn btn-secondary btn-xs"
+                            data-toggle="move-album-card-form-<?= (int)$album['id'] ?>">Move</button>
+                    <div id="move-album-card-form-<?= (int)$album['id'] ?>" class="hidden inline-form-row">
+                        <form method="POST" class="inline-form">
+                            <?= csrf_field() ?>
+                            <input type="hidden" name="action" value="move_album">
+                            <input type="hidden" name="album_id" value="<?= (int)$album['id'] ?>">
+                            <input type="hidden" name="source_category_id" value="<?= $categoryId ?>">
+                            <select name="new_category_id">
+                                <option value="0">(No category)</option>
+                                <?php foreach ($categories as $cat): ?>
+                                <option value="<?= (int)$cat['id'] ?>"
+                                    <?= ((int)$album['category_id'] === (int)$cat['id']) ? 'selected' : '' ?>>
+                                    <?= e($cat['title']) ?>
+                                </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <button type="submit" class="btn btn-primary btn-xs">Move</button>
+                        </form>
+                    </div>
+                    <!-- Delete album -->
                     <form method="POST" class="inline-form">
                         <?= csrf_field() ?>
                         <input type="hidden" name="action" value="delete_album">
                         <input type="hidden" name="album_id" value="<?= (int)$album['id'] ?>">
                         <input type="hidden" name="category_id" value="<?= $categoryId ?>">
                         <button type="submit" class="btn btn-danger btn-xs"
-                                onclick="return confirm('Delete album?')">Delete</button>
+                                data-confirm="Delete album?">Delete</button>
                     </form>
                 </div>
                 <?php endif; ?>
@@ -670,7 +699,7 @@ include SITE_ROOT . '/includes/header.php';
                         <input type="hidden" name="action" value="delete_category">
                         <input type="hidden" name="category_id" value="<?= (int)$cat['id'] ?>">
                         <button type="submit" class="btn btn-danger btn-xs"
-                                onclick="return confirm('Delete this category? Albums inside will become uncategorised.')">Delete</button>
+                                data-confirm="Delete this category? Albums inside will become uncategorised.">Delete</button>
                     </form>
                 </div>
                 <?php endif; ?>

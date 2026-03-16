@@ -81,7 +81,7 @@ declare(strict_types=1);
             <input type="hidden" name="action" value="delete_media">
             <input type="hidden" name="media_id" value="<?= (int)$media['id'] ?>">
             <button type="submit" class="btn btn-danger btn-xs"
-                    onclick="return confirm('Delete this media?')">✕</button>
+                    data-confirm="Delete this media?">✕</button>
         </form>
         <?php endif; ?>
     </div>
@@ -114,7 +114,7 @@ declare(strict_types=1);
             <input type="hidden" name="action" value="delete_media">
             <input type="hidden" name="media_id" value="<?= (int)$media['id'] ?>">
             <button type="submit" class="btn btn-danger btn-xs"
-                    onclick="return confirm('Delete this media?')">✕</button>
+                    data-confirm="Delete this media?">✕</button>
         </form>
     </div>
     <?php endif; ?>

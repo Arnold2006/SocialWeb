@@ -91,7 +91,9 @@ include SITE_ROOT . '/includes/header.php';
                 <p><strong><?= e($n['from_username'] ?? 'Someone') ?></strong> sent you a message.</p>
                 <?php if ($n['from_user_id']): ?>
                 <button type="button" class="notif-chat-btn"
-                        onclick="ChatWidget.startChat(<?= json_encode((int)$n['from_user_id']) ?>, <?= json_encode($n['from_username'] ?? '') ?>, <?= json_encode(avatar_url(['avatar_path' => $n['from_avatar'] ?? null])) ?>)">Open chat</button>
+                        data-chat-user-id="<?= (int)$n['from_user_id'] ?>"
+                        data-chat-username="<?= e($n['from_username'] ?? '') ?>"
+                        data-chat-avatar="<?= e(avatar_url(['avatar_path' => $n['from_avatar'] ?? null])) ?>">Open chat</button>
                 <?php endif; ?>
                 <?php break;
             endswitch; ?>

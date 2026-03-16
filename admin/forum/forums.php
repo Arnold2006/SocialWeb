@@ -181,7 +181,7 @@ include SITE_ROOT . '/includes/header.php';
                                 <input type="hidden" name="action" value="delete">
                                 <input type="hidden" name="id" value="<?= (int)$f['id'] ?>">
                                 <button type="submit" class="btn btn-xs btn-danger"
-                                        onclick="return confirm('Delete this forum and ALL its contents?')">Delete</button>
+                                        data-confirm="Delete this forum and ALL its contents?">Delete</button>
                             </form>
                         </td>
                     </tr>
