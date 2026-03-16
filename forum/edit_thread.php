@@ -104,7 +104,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$pageTitle = 'Edit Thread — Forum';
+$pageTitle  = 'Edit Thread — Forum';
+$pageScript = ASSETS_URL . '/js/forum.js';
 
 include SITE_ROOT . '/includes/header.php';
 ?>

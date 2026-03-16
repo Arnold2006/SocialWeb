@@ -225,7 +225,7 @@ include SITE_ROOT . '/includes/header.php';
                     </form>
                     <?php endif; ?>
                 </div>
-                <div class="forum-post-content" id="post-content-<?= (int)$post['id'] ?>"><?= nl2br(e($post['content'])) ?></div>
+                <div class="forum-post-content" id="post-content-<?= (int)$post['id'] ?>"><?= nl2br(linkify(smilify($post['content']))) ?></div>
                 <?php if ($user && ((int)$post['user_id'] === (int)$user['id'] || is_admin())): ?>
                 <div class="forum-post-edit-form" id="post-edit-<?= (int)$post['id'] ?>" style="display:none;">
                     <form method="post" action="<?= SITE_URL ?>/forum/thread.php?id=<?= (int)$threadId ?>">
