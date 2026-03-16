@@ -643,6 +643,18 @@ textarea { resize: vertical; min-height: 80px; }
     margin-bottom: 0.5rem;
 }
 
+.load-more-blog-comments {
+    font-size: 0.82rem;
+    color: var(--color-info);
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    display: block;
+    margin-bottom: 0.5rem;
+    text-align: left;
+}
+
 .load-more-comments-note {
     font-size: 0.8rem;
     color: var(--color-text-muted);
