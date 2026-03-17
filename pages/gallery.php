@@ -25,7 +25,7 @@ $currentUser  = current_user();
 $galleryOwner = sanitise_int($_GET['user_id'] ?? (int)$currentUser['id']);
 $categoryId   = sanitise_int($_GET['cat'] ?? 0);
 $albumId      = sanitise_int($_GET['album'] ?? 0);
-$isOwn        = ((int)$currentUser['id'] === $galleryOwner);
+$isOwn        = ((int)$currentUser['id'] === $galleryOwner) || is_admin();
 
 $owner = db_row('SELECT id, username, avatar_path FROM users WHERE id = ? AND is_banned = 0', [$galleryOwner]);
 if (!$owner) {
