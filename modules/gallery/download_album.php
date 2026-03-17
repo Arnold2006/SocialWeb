@@ -175,9 +175,11 @@ $zip->close();
 
 // ── Stream the ZIP to the browser ────────────────────────────────────────────
 
-$siteSlug   = preg_replace('/[^\w]/', '_', SITE_NAME);
-$albumSlug  = preg_replace('/[^\w]/', '_', $albumTitle);
-$filename   = $siteSlug . '_album_' . $albumSlug . '_' . gmdate('Ymd') . '.zip';
+$slugify    = static fn (string $s): string => trim(preg_replace('/-{2,}/', '-', preg_replace('/[^\w\-]/', '-', $s)), '-');
+$siteSlug   = $slugify(SITE_NAME);
+$userSlug   = $slugify($ownerUsername);
+$albumSlug  = $slugify($albumTitle);
+$filename   = $siteSlug . '-' . $userSlug . '-' . $albumSlug . '.zip';
 $size       = filesize($tmpFile);
 
 while (ob_get_level()) {
