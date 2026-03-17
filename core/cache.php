@@ -108,13 +108,5 @@ function cache_flush(): void
  */
 function cache_invalidate_wall(): void
 {
-    // Wall cache keys are prefixed 'wall_feed_'
-    $files = glob(CACHE_DIR . '/*.cache');
-    if ($files === false) {
-        return;
-    }
-
-    // We store a companion meta-file to know the original key
-    // For simplicity just flush all cache on wall updates
     cache_flush();
 }

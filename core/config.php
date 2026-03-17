@@ -63,3 +63,4 @@ if (!defined('SESSION_LIFETIME')) define('SESSION_LIFETIME', 86400);   // 24 hou
 
 // ── Security ─────────────────────────────────────────────────────────────────
 if (!defined('CSRF_TOKEN_LENGTH')) define('CSRF_TOKEN_LENGTH', 32);
+if (!defined('SESSION_NAME'))      define('SESSION_NAME',      'TORSOCIAL_SESS');
