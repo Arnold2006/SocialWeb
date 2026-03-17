@@ -80,6 +80,20 @@ include SITE_ROOT . '/includes/header.php';
                 <?php endif; ?>
                 <?php break;
 
+                case 'photo_like': ?>
+                <p><strong><?= e($n['from_username'] ?? 'Someone') ?></strong> liked your photo.</p>
+                <?php if ($n['ref_id']):
+                    $photoRow = db_row(
+                        'SELECT user_id, album_id FROM media WHERE id = ? AND is_deleted = 0',
+                        [(int)$n['ref_id']]
+                    );
+                    if ($photoRow && $photoRow['album_id'] !== null):
+                ?>
+                <a href="<?= e(SITE_URL . '/pages/gallery.php?user_id=' . (int)$photoRow['user_id'] . '&album=' . (int)$photoRow['album_id']) ?>">View photo</a>
+                <?php   endif;
+                endif; ?>
+                <?php break;
+
                 case 'comment': ?>
                 <p><strong><?= e($n['from_username'] ?? 'Someone') ?></strong> commented on your post.</p>
                 <?php if ($n['ref_id']): ?>
