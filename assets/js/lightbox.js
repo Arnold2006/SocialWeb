@@ -516,9 +516,12 @@
     // Keyboard navigation
     document.addEventListener('keydown', (e) => {
         if (!overlay || overlay.style.display === 'none') return;
+        const activeEl = document.activeElement;
+        const activeTag = activeEl && activeEl.tagName;
+        const isTyping = activeTag === 'INPUT' || activeTag === 'TEXTAREA' || (activeEl && activeEl.isContentEditable);
         switch (e.key) {
-            case 'ArrowLeft':  navigate(-1); break;
-            case 'ArrowRight': navigate(1);  break;
+            case 'ArrowLeft':  if (!isTyping) navigate(-1); break;
+            case 'ArrowRight': if (!isTyping) navigate(1);  break;
             case 'Escape':     closeLightbox(); break;
         }
     });
