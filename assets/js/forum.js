@@ -334,14 +334,20 @@
                     editorDiv.focus();
                     var sel          = window.getSelection();
                     var selectedText = sel ? sel.toString() : '';
-                    var url          = prompt('Enter link URL (https://\u2026):', 'https://');
-                    if (!url || !/^https?:\/\//i.test(url)) return;
+                    var url          = prompt('Enter link URL (https://\u2026 or /page):', '');
+                    var decoded      = url ? (function (u) { try { return decodeURIComponent(u); } catch (_) { return u; } })(url) : '';
+                    if (!url || !/^(https?:\/\/|\/[^\/])/i.test(url) || decoded.indexOf('..') !== -1) return;
+                    var isInternal   = /^\//.test(url)
+                                    || (typeof window !== 'undefined'
+                                        && url.toLowerCase().indexOf(window.location.origin.toLowerCase()) === 0);
+                    var rel          = isInternal ? 'noopener' : 'noopener noreferrer nofollow';
+                    var targetAttr   = isInternal ? '' : ' target="_blank"';
                     try {
                         if (selectedText) {
                             document.execCommand('createLink', false, url);
                         } else {
                             document.execCommand('insertHTML', false,
-                                '<a href="' + escAttr(url) + '" rel="noopener noreferrer nofollow" target="_blank">'
+                                '<a href="' + escAttr(url) + '" rel="' + rel + '"' + targetAttr + '>'
                                 + escHtml(url) + '</a>');
                         }
                     } catch (_) {}
