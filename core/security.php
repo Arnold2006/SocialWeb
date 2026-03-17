@@ -128,7 +128,9 @@ function sanitise_html(string $html, int $maxBytes = 0): string
         return '';
     }
 
-    _sanitise_html_node($body, $dom, $allowedTags, $allowedAttrs);
+    $siteHost = strtolower(parse_url(SITE_URL, PHP_URL_HOST) ?? '');
+
+    _sanitise_html_node($body, $dom, $allowedTags, $allowedAttrs, $siteHost);
 
     $out = '';
     foreach ($body->childNodes as $child) {
@@ -136,30 +138,6 @@ function sanitise_html(string $html, int $maxBytes = 0): string
     }
 
     return trim($out);
-}
-
-/**
- * Return true when a DOMElement's sole meaningful child is an <img> element.
- * Pure-whitespace text nodes are ignored.  Used to distinguish image links
- * (which should remain active) from plain text links (which should not).
- *
- * @internal
- */
-function _sanitise_is_image_only_link(DOMNode $node): bool
-{
-    $meaningfulChild = null;
-    $meaningfulCount = 0;
-    foreach ($node->childNodes as $child) {
-        if ($child->nodeType === XML_TEXT_NODE && trim($child->nodeValue) === '') {
-            continue;
-        }
-        $meaningfulChild = $child;
-        $meaningfulCount++;
-    }
-    return $meaningfulCount === 1
-        && $meaningfulChild !== null
-        && $meaningfulChild->nodeType === XML_ELEMENT_NODE
-        && strtolower($meaningfulChild->nodeName) === 'img';
 }
 
 /**
@@ -171,7 +149,8 @@ function _sanitise_html_node(
     DOMNode $parent,
     DOMDocument $dom,
     array $allowedTags,
-    array $allowedAttrs
+    array $allowedAttrs,
+    string $siteHost
 ): void {
     $toProcess = [];
     foreach ($parent->childNodes as $node) {
@@ -210,7 +189,7 @@ function _sanitise_html_node(
             // Recurse into the now-inlined children
             foreach ($children as $child) {
                 if ($child->nodeType === XML_ELEMENT_NODE) {
-                    _sanitise_html_node($child, $dom, $allowedTags, $allowedAttrs);
+                    _sanitise_html_node($child, $dom, $allowedTags, $allowedAttrs, $siteHost);
                 }
             }
             continue;
@@ -233,17 +212,23 @@ function _sanitise_html_node(
         // Validate and harden <a href>
         if ($tag === 'a') {
             $href = $node->getAttribute('href');
-            if (!preg_match('/^https?:\/\//i', $href)) {
-                $node->removeAttribute('href');
+            if (preg_match('/^https?:\/\//i', $href)) {
+                // Absolute URL — check whether it is on the same site.
+                $hrefHost = strtolower(parse_url($href, PHP_URL_HOST) ?? '');
+                if ($siteHost !== '' && $hrefHost === $siteHost) {
+                    // Same-site absolute URL — treat as internal.
+                    $node->setAttribute('rel', 'noopener');
+                } else {
+                    // External URL — open in a new tab with full safety attributes.
+                    $node->setAttribute('rel', 'noopener noreferrer nofollow');
+                    $node->setAttribute('target', '_blank');
+                }
+            } elseif ((preg_match('/^\/[^\/]/u', $href) || $href === '/')
+                      && strpos($href, '..') === false) {
+                // Relative path on the same site (no traversal) — safe internal link.
+                $node->setAttribute('rel', 'noopener');
             } else {
-                $node->setAttribute('rel', 'noopener noreferrer nofollow');
-                $node->setAttribute('target', '_blank');
-            }
-
-            // Inserted text links must not be active: only <a> tags whose sole
-            // non-empty child is a local <img> (i.e. image links to the original)
-            // retain their href.  All other links have href stripped.
-            if ($node->hasAttribute('href') && !_sanitise_is_image_only_link($node)) {
+                // Anything else (javascript:, data:, empty, etc.) is unsafe.
                 $node->removeAttribute('href');
             }
         }
@@ -275,7 +260,7 @@ function _sanitise_html_node(
         }
 
         // Recurse into allowed element
-        _sanitise_html_node($node, $dom, $allowedTags, $allowedAttrs);
+        _sanitise_html_node($node, $dom, $allowedTags, $allowedAttrs, $siteHost);
     }
 }
 
