@@ -2204,6 +2204,11 @@ textarea { resize: vertical; min-height: 80px; }
     text-decoration: underline;
 }
 
+/* ── Media admin actions bar ─────────────────────────────── */
+.media-admin-actions {
+    margin-bottom: 1rem;
+}
+
 /* ── Lightbox overlay ────────────────────────────────────────── */
 #lightbox-overlay {
     position: fixed;

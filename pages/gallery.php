@@ -424,9 +424,11 @@ include SITE_ROOT . '/includes/header.php';
 
             <?php if ($isOwn): ?>
             <div class="album-header-actions">
+                <?php if ((int)$currentUser['id'] === $galleryOwner): ?>
                 <!-- Download album as ZIP -->
                 <a href="<?= e(SITE_URL . '/modules/gallery/download_album.php?album_id=' . (int)$currentAlbum['id']) ?>"
                    class="btn btn-secondary btn-sm">Download ZIP</a>
+                <?php endif; ?>
                 <!-- Rename album -->
                 <button type="button" class="btn btn-secondary btn-sm"
                         data-toggle="rename-album-form-<?= (int)$currentAlbum['id'] ?>">Rename</button>
@@ -635,9 +637,11 @@ include SITE_ROOT . '/includes/header.php';
                 </a>
                 <?php if ($isOwn): ?>
                 <div class="album-actions">
+                    <?php if ((int)$currentUser['id'] === $galleryOwner): ?>
                     <!-- Download album as ZIP -->
                     <a href="<?= e(SITE_URL . '/modules/gallery/download_album.php?album_id=' . (int)$album['id']) ?>"
                        class="btn btn-secondary btn-xs">Download ZIP</a>
+                    <?php endif; ?>
                     <!-- Move album -->
                     <button type="button" class="btn btn-secondary btn-xs"
                             data-toggle="move-album-card-form-<?= (int)$album['id'] ?>">Move</button>
