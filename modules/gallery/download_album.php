@@ -14,7 +14,7 @@
 /**
  * download_album.php — Stream a ZIP archive of all media in a single album.
  *
- * Only the album owner may download.  A valid authenticated session is
+ * The album owner or an admin may download.  A valid authenticated session is
  * sufficient; no CSRF token is required because this is a read-only GET
  * operation that produces no side-effects.
  *
@@ -40,15 +40,31 @@ if ($albumId <= 0) {
     redirect(SITE_URL . '/pages/gallery.php?user_id=' . $userId);
 }
 
-// Verify the album exists and belongs to the current user
-$album = db_row(
-    'SELECT id, title FROM albums WHERE id = ? AND user_id = ? AND is_deleted = 0',
-    [$albumId, $userId]
-);
+// Verify the album exists and belongs to the current user (admins may access any album)
+if (is_admin()) {
+    $album = db_row(
+        'SELECT id, title, user_id FROM albums WHERE id = ? AND is_deleted = 0',
+        [$albumId]
+    );
+} else {
+    $album = db_row(
+        'SELECT id, title, user_id FROM albums WHERE id = ? AND user_id = ? AND is_deleted = 0',
+        [$albumId, $userId]
+    );
+}
 if (!$album) {
     http_response_code(403);
     flash_set('error', 'Album not found or access denied.');
     redirect(SITE_URL . '/pages/gallery.php?user_id=' . $userId);
+}
+
+// Resolve the album owner (for README and media lookup)
+$albumOwnerId = (int) $album['user_id'];
+if ($albumOwnerId === $userId) {
+    $ownerUsername = $user['username'];
+} else {
+    $albumOwnerRow = db_row('SELECT username FROM users WHERE id = ?', [$albumOwnerId]);
+    $ownerUsername = $albumOwnerRow ? $albumOwnerRow['username'] : 'Unknown';
 }
 
 // ── Collect media files ───────────────────────────────────────────────────────
@@ -83,11 +99,16 @@ $resolvePath = function (string $path) use ($uploadsReal): ?string {
 };
 
 $mediaRows = db_query(
-    'SELECT id, type, storage_path, original_name
-     FROM media
-     WHERE album_id = ? AND user_id = ? AND is_deleted = 0
-     ORDER BY created_at ASC',
-    [$albumId, $userId]
+    is_admin()
+        ? 'SELECT id, type, storage_path, original_name
+           FROM media
+           WHERE album_id = ? AND is_deleted = 0
+           ORDER BY created_at ASC'
+        : 'SELECT id, type, storage_path, original_name
+           FROM media
+           WHERE album_id = ? AND user_id = ? AND is_deleted = 0
+           ORDER BY created_at ASC',
+    is_admin() ? [$albumId] : [$albumId, $userId]
 );
 
 /** @var array<array{abs: string, name: string}> $entries */
@@ -143,7 +164,7 @@ foreach ($entries as $entry) {
 $albumTitle = $album['title'];
 $readme  = SITE_NAME . ' — Album Export' . PHP_EOL;
 $readme .= 'Album: ' . $albumTitle . PHP_EOL;
-$readme .= 'Owner: ' . $user['username'] . PHP_EOL;
+$readme .= 'Owner: ' . $ownerUsername . PHP_EOL;
 $readme .= 'Exported: ' . gmdate('Y-m-d H:i:s') . ' UTC' . PHP_EOL . PHP_EOL;
 $readme .= 'Contents:' . PHP_EOL;
 $readme .= '  images/  — photos (original resolution, EXIF stripped)' . PHP_EOL;
