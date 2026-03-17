@@ -29,6 +29,28 @@ const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp
 // Allowed video MIME types
 const ALLOWED_VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/ogg'];
 
+// ── Upload helpers ────────────────────────────────────────────────────────────
+
+/**
+ * Map a PHP upload error code to a human-readable message.
+ *
+ * @param int $code  One of the UPLOAD_ERR_* constants
+ * @return string
+ */
+function upload_error_message(int $code): string
+{
+    return match ($code) {
+        UPLOAD_ERR_INI_SIZE   => 'The uploaded file exceeds the upload_max_filesize directive in php.ini.',
+        UPLOAD_ERR_FORM_SIZE  => 'The uploaded file exceeds the MAX_FILE_SIZE directive in the HTML form.',
+        UPLOAD_ERR_PARTIAL    => 'The uploaded file was only partially uploaded.',
+        UPLOAD_ERR_NO_FILE    => 'No file was uploaded.',
+        UPLOAD_ERR_NO_TMP_DIR => 'Missing a temporary folder.',
+        UPLOAD_ERR_CANT_WRITE => 'Failed to write file to disk.',
+        UPLOAD_ERR_EXTENSION  => 'A PHP extension stopped the file upload.',
+        default               => 'Unknown upload error (code ' . $code . ').',
+    };
+}
+
 // ── Hashing / deduplication ───────────────────────────────────────────────────
 
 /**
@@ -44,7 +66,7 @@ function media_hash(string $filePath): string
  *
  * @return array|null  Existing media row, or null if not found
  */
-function media_find_duplicate(string $hash, int $userId): ?array
+function media_find_duplicate(string $hash): ?array
 {
     // Deduplication: check across all users (disk-space savings)
     return db_row(
@@ -72,7 +94,7 @@ function process_image_upload(array $file, int $userId, int $albumId = 0): array
 {
     // Basic validation
     if ($file['error'] !== UPLOAD_ERR_OK) {
-        return ['ok' => false, 'error' => 'Upload error code: ' . $file['error'], 'media_id' => 0];
+        return ['ok' => false, 'error' => upload_error_message($file['error']), 'media_id' => 0];
     }
 
     if ($file['size'] > MAX_UPLOAD_BYTES) {
@@ -89,7 +111,7 @@ function process_image_upload(array $file, int $userId, int $albumId = 0): array
 
     // Hash for deduplication
     $hash = media_hash($file['tmp_name']);
-    $dupe = media_find_duplicate($hash, $userId);
+    $dupe = media_find_duplicate($hash);
 
     if ($dupe !== null) {
         // Reference existing record instead of re-storing file
@@ -231,7 +253,7 @@ function image_resize_and_save(\GdImage $gd, int $origW, int $origH, string $des
 function process_avatar_upload(array $file, int $userId, array $crop = []): array
 {
     if ($file['error'] !== UPLOAD_ERR_OK) {
-        return ['ok' => false, 'error' => 'Upload error.', 'paths' => []];
+        return ['ok' => false, 'error' => upload_error_message($file['error']), 'paths' => []];
     }
 
     if ($file['size'] > MAX_UPLOAD_BYTES) {
@@ -404,7 +426,7 @@ function process_cover_crop(array $media, array $crop): array
 function process_video_upload(array $file, int $userId, int $albumId = 0): array
 {
     if ($file['error'] !== UPLOAD_ERR_OK) {
-        return ['ok' => false, 'error' => 'Upload error.', 'media_id' => 0];
+        return ['ok' => false, 'error' => upload_error_message($file['error']), 'media_id' => 0];
     }
 
     if ($file['size'] > MAX_VIDEO_BYTES) {
@@ -419,7 +441,7 @@ function process_video_upload(array $file, int $userId, int $albumId = 0): array
     }
 
     $hash = media_hash($file['tmp_name']);
-    $dupe = media_find_duplicate($hash, $userId);
+    $dupe = media_find_duplicate($hash);
 
     if ($dupe !== null) {
         $newId = db_insert(

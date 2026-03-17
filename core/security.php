@@ -407,7 +407,7 @@ function session_start_secure(): void
     }
 
     session_start([
-        'name'            => 'TORSOCIAL_SESS',
+        'name'            => SESSION_NAME,
         'gc_maxlifetime'  => SESSION_LIFETIME,
         'cookie_lifetime' => SESSION_LIFETIME,
     ]);
@@ -433,9 +433,17 @@ function rate_limit(string $key, int $maxHits = 5, int $windowSec = 300): bool
     $data = ['hits' => [], 'blocked_until' => 0];
 
     if (file_exists($cacheFile)) {
-        $decoded = json_decode(file_get_contents($cacheFile), true);
-        if (is_array($decoded)) {
-            $data = $decoded;
+        $raw = file_get_contents($cacheFile);
+        if ($raw !== false) {
+            try {
+                $decoded = json_decode($raw, true, 3, JSON_THROW_ON_ERROR);
+                if (is_array($decoded)) {
+                    $data = $decoded;
+                }
+            } catch (\JsonException $e) {
+                // Corrupt cache file — start fresh
+                @unlink($cacheFile);
+            }
         }
     }
 
