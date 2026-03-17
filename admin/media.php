@@ -272,6 +272,13 @@ include SITE_ROOT . '/includes/header.php';
 
         <?php else: ?>
 
+        <?php if ($albumId > 0): ?>
+        <div class="media-admin-actions">
+            <a href="<?= e(SITE_URL . '/modules/gallery/download_album.php?album_id=' . $albumId) ?>"
+               class="btn btn-secondary btn-sm">Download ZIP</a>
+        </div>
+        <?php endif; ?>
+
         <div class="media-admin-grid">
             <?php foreach ($mediaList as $media): ?>
             <div class="media-admin-item">
