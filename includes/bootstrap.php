@@ -98,6 +98,7 @@ require_once APP_ROOT . '/core/security.php';
 require_once APP_ROOT . '/core/auth.php';
 require_once APP_ROOT . '/core/cache.php';
 require_once APP_ROOT . '/core/media_processor.php';
+require_once APP_ROOT . '/core/RequestValidator.php';
 require_once APP_ROOT . '/core/plugin_loader.php';
 require_once APP_ROOT . '/includes/functions.php';
 
