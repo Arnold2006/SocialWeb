@@ -40,7 +40,7 @@ $commentId = db_insert(
 
 // Notify blog post owner (if not self-comment).
 // Use the comment ID as ref_id so the notification can link directly to the comment.
-notify_user((int)$blogPost['user_id'], 'blog_comment', (int)$user['id'], (int)$commentId);
+notify_user((int)$blogPost['user_id'], 'comment', (int)$user['id'], (int)$commentId);
 
 echo json_encode([
     'ok'          => true,
