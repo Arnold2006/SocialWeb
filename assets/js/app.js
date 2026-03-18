@@ -1710,6 +1710,117 @@ if (avatarInput && cropContainer && cropCanvas) {
     });
 }());
 
+// ── Load More profile posts ───────────────────────────────────────────────────
+
+(function () {
+    'use strict';
+
+    const wrap = document.getElementById('profile-load-more-wrap');
+    const btn  = document.getElementById('profile-load-more-btn');
+    const feed = document.getElementById('profile-post-feed');
+
+    if (!wrap || !btn || !feed) return;
+
+    // Hide the button immediately if there are no more posts to load
+    if (feed.dataset.hasMore !== '1') {
+        wrap.classList.add('hidden');
+        return;
+    }
+
+    const BATCH_SIZE = parseInt(feed.dataset.offset || '10', 10);
+    const profileId  = feed.dataset.profileId || '';
+    let offset   = BATCH_SIZE;
+    let loading  = false;
+    let sentinel = null;
+
+    function watchLastPost() {
+        if (sentinel) {
+            sentinel.disconnect();
+            sentinel = null;
+        }
+
+        const posts = feed.querySelectorAll('.post-item');
+        if (!posts.length) return;
+        const lastPost = posts[posts.length - 1];
+
+        if (!('IntersectionObserver' in window)) {
+            wrap.classList.remove('hidden');
+            return;
+        }
+
+        sentinel = new IntersectionObserver(
+            (entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        wrap.classList.remove('hidden');
+                    } else {
+                        wrap.classList.add('hidden');
+                    }
+                });
+            },
+            { rootMargin: '0px', threshold: 0 }
+        );
+        sentinel.observe(lastPost);
+    }
+
+    wrap.classList.add('hidden');
+    watchLastPost();
+
+    btn.addEventListener('click', async function () {
+        if (loading) return;
+        loading = true;
+        btn.disabled    = true;
+        btn.textContent = 'Loading\u2026';
+
+        const baseUrl = document.querySelector('meta[name="site-url"]')?.content || '';
+
+        try {
+            const resp   = await fetch(
+                baseUrl + '/modules/wall/load_profile_posts.php'
+                    + '?user_id=' + encodeURIComponent(profileId)
+                    + '&offset='  + encodeURIComponent(offset),
+                { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } }
+            );
+            const result = await resp.json();
+
+            if (result.ok) {
+                const countBefore = feed.querySelectorAll('.post-item').length;
+
+                feed.insertAdjacentHTML('beforeend', result.html);
+                offset += BATCH_SIZE;
+
+                const allPosts  = feed.querySelectorAll('.post-item');
+                const newPosts  = Array.from(allPosts).slice(countBefore);
+                const lazyObs   = typeof window.lazyObserveImages === 'function' ? window.lazyObserveImages   : null;
+                const lbBindNew = typeof window.lightboxBindNew    === 'function' ? window.lightboxBindNew    : null;
+                newPosts.forEach(post => {
+                    if (lazyObs)   lazyObs(post);
+                    if (lbBindNew) lbBindNew(post);
+                });
+
+                if (!result.has_more) {
+                    wrap.classList.add('hidden');
+                    if (sentinel) {
+                        sentinel.disconnect();
+                        sentinel = null;
+                    }
+                } else {
+                    watchLastPost();
+                }
+            } else {
+                alert('Could not load more posts. Please try again.');
+            }
+        } catch (err) {
+            console.error('Load more profile posts failed:', err);
+            alert('Failed to load more posts. Please try again.');
+        } finally {
+            loading         = false;
+            btn.disabled    = false;
+            btn.textContent = 'Load More';
+        }
+    });
+}());
+
 // ── Toggle visibility via data-toggle ────────────────────────────────────────
 // <button data-toggle="elementId"> toggles the 'hidden' class on the target element.
 document.addEventListener('click', (e) => {
