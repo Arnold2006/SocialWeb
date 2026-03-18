@@ -56,8 +56,27 @@ function process_video_upload(array $file, int $userId, int $albumId = 0): array
         return ['ok' => true, 'error' => '', 'media_id' => (int) $newId];
     }
 
+    // Ensure upload directories exist before writing
+    $videoDirs = [
+        UPLOADS_DIR . '/videos/original',
+        UPLOADS_DIR . '/videos/processed',
+        UPLOADS_DIR . '/videos/thumbnails',
+    ];
+    foreach ($videoDirs as $dir) {
+        if (!is_dir($dir) && !mkdir($dir, 0755, true)) {
+            return ['ok' => false, 'error' => 'Could not create upload directory.', 'media_id' => 0];
+        }
+    }
+
+    // Derive the correct file extension from the validated MIME type
+    $ext = match ($mimeType) {
+        'video/webm' => 'webm',
+        'video/ogg'  => 'ogv',
+        default      => 'mp4',
+    };
+
     $baseName  = bin2hex(random_bytes(16));
-    $origPath  = UPLOADS_DIR . '/videos/original/' . $baseName . '.mp4';
+    $origPath  = UPLOADS_DIR . '/videos/original/' . $baseName . '.' . $ext;
     $thumbPath = UPLOADS_DIR . '/videos/thumbnails/' . $baseName . '.jpg';
 
     if (!move_uploaded_file($file['tmp_name'], $origPath)) {
@@ -101,7 +120,7 @@ function process_video_upload(array $file, int $userId, int $albumId = 0): array
         );
 
         // Strip metadata: re-encode without metadata stream
-        $processedPath = UPLOADS_DIR . '/videos/processed/' . $baseName . '.mp4';
+        $processedPath = UPLOADS_DIR . '/videos/processed/' . $baseName . '.' . $ext;
         shell_exec(
             escapeshellarg($ffmpeg) . ' -y -i ' . escapeshellarg($origPath) .
             ' -map_metadata -1 -c:v copy -c:a copy ' . escapeshellarg($processedPath) . ' 2>/dev/null'
