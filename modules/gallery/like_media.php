@@ -46,7 +46,7 @@ if ($existing) {
     $liked = true;
 
     // Notify media owner (if not self-like)
-    notify_user((int)$media['user_id'], 'photo_like', (int)$user['id'], $mediaId);
+    notify_user((int)$media['user_id'], 'like', (int)$user['id'], $mediaId);
 }
 
 $likeCount = (int) db_val('SELECT COUNT(*) FROM likes WHERE media_id = ?', [$mediaId]);
