@@ -64,8 +64,23 @@ function process_video_upload(array $file, int $userId, int $albumId = 0): array
         return ['ok' => false, 'error' => 'Could not save video.', 'media_id' => 0];
     }
 
+    // Insert the DB record immediately after saving the file so the video
+    // always appears in the album even if FFmpeg processing below fails or
+    // times out (leaving the file in original/ without a DB record otherwise).
+    $mediaId = db_insert(
+        'INSERT INTO media (user_id, album_id, type, file_hash, storage_path, thumbnail_path,
+                            size, mime_type, original_name, duration)
+         VALUES (?, ?, "video", ?, ?, ?, ?, ?, ?, ?)',
+        [
+            $userId, $albumId ?: null,
+            $hash, $origPath, null,
+            $file['size'], $mimeType, $file['name'] ?? null, null,
+        ]
+    );
+
     // Strip metadata and validate using ffmpeg (optional — if available)
-    $duration = null;
+    $duration  = null;
+    $finalPath = $origPath;
     if (is_executable('/usr/bin/ffprobe')) {
         $cmd      = '/usr/bin/ffprobe -v error -show_entries format=duration -of csv=p=0 ' . escapeshellarg($origPath);
         $output   = shell_exec($cmd);
@@ -73,6 +88,7 @@ function process_video_upload(array $file, int $userId, int $albumId = 0): array
 
         if ($duration !== null && $duration > MAX_VIDEO_DURATION) {
             @unlink($origPath);
+            db_exec('UPDATE media SET is_deleted = 1 WHERE id = ?', [(int) $mediaId]);
             return ['ok' => false, 'error' => 'Video exceeds maximum duration of ' . MAX_VIDEO_DURATION . ' seconds.', 'media_id' => 0];
         }
 
@@ -90,18 +106,22 @@ function process_video_upload(array $file, int $userId, int $albumId = 0): array
         );
         if (file_exists($processedPath)) {
             @unlink($origPath);
-            $origPath = $processedPath;
+            $finalPath = $processedPath;
         }
     }
 
-    $mediaId = db_insert(
-        'INSERT INTO media (user_id, album_id, type, file_hash, storage_path, thumbnail_path,
-                            size, mime_type, original_name, duration)
-         VALUES (?, ?, "video", ?, ?, ?, ?, ?, ?, ?)',
+    // Update the record with the final storage path, thumbnail and duration
+    // (these may differ from the initial insert if FFmpeg ran successfully).
+    $thumbExists  = file_exists($thumbPath);
+    $finalSize    = filesize($finalPath);
+    db_exec(
+        'UPDATE media SET storage_path = ?, thumbnail_path = ?, size = ?, duration = ? WHERE id = ?',
         [
-            $userId, $albumId ?: null,
-            $hash, $origPath, file_exists($thumbPath) ? $thumbPath : null,
-            filesize($origPath), 'video/mp4', $file['name'] ?? null, $duration,
+            $finalPath,
+            $thumbExists ? $thumbPath : null,
+            $finalSize !== false ? $finalSize : $file['size'],
+            $duration,
+            (int) $mediaId,
         ]
     );
 

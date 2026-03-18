@@ -491,7 +491,7 @@ include SITE_ROOT . '/includes/header.php';
             <div class="dropzone-inner">
                 <div class="dropzone-icon">📷</div>
                 <p>Drop images or videos here, or <span class="dropzone-link">click to browse</span></p>
-                <p class="muted">JPG, PNG, GIF, WebP, MP4, WebM · Max <?= (int)(MAX_UPLOAD_BYTES / 1024 / 1024) ?> MB per file · Multiple files allowed</p>
+                <p class="muted">JPG, PNG, GIF, WebP · Max <?= (int)(MAX_UPLOAD_BYTES / 1024 / 1024) ?> MB · MP4, WebM · Max <?= (int)(MAX_VIDEO_BYTES / 1024 / 1024) ?> MB · Multiple files allowed</p>
             </div>
             <div class="dropzone-previews" id="dropzone-previews"></div>
             <form method="POST" enctype="multipart/form-data" id="gallery-upload-form"
@@ -609,20 +609,28 @@ include SITE_ROOT . '/includes/header.php';
                             $coverUrl = SITE_URL . $album['cover_path'];
                         } elseif (!empty($album['cover_id'])) {
                             $coverMedia = db_row(
-                                'SELECT thumb_path FROM media WHERE id = ? AND is_deleted = 0',
+                                'SELECT thumb_path, thumbnail_path FROM media WHERE id = ? AND is_deleted = 0',
                                 [(int)$album['cover_id']]
                             );
-                            if ($coverMedia && $coverMedia['thumb_path']) {
-                                $coverUrl = get_media_url($coverMedia, 'thumb');
+                            if ($coverMedia) {
+                                if (!empty($coverMedia['thumb_path'])) {
+                                    $coverUrl = get_media_url($coverMedia, 'thumb');
+                                } elseif (!empty($coverMedia['thumbnail_path'])) {
+                                    $coverUrl = get_media_url($coverMedia, 'thumbnail');
+                                }
                             }
                         }
                         if (!$coverUrl) {
                             $firstImg = db_row(
-                                'SELECT thumb_path FROM media WHERE album_id = ? AND is_deleted = 0 ORDER BY created_at ASC LIMIT 1',
+                                'SELECT thumb_path, thumbnail_path FROM media WHERE album_id = ? AND is_deleted = 0 ORDER BY created_at ASC LIMIT 1',
                                 [(int)$album['id']]
                             );
-                            if ($firstImg && $firstImg['thumb_path']) {
-                                $coverUrl = get_media_url($firstImg, 'thumb');
+                            if ($firstImg) {
+                                if (!empty($firstImg['thumb_path'])) {
+                                    $coverUrl = get_media_url($firstImg, 'thumb');
+                                } elseif (!empty($firstImg['thumbnail_path'])) {
+                                    $coverUrl = get_media_url($firstImg, 'thumbnail');
+                                }
                             }
                         }
                         ?>
@@ -711,15 +719,23 @@ include SITE_ROOT . '/includes/header.php';
                             if (!empty($firstAlbum['cover_path'])) {
                                 $catCover = SITE_URL . $firstAlbum['cover_path'];
                             } elseif (!empty($firstAlbum['cover_id'])) {
-                                $cm = db_row('SELECT thumb_path FROM media WHERE id = ? AND is_deleted = 0', [(int)$firstAlbum['cover_id']]);
-                                if ($cm && $cm['thumb_path']) {
-                                    $catCover = get_media_url($cm, 'thumb');
+                                $cm = db_row('SELECT thumb_path, thumbnail_path FROM media WHERE id = ? AND is_deleted = 0', [(int)$firstAlbum['cover_id']]);
+                                if ($cm) {
+                                    if (!empty($cm['thumb_path'])) {
+                                        $catCover = get_media_url($cm, 'thumb');
+                                    } elseif (!empty($cm['thumbnail_path'])) {
+                                        $catCover = get_media_url($cm, 'thumbnail');
+                                    }
                                 }
                             }
                             if (!$catCover) {
-                                $fi = db_row('SELECT thumb_path FROM media WHERE album_id = ? AND is_deleted = 0 ORDER BY created_at ASC LIMIT 1', [(int)$firstAlbum['id']]);
-                                if ($fi && $fi['thumb_path']) {
-                                    $catCover = get_media_url($fi, 'thumb');
+                                $fi = db_row('SELECT thumb_path, thumbnail_path FROM media WHERE album_id = ? AND is_deleted = 0 ORDER BY created_at ASC LIMIT 1', [(int)$firstAlbum['id']]);
+                                if ($fi) {
+                                    if (!empty($fi['thumb_path'])) {
+                                        $catCover = get_media_url($fi, 'thumb');
+                                    } elseif (!empty($fi['thumbnail_path'])) {
+                                        $catCover = get_media_url($fi, 'thumbnail');
+                                    }
                                 }
                             }
                         }
