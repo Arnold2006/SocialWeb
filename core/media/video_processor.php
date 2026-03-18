@@ -81,8 +81,10 @@ function process_video_upload(array $file, int $userId, int $albumId = 0): array
     // Strip metadata and validate using ffmpeg (optional — if available)
     $duration  = null;
     $finalPath = $origPath;
-    if (is_executable('/usr/bin/ffprobe')) {
-        $cmd      = '/usr/bin/ffprobe -v error -show_entries format=duration -of csv=p=0 ' . escapeshellarg($origPath);
+    $ffprobe   = defined('FFPROBE_BIN') ? FFPROBE_BIN : '/usr/bin/ffprobe';
+    $ffmpeg    = defined('FFMPEG_BIN')  ? FFMPEG_BIN  : '/usr/bin/ffmpeg';
+    if (is_executable($ffprobe) && is_executable($ffmpeg)) {
+        $cmd      = escapeshellarg($ffprobe) . ' -v error -show_entries format=duration -of csv=p=0 ' . escapeshellarg($origPath);
         $output   = shell_exec($cmd);
         $duration = $output ? (int) round((float) trim($output)) : null;
 
@@ -94,14 +96,14 @@ function process_video_upload(array $file, int $userId, int $albumId = 0): array
 
         // Generate thumbnail at 1s
         shell_exec(
-            '/usr/bin/ffmpeg -y -i ' . escapeshellarg($origPath) .
-            ' -ss 00:00:01 -vframes 1 -vf "scale=300:-1" ' . escapeshellarg($thumbPath) . ' 2>/dev/null'
+            escapeshellarg($ffmpeg) . ' -y -ss 00:00:01 -i ' . escapeshellarg($origPath) .
+            ' -vframes 1 -vf ' . escapeshellarg('scale=300:-1') . ' ' . escapeshellarg($thumbPath) . ' 2>/dev/null'
         );
 
         // Strip metadata: re-encode without metadata stream
         $processedPath = UPLOADS_DIR . '/videos/processed/' . $baseName . '.mp4';
         shell_exec(
-            '/usr/bin/ffmpeg -y -i ' . escapeshellarg($origPath) .
+            escapeshellarg($ffmpeg) . ' -y -i ' . escapeshellarg($origPath) .
             ' -map_metadata -1 -c:v copy -c:a copy ' . escapeshellarg($processedPath) . ' 2>/dev/null'
         );
         if (file_exists($processedPath)) {

@@ -61,6 +61,10 @@ if (!defined('CACHE_TTL')) define('CACHE_TTL', 30);   // seconds
 // ── Session ──────────────────────────────────────────────────────────────────
 if (!defined('SESSION_LIFETIME')) define('SESSION_LIFETIME', 86400);   // 24 hours
 
+// ── FFmpeg binaries ──────────────────────────────────────────────────────────
+if (!defined('FFPROBE_BIN')) define('FFPROBE_BIN', '/usr/bin/ffprobe');
+if (!defined('FFMPEG_BIN'))  define('FFMPEG_BIN',  '/usr/bin/ffmpeg');
+
 // ── Security ─────────────────────────────────────────────────────────────────
 if (!defined('CSRF_TOKEN_LENGTH')) define('CSRF_TOKEN_LENGTH', 32);
 if (!defined('SESSION_NAME'))      define('SESSION_NAME',      'TORSOCIAL_SESS');
