@@ -80,7 +80,8 @@ if ($profileUser === null) {
     redirect(SITE_URL . '/pages/members.php');
 }
 
-// Recent posts
+// Recent posts (fetch one extra to detect whether a "Load More" is needed)
+$profilePostsLimit = 10;
 $posts = db_query(
     'SELECT p.*, u.username, u.avatar_path,
             (SELECT COUNT(*) FROM likes   WHERE post_id = p.id) AS like_count,
@@ -89,9 +90,13 @@ $posts = db_query(
      FROM posts p JOIN users u ON u.id = p.user_id
      WHERE p.user_id = ? AND p.is_deleted = 0
      ORDER BY p.created_at DESC
-     LIMIT 10',
+     LIMIT ' . ($profilePostsLimit + 1),
     [(int)$currentUser['id'], $profileId]
 );
+$profilePostsHasMore = count($posts) > $profilePostsLimit;
+if ($profilePostsHasMore) {
+    array_pop($posts);
+}
 
 // Plugin profile extensions
 $plugins = plugins_load();
@@ -330,7 +335,11 @@ include SITE_ROOT . '/includes/header.php';
     </aside>
 
     <!-- Recent Posts -->
-    <main class="profile-posts">
+    <main class="profile-posts"
+          id="profile-post-feed"
+          data-offset="<?= $profilePostsLimit ?>"
+          data-has-more="<?= $profilePostsHasMore ? '1' : '0' ?>"
+          data-profile-id="<?= (int)$profileId ?>">
         <h2>Recent Posts</h2>
         <?php if (empty($posts)): ?>
         <p class="empty-state">No posts yet.</p>
@@ -340,6 +349,14 @@ include SITE_ROOT . '/includes/header.php';
             <?php endforeach; ?>
         <?php endif; ?>
     </main>
+
+    <?php if ($profilePostsHasMore): ?>
+    <div class="load-more-wrap" id="profile-load-more-wrap">
+        <button class="btn btn-primary btn-load-more" id="profile-load-more-btn" type="button">
+            Load More
+        </button>
+    </div>
+    <?php endif; ?>
 
 </div>
 
