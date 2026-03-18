@@ -156,20 +156,28 @@ include SITE_ROOT . '/includes/header.php';
                         $coverUrl = SITE_URL . $album['cover_path'];
                     } elseif (!empty($album['cover_id'])) {
                         $coverMedia = db_row(
-                            'SELECT thumb_path FROM media WHERE id = ? AND is_deleted = 0',
+                            'SELECT thumb_path, thumbnail_path FROM media WHERE id = ? AND is_deleted = 0',
                             [(int)$album['cover_id']]
                         );
-                        if ($coverMedia && $coverMedia['thumb_path']) {
-                            $coverUrl = get_media_url($coverMedia, 'thumb');
+                        if ($coverMedia) {
+                            if (!empty($coverMedia['thumb_path'])) {
+                                $coverUrl = get_media_url($coverMedia, 'thumb');
+                            } elseif (!empty($coverMedia['thumbnail_path'])) {
+                                $coverUrl = get_media_url($coverMedia, 'thumbnail');
+                            }
                         }
                     }
                     if (!$coverUrl) {
                         $firstImg = db_row(
-                            'SELECT thumb_path FROM media WHERE album_id = ? AND is_deleted = 0 ORDER BY created_at ASC LIMIT 1',
+                            'SELECT thumb_path, thumbnail_path FROM media WHERE album_id = ? AND is_deleted = 0 ORDER BY created_at ASC LIMIT 1',
                             [(int)$album['id']]
                         );
-                        if ($firstImg && $firstImg['thumb_path']) {
-                            $coverUrl = get_media_url($firstImg, 'thumb');
+                        if ($firstImg) {
+                            if (!empty($firstImg['thumb_path'])) {
+                                $coverUrl = get_media_url($firstImg, 'thumb');
+                            } elseif (!empty($firstImg['thumbnail_path'])) {
+                                $coverUrl = get_media_url($firstImg, 'thumbnail');
+                            }
                         }
                     }
                     ?>
