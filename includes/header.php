@@ -22,9 +22,10 @@ declare(strict_types=1);
 
 $pageTitle   = $pageTitle ?? SITE_NAME;
 $user        = current_user();
-$notifCount  = $user ? unread_notifications_count() : 0;
-$msgCount    = $user ? unread_messages_count() : 0;
-$forumCount  = $user ? unread_forum_count() : 0;
+$notifCount        = $user ? unread_notifications_count() : 0;
+$msgCount          = $user ? unread_messages_count() : 0;
+$forumCount        = $user ? unread_forum_count() : 0;
+$pendingMigrations = ($user && is_admin()) ? pending_migrations_count() : 0;
 $bannerImage = site_setting('banner_image');
 
 // Banner overlay settings
@@ -109,7 +110,7 @@ $siteTheme    = active_theme();
             </li>
             <?php if (is_admin()): ?>
             <li><a href="<?= SITE_URL ?>/admin/dashboard.php"
-                   class="<?= str_contains($_SERVER['PHP_SELF'] ?? '', '/admin/') ? 'active' : '' ?>">Admin</a></li>
+                   class="<?= str_contains($_SERVER['PHP_SELF'] ?? '', '/admin/') ? 'active' : '' ?>">Admin<?= $pendingMigrations > 0 ? ' <span class="badge">' . $pendingMigrations . '</span>' : '' ?></a></li>
             <?php endif; ?>
             <li><a href="<?= SITE_URL ?>/pages/logout.php">Logout</a></li>
         </ul>
