@@ -46,9 +46,9 @@ if (!isset($plugins)) {
     $plugins = plugins_load();
 }
 
-// Load latest photos: up to 9 most recent images for the 3x3 grid
+// Load latest photos: 3 photos each for the 3 most recently active users (one row per user)
 try {
-    $sidebarLatestPhotos = db_query(
+    $rawPhotos = db_query(
         'SELECT m.id, m.user_id, m.thumb_path, m.medium_path, m.storage_path,
                 u.username
          FROM media m
@@ -57,8 +57,27 @@ try {
            AND m.is_deleted = 0
            AND u.is_banned = 0
          ORDER BY m.created_at DESC, m.id DESC
-         LIMIT 9'
+         LIMIT 30'
     );
+    // Group into up to 3 users with up to 3 photos each, preserving recency order
+    $sidebarLatestPhotos = [];
+    $totalCollected = 0;
+    foreach ($rawPhotos as $photo) {
+        if ($totalCollected >= 9) {
+            break;
+        }
+        $uid = (int)$photo['user_id'];
+        if (!isset($sidebarLatestPhotos[$uid])) {
+            if (count($sidebarLatestPhotos) >= 3) {
+                continue;
+            }
+            $sidebarLatestPhotos[$uid] = ['username' => $photo['username'], 'photos' => []];
+        }
+        if (count($sidebarLatestPhotos[$uid]['photos']) < 3) {
+            $sidebarLatestPhotos[$uid]['photos'][] = $photo;
+            $totalCollected++;
+        }
+    }
 } catch (Throwable $e) {
     error_log('Latest photos load error: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
     $sidebarLatestPhotos = [];
@@ -138,16 +157,20 @@ try {
         <p class="latest-photos-empty">No photos uploaded yet.</p>
     <?php else: ?>
         <div class="latest-photos-grid">
-            <?php foreach ($sidebarLatestPhotos as $photo): ?>
-            <a href="<?= e(SITE_URL . '/pages/gallery.php?user=' . (int)$photo['user_id']) ?>"
-               class="latest-photos-thumb"
-               title="<?= e($photo['username']) ?>">
-                <img src="<?= e(get_media_url($photo, 'thumb')) ?>"
-                     alt="<?= e($photo['username']) ?>"
-                     width="70" height="70"
-                     loading="lazy">
-                <span class="latest-photos-caption"><?= e($photo['username']) ?></span>
-            </a>
+            <?php foreach ($sidebarLatestPhotos as $uid => $userRow): ?>
+            <div class="latest-photos-row">
+                <?php foreach ($userRow['photos'] as $photo): ?>
+                <a href="<?= e(SITE_URL . '/pages/gallery.php?user=' . $uid) ?>"
+                   class="latest-photos-thumb"
+                   title="<?= e($userRow['username']) ?>">
+                    <img src="<?= e(get_media_url($photo, 'thumb')) ?>"
+                         alt="<?= e($userRow['username']) ?>"
+                         width="70" height="70"
+                         loading="lazy">
+                    <span class="latest-photos-caption"><?= e($userRow['username']) ?></span>
+                </a>
+                <?php endforeach; ?>
+            </div>
             <?php endforeach; ?>
         </div>
     <?php endif; ?>
