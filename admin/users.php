@@ -59,9 +59,11 @@ $params = [];
 $where  = 'WHERE 1=1';
 
 if ($search) {
-    $where   .= ' AND (username LIKE ? OR email LIKE ?)';
-    $params[] = '%' . $search . '%';
-    $params[] = '%' . $search . '%';
+    $searchParam = '%' . $search . '%';
+    $where   .= ' AND (username LIKE ? OR email LIKE ? OR full_name LIKE ?)';
+    $params[] = $searchParam;
+    $params[] = $searchParam;
+    $params[] = $searchParam;
 }
 
 $total     = (int) db_val("SELECT COUNT(*) FROM users $where", $params);
@@ -69,7 +71,7 @@ $pages     = (int) ceil($total / $perPage);
 $limitSql  = (int) $perPage;
 $offsetSql = (int) $offset;
 $users     = db_query(
-    "SELECT id, username, email, role, is_banned, created_at, last_login FROM users $where ORDER BY created_at DESC LIMIT {$limitSql} OFFSET {$offsetSql}",
+    "SELECT id, username, full_name, email, role, is_banned, created_at, last_login FROM users $where ORDER BY created_at DESC LIMIT {$limitSql} OFFSET {$offsetSql}",
     $params
 );
 
@@ -103,7 +105,7 @@ include SITE_ROOT . '/includes/header.php';
         <table class="admin-table">
             <thead>
                 <tr>
-                    <th>#</th><th>Username</th><th>Email</th><th>Role</th>
+                    <th>#</th><th>Username</th><th>Full Name</th><th>Email</th><th>Role</th>
                     <th>Joined</th><th>Last Login</th><th>Status</th><th>Actions</th>
                 </tr>
             </thead>
@@ -112,6 +114,7 @@ include SITE_ROOT . '/includes/header.php';
                 <tr>
                     <td><?= (int)$u['id'] ?></td>
                     <td><a href="<?= e(SITE_URL . '/pages/profile.php?id=' . (int)$u['id']) ?>"><?= e($u['username']) ?></a></td>
+                    <td><?= e($u['full_name'] ?? '') ?></td>
                     <td><?= e($u['email']) ?></td>
                     <td><?= e($u['role']) ?></td>
                     <td><?= e(date('Y-m-d', strtotime($u['created_at']))) ?></td>
