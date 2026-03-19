@@ -115,6 +115,34 @@ try {
     </form>
 </div>
 
+<!-- Latest Photos -->
+<div class="widget widget-latest-photos">
+    <h3 class="widget-title">Latest Photos</h3>
+    <?php if (empty($sidebarLatestPhotos)): ?>
+        <p class="latest-photos-empty">No photos uploaded yet.</p>
+    <?php else: ?>
+        <div class="latest-photos-grid">
+            <?php foreach ($sidebarLatestPhotos as $uid => $userRow): ?>
+            <div class="latest-photos-row">
+                <?php foreach ($userRow['photos'] as $photo): ?>
+                <a href="<?= e(get_media_url($photo, 'original')) ?>"
+                   class="lightbox-trigger latest-photos-thumb"
+                   data-src="<?= e(get_media_url($photo, 'large')) ?>"
+                   data-media-id="<?= (int)$photo['id'] ?>"
+                   title="<?= e($userRow['username']) ?>">
+                    <img src="<?= e(get_media_url($photo, 'thumb')) ?>"
+                         alt="<?= e($userRow['username']) ?>"
+                         width="70" height="70"
+                         loading="lazy">
+                    <span class="latest-photos-caption"><?= e($userRow['username']) ?></span>
+                </a>
+                <?php endforeach; ?>
+            </div>
+            <?php endforeach; ?>
+        </div>
+    <?php endif; ?>
+</div>
+
 <!-- Quick Links -->
 <div class="widget widget-links">
     <h3 class="widget-title">Quick Links</h3>
@@ -152,34 +180,6 @@ try {
     <ul class="site-stats">
         <li><strong><?= $sidebarMemberCount ?></strong> members</li>
     </ul>
-</div>
-
-<!-- Latest Photos -->
-<div class="widget widget-latest-photos">
-    <h3 class="widget-title">Latest Photos</h3>
-    <?php if (empty($sidebarLatestPhotos)): ?>
-        <p class="latest-photos-empty">No photos uploaded yet.</p>
-    <?php else: ?>
-        <div class="latest-photos-grid">
-            <?php foreach ($sidebarLatestPhotos as $uid => $userRow): ?>
-            <div class="latest-photos-row">
-                <?php foreach ($userRow['photos'] as $photo): ?>
-                <a href="<?= e(get_media_url($photo, 'original')) ?>"
-                   class="lightbox-trigger latest-photos-thumb"
-                   data-src="<?= e(get_media_url($photo, 'large')) ?>"
-                   data-media-id="<?= (int)$photo['id'] ?>"
-                   title="<?= e($userRow['username']) ?>">
-                    <img src="<?= e(get_media_url($photo, 'thumb')) ?>"
-                         alt="<?= e($userRow['username']) ?>"
-                         width="70" height="70"
-                         loading="lazy">
-                    <span class="latest-photos-caption"><?= e($userRow['username']) ?></span>
-                </a>
-                <?php endforeach; ?>
-            </div>
-            <?php endforeach; ?>
-        </div>
-    <?php endif; ?>
 </div>
 
 <!-- Plugin sidebar widgets -->
