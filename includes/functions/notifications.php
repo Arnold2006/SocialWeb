@@ -74,8 +74,8 @@ function unread_forum_count(): int
          FROM   forum_threads t
          LEFT   JOIN forum_reads fr ON fr.thread_id = t.id AND fr.user_id = ?
          WHERE  t.is_deleted = 0
-           AND  (fr.read_at IS NULL OR t.last_post_at > fr.read_at)',
-        [$user['id']]
+           AND  t.last_post_at > IFNULL(fr.read_at, ?)',
+        [$user['id'], $user['created_at']]
     );
 }
 

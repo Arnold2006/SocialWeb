@@ -19,8 +19,9 @@ declare(strict_types=1);
 require_once dirname(__DIR__) . '/includes/bootstrap.php';
 
 $pageTitle = 'Forum';
-$user      = current_user();
-$userId    = $user ? (int)$user['id'] : 0;
+$user          = current_user();
+$userId        = $user ? (int)$user['id'] : 0;
+$userCreatedAt = $user ? $user['created_at'] : '1970-01-01 00:00:00';
 
 $categories = db_query(
     'SELECT c.id, c.title, c.description
@@ -36,7 +37,7 @@ foreach ($categories as &$cat) {
                 MAX(t.last_post_at)  AS last_post_at,
                 u.username           AS last_poster,
                 SUM(CASE WHEN ? > 0 AND t.id IS NOT NULL
-                              AND (fr.read_at IS NULL OR t.last_post_at > fr.read_at)
+                              AND t.last_post_at > IFNULL(fr.read_at, ?)
                          THEN 1 ELSE 0 END) AS unread_count
          FROM   forum_forums f
          LEFT   JOIN forum_threads t ON t.forum_id = f.id AND t.is_deleted = 0
@@ -52,7 +53,7 @@ foreach ($categories as &$cat) {
          WHERE  f.category_id = ?
          GROUP  BY f.id, f.title, f.description
          ORDER  BY f.sort_order ASC, f.id ASC',
-        [$userId, $userId, $cat['id']]
+        [$userId, $userCreatedAt, $userId, $cat['id']]
     );
 }
 unset($cat);
