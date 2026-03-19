@@ -32,7 +32,7 @@ function current_user(): ?array
     }
 
     $user = db_row(
-        'SELECT id, username, email, role, avatar_path, bio, is_banned, created_at
+        'SELECT id, username, full_name, email, role, avatar_path, bio, is_banned, created_at
          FROM users WHERE id = ? AND is_banned = 0 LIMIT 1',
         [(int) $_SESSION['user_id']]
     );
@@ -147,12 +147,13 @@ function logout(): void
  * Register a new user using an invite code.
  *
  * @param string $username
+ * @param string $full_name
  * @param string $email
  * @param string $password   Plain-text, will be hashed
  * @param string $inviteCode
  * @return array{ok: bool, error: string}
  */
-function register_user(string $username, string $email, string $password, string $inviteCode): array
+function register_user(string $username, string $full_name, string $email, string $password, string $inviteCode): array
 {
     // Validate invite
     $invite = db_row(
@@ -178,8 +179,8 @@ function register_user(string $username, string $email, string $password, string
     $hash = password_hash($password, PASSWORD_BCRYPT);
 
     $userId = db_insert(
-        'INSERT INTO users (username, email, password, invite_id) VALUES (?, ?, ?, ?)',
-        [$username, $email, $hash, $invite['id']]
+        'INSERT INTO users (username, full_name, email, password, invite_id) VALUES (?, ?, ?, ?, ?)',
+        [$username, $full_name !== '' ? $full_name : null, $email, $hash, $invite['id']]
     );
 
     // Increment invite usage

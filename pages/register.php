@@ -33,12 +33,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Too many registration attempts. Please wait.';
     } else {
         $username   = sanitise_username($_POST['username'] ?? '');
+        $full_name  = sanitise_string($_POST['full_name'] ?? '', 100);
         $email      = sanitise_email($_POST['email'] ?? '');
         $password   = $_POST['password'] ?? '';
         $password2  = $_POST['password2'] ?? '';
         $inviteCode = sanitise_string($_POST['invite_code'] ?? '', 64);
 
-        if (empty($username) || empty($email) || empty($password) || empty($inviteCode)) {
+        if (empty($username) || empty($full_name) || empty($email) || empty($password) || empty($inviteCode)) {
             $error = 'All fields are required.';
         } elseif (strlen($username) < 3 || strlen($username) > 50) {
             $error = 'Username must be 3–50 characters.';
@@ -47,7 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif ($password !== $password2) {
             $error = 'Passwords do not match.';
         } else {
-            $result = register_user($username, $email, $password, $inviteCode);
+            $result = register_user($username, $full_name, $email, $password, $inviteCode);
             if ($result['ok']) {
                 flash_set('success', 'Registration successful! Please log in.');
                 redirect(SITE_URL . '/pages/login.php');
@@ -99,6 +100,14 @@ $siteTheme = active_theme();
                        pattern="[a-zA-Z0-9_\-]+"
                        title="Only letters, numbers, underscores, and hyphens"
                        autocomplete="username" required>
+            </div>
+
+            <div class="form-group">
+                <label for="full_name">Full Name</label>
+                <input type="text" id="full_name" name="full_name"
+                       value="<?= e($_POST['full_name'] ?? '') ?>"
+                       maxlength="100"
+                       autocomplete="name" required>
             </div>
 
             <div class="form-group">

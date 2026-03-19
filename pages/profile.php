@@ -42,6 +42,20 @@ if ($isOwnProfile && $_SERVER['REQUEST_METHOD'] === 'POST') {
         db_exec('UPDATE users SET bio = ? WHERE id = ?', [$bio, (int)$currentUser['id']]);
         $success = 'Profile updated.';
 
+    } elseif ($action === 'update_email') {
+        $newEmail = sanitise_email($_POST['email'] ?? '');
+
+        if (empty($newEmail)) {
+            $error = 'Email address is required.';
+        } elseif ($newEmail === $currentUser['email']) {
+            $error = 'That is already your current email address.';
+        } elseif (db_val('SELECT COUNT(*) FROM users WHERE email = ? AND id != ?', [$newEmail, (int)$currentUser['id']]) > 0) {
+            $error = 'Email address is already in use.';
+        } else {
+            db_exec('UPDATE users SET email = ? WHERE id = ?', [$newEmail, (int)$currentUser['id']]);
+            $success = 'Email address updated.';
+        }
+
     } elseif ($action === 'change_password') {
         $current  = $_POST['current_password'] ?? '';
         $new      = $_POST['new_password'] ?? '';
@@ -64,13 +78,13 @@ if ($isOwnProfile && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Refresh current user data after any update
     $currentUser = db_row(
-        'SELECT id, username, email, bio, avatar_path, role FROM users WHERE id = ?',
+        'SELECT id, username, full_name, email, bio, avatar_path, role FROM users WHERE id = ?',
         [(int)$currentUser['id']]
     );
 }
 
 $profileUser = db_row(
-    'SELECT id, username, bio, avatar_path, created_at
+    'SELECT id, username, full_name, bio, avatar_path, created_at
      FROM users WHERE id = ? AND is_banned = 0',
     [$profileId]
 );
@@ -116,6 +130,9 @@ include SITE_ROOT . '/includes/header.php';
         </div>
 
         <h1 class="profile-username"><?= e($profileUser['username']) ?></h1>
+        <?php if (!empty($profileUser['full_name'])): ?>
+        <p class="profile-fullname"><?= e($profileUser['full_name']) ?></p>
+        <?php endif; ?>
         <p class="profile-joined">Joined <?= e(date('M Y', strtotime($profileUser['created_at']))) ?></p>
 
         <?php if (!empty($profileUser['bio'])): ?>
@@ -181,9 +198,10 @@ include SITE_ROOT . '/includes/header.php';
                     </div>
 
                     <div class="form-group">
-                        <label>Email</label>
-                        <input type="email" value="<?= e($currentUser['email']) ?>" disabled
+                        <label>Full Name</label>
+                        <input type="text" value="<?= e($currentUser['full_name'] ?? '') ?>" disabled
                                class="input-disabled">
+                        <small>Full name cannot be changed.</small>
                     </div>
 
                     <div class="form-group">
@@ -192,6 +210,24 @@ include SITE_ROOT . '/includes/header.php';
                     </div>
 
                     <button type="submit" class="btn btn-primary">Save Profile</button>
+                </form>
+            </section>
+
+            <!-- Change email -->
+            <section class="settings-section">
+                <h2>Email Address</h2>
+                <form method="POST" class="settings-form">
+                    <?= csrf_field() ?>
+                    <input type="hidden" name="action" value="update_email">
+
+                    <div class="form-group">
+                        <label for="email">Email Address</label>
+                        <input type="email" id="email" name="email"
+                               value="<?= e($currentUser['email']) ?>"
+                               autocomplete="email" required>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Update Email</button>
                 </form>
             </section>
 
