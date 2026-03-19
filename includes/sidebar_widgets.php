@@ -45,6 +45,33 @@ try {
 if (!isset($plugins)) {
     $plugins = plugins_load();
 }
+
+// Load latest photos: one image per user, ordered by upload time, top 3 distinct users
+try {
+    $sidebarLatestPhotos = db_query(
+        'SELECT m.id, m.user_id, m.thumb_path, m.medium_path, m.storage_path,
+                u.username
+         FROM media m
+         JOIN users u ON u.id = m.user_id
+         WHERE m.type = \'image\'
+           AND m.is_deleted = 0
+           AND u.is_banned = 0
+           AND m.id = (
+               SELECT m2.id
+               FROM media m2
+               WHERE m2.user_id = m.user_id
+                 AND m2.type = \'image\'
+                 AND m2.is_deleted = 0
+               ORDER BY m2.created_at DESC, m2.id DESC
+               LIMIT 1
+           )
+         ORDER BY m.created_at DESC, m.id DESC
+         LIMIT 3'
+    );
+} catch (Throwable $e) {
+    error_log('Latest photos load error: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+    $sidebarLatestPhotos = [];
+}
 ?>
 
 <!-- Shoutbox -->
@@ -111,6 +138,27 @@ if (!isset($plugins)) {
     <ul class="site-stats">
         <li><strong><?= $sidebarMemberCount ?></strong> members</li>
     </ul>
+</div>
+
+<!-- Latest Photos -->
+<div class="widget widget-latest-photos">
+    <h3 class="widget-title">Latest Photos</h3>
+    <?php if (empty($sidebarLatestPhotos)): ?>
+        <p class="latest-photos-empty">No photos uploaded yet.</p>
+    <?php else: ?>
+        <div class="latest-photos-grid">
+            <?php foreach ($sidebarLatestPhotos as $photo): ?>
+            <a href="<?= e(SITE_URL . '/pages/gallery.php?user=' . (int)$photo['user_id']) ?>"
+               class="latest-photos-thumb"
+               title="<?= e($photo['username']) ?>">
+                <img src="<?= e(get_media_url($photo, 'thumb')) ?>"
+                     alt="<?= e($photo['username']) ?>"
+                     loading="lazy">
+                <span class="latest-photos-caption"><?= e($photo['username']) ?></span>
+            </a>
+            <?php endforeach; ?>
+        </div>
+    <?php endif; ?>
 </div>
 
 <!-- Plugin sidebar widgets -->
