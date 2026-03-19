@@ -46,7 +46,7 @@ if (!isset($plugins)) {
     $plugins = plugins_load();
 }
 
-// Load latest photos: one image per user, ordered by upload time, top 3 distinct users
+// Load latest photos: up to 9 most recent images for the 3x3 grid
 try {
     $sidebarLatestPhotos = db_query(
         'SELECT m.id, m.user_id, m.thumb_path, m.medium_path, m.storage_path,
@@ -56,17 +56,8 @@ try {
          WHERE m.type = \'image\'
            AND m.is_deleted = 0
            AND u.is_banned = 0
-           AND m.id = (
-               SELECT m2.id
-               FROM media m2
-               WHERE m2.user_id = m.user_id
-                 AND m2.type = \'image\'
-                 AND m2.is_deleted = 0
-               ORDER BY m2.created_at DESC, m2.id DESC
-               LIMIT 1
-           )
          ORDER BY m.created_at DESC, m.id DESC
-         LIMIT 3'
+         LIMIT 9'
     );
 } catch (Throwable $e) {
     error_log('Latest photos load error: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
@@ -153,6 +144,7 @@ try {
                title="<?= e($photo['username']) ?>">
                 <img src="<?= e(get_media_url($photo, 'thumb')) ?>"
                      alt="<?= e($photo['username']) ?>"
+                     width="70" height="70"
                      loading="lazy">
                 <span class="latest-photos-caption"><?= e($photo['username']) ?></span>
             </a>
