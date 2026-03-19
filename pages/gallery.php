@@ -344,6 +344,28 @@ $mediaItems  = [];
 $mediaTotal  = 0;
 $mediaLimit  = 25;
 if ($albumId > 0) {
+    // If a specific photo must be auto-opened (e.g. from a notification link),
+    // extend the initial batch so that photo is guaranteed to be in the DOM.
+    if ($openPhotoId > 0) {
+        $targetCreatedAt = db_val(
+            'SELECT created_at FROM media WHERE id = ? AND album_id = ? AND user_id = ? AND is_deleted = 0',
+            [$openPhotoId, $albumId, $galleryOwner]
+        );
+        if ($targetCreatedAt !== null) {
+            // Photos are sorted DESC by created_at, so all photos with
+            // created_at >= target appear earlier in the list than the target.
+            // Counting them gives the number of items that precede (or equal)
+            // the target in the sorted result, so loading that many items
+            // guarantees the target photo is rendered on the first page.
+            // Cap at 200 to avoid loading an unreasonably large batch for
+            // very large albums where the target photo is near the end.
+            $photoRank = (int) db_val(
+                'SELECT COUNT(*) FROM media WHERE album_id = ? AND user_id = ? AND is_deleted = 0 AND created_at >= ?',
+                [$albumId, $galleryOwner, $targetCreatedAt]
+            );
+            $mediaLimit = min(200, max($mediaLimit, $photoRank));
+        }
+    }
     $mediaTotal = (int) db_val(
         'SELECT COUNT(*) FROM media WHERE album_id = ? AND user_id = ? AND is_deleted = 0',
         [$albumId, $galleryOwner]
