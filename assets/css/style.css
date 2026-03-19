@@ -474,10 +474,15 @@ textarea { resize: vertical; min-height: 80px; }
 
 /* ── Latest Photos widget ─────────────────────────────────────── */
 .latest-photos-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    display: flex;
+    flex-direction: column;
     gap: 6px;
     margin-top: 0.25rem;
+}
+
+.latest-photos-row {
+    display: flex;
+    gap: 6px;
 }
 
 .latest-photos-thumb {
