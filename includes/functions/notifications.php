@@ -112,3 +112,32 @@ function notify_user(int $recipientId, string $type, int $fromUserId, int $refId
         [$recipientId, $type, $fromUserId, $refId]
     );
 }
+
+/**
+ * Count pending (unapplied) database migrations.
+ *
+ * Scans database/migrations/ for *.sql files not yet recorded in db_migrations.
+ * Returns 0 if the db_migrations table does not exist yet (fresh install).
+ */
+function pending_migrations_count(): int
+{
+    $dir   = APP_ROOT . '/database/migrations';
+    $files = is_dir($dir) ? (glob($dir . '/*.sql') ?: []) : [];
+    if (empty($files)) {
+        return 0;
+    }
+    try {
+        $applied = db_query('SELECT migration FROM db_migrations');
+        $applied = array_column($applied, 'migration');
+    } catch (\Throwable $e) {
+        // db_migrations table does not exist yet (fresh install before setup.php is run)
+        return 0;
+    }
+    $count = 0;
+    foreach ($files as $file) {
+        if (!in_array(basename($file), $applied, true)) {
+            $count++;
+        }
+    }
+    return $count;
+}
