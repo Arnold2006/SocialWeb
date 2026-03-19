@@ -46,37 +46,41 @@ if (!isset($plugins)) {
     $plugins = plugins_load();
 }
 
-// Load latest photos: 3 photos each for the 3 most recently active users (one row per user)
+// Load latest photos: 3 most recently active users, 3 photos each
 try {
-    $rawPhotos = db_query(
-        'SELECT m.id, m.user_id, m.thumb_path, m.medium_path, m.storage_path,
-                u.username
+    $activeUsers = db_query(
+        'SELECT m.user_id, u.username
          FROM media m
          JOIN users u ON u.id = m.user_id
          WHERE m.type = \'image\'
            AND m.is_deleted = 0
            AND u.is_banned = 0
-         ORDER BY m.created_at DESC, m.id DESC
-         LIMIT 30'
+         GROUP BY m.user_id, u.username
+         ORDER BY MAX(m.created_at) DESC, MAX(m.id) DESC
+         LIMIT 3'
     );
-    // Group into up to 3 users with up to 3 photos each, preserving recency order
     $sidebarLatestPhotos = [];
-    $totalCollected = 0;
-    foreach ($rawPhotos as $photo) {
-        if ($totalCollected >= 9) {
-            break;
+    if (!empty($activeUsers)) {
+        $userIds = [];
+        foreach ($activeUsers as $row) {
+            $uid = (int)$row['user_id'];
+            $userIds[] = $uid;
+            $sidebarLatestPhotos[$uid] = ['username' => $row['username'], 'photos' => []];
         }
-        $uid = (int)$photo['user_id'];
-        if (!isset($sidebarLatestPhotos[$uid])) {
-            if (count($sidebarLatestPhotos) >= 3) {
-                continue;
+        // UNION ALL ensures exactly up to 3 photos per user regardless of relative recency
+        $perUserSql = '(SELECT id, user_id, thumb_path, medium_path, large_path, storage_path
+                        FROM media
+                        WHERE type = \'image\' AND is_deleted = 0 AND user_id = ?
+                        ORDER BY created_at DESC, id DESC
+                        LIMIT 3)';
+        $sql = implode(' UNION ALL ', array_fill(0, count($userIds), $perUserSql));
+        foreach (db_query($sql, $userIds) as $photo) {
+            $uid = (int)$photo['user_id'];
+            if (count($sidebarLatestPhotos[$uid]['photos']) < 3) {
+                $sidebarLatestPhotos[$uid]['photos'][] = $photo;
             }
-            $sidebarLatestPhotos[$uid] = ['username' => $photo['username'], 'photos' => []];
         }
-        if (count($sidebarLatestPhotos[$uid]['photos']) < 3) {
-            $sidebarLatestPhotos[$uid]['photos'][] = $photo;
-            $totalCollected++;
-        }
+        $sidebarLatestPhotos = array_filter($sidebarLatestPhotos, fn($u) => !empty($u['photos']));
     }
 } catch (Throwable $e) {
     error_log('Latest photos load error: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
@@ -160,8 +164,10 @@ try {
             <?php foreach ($sidebarLatestPhotos as $uid => $userRow): ?>
             <div class="latest-photos-row">
                 <?php foreach ($userRow['photos'] as $photo): ?>
-                <a href="<?= e(SITE_URL . '/pages/gallery.php?user=' . $uid) ?>"
-                   class="latest-photos-thumb"
+                <a href="<?= e(get_media_url($photo, 'original')) ?>"
+                   class="lightbox-trigger latest-photos-thumb"
+                   data-src="<?= e(get_media_url($photo, 'large')) ?>"
+                   data-media-id="<?= (int)$photo['id'] ?>"
                    title="<?= e($userRow['username']) ?>">
                     <img src="<?= e(get_media_url($photo, 'thumb')) ?>"
                          alt="<?= e($userRow['username']) ?>"
