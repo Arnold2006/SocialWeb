@@ -40,22 +40,23 @@ if (!$forum) {
 }
 
 $pageTitle = e($forum['title']) . ' — Forum';
-$user      = current_user();
-$userId    = $user ? (int)$user['id'] : 0;
+$user           = current_user();
+$userId         = $user ? (int)$user['id'] : 0;
+$userCreatedAt  = $user ? $user['created_at'] : '1970-01-01 00:00:00';
 
 $page    = max(1, (int)($_GET['page'] ?? 1));
 $perPage = 20;
 $result  = paginate(
     'SELECT t.id, t.title, t.created_at, t.last_post_at, t.reply_count, t.is_locked,
             u.id AS user_id, u.username AS author,
-            CASE WHEN ? > 0 AND (fr.read_at IS NULL OR t.last_post_at > fr.read_at)
+            CASE WHEN ? > 0 AND t.last_post_at > IFNULL(fr.read_at, ?)
                  THEN 1 ELSE 0 END AS is_unread
      FROM   forum_threads t
      JOIN   users u ON u.id = t.user_id
      LEFT   JOIN forum_reads fr ON fr.thread_id = t.id AND fr.user_id = ?
      WHERE  t.forum_id = ? AND t.is_deleted = 0
      ORDER  BY t.last_post_at DESC',
-    [$userId, $userId, $forumId],
+    [$userId, $userCreatedAt, $userId, $forumId],
     $page,
     $perPage
 );
