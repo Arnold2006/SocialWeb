@@ -111,6 +111,20 @@ include SITE_ROOT . '/includes/header.php';
                 <?php endif; ?>
                 <?php break;
 
+                case 'photo_comment': ?>
+                <p><strong><?= e($n['from_username'] ?? 'Someone') ?></strong> commented on your photo.</p>
+                <?php if ($n['ref_id']):
+                    $photoCommentRow = db_row(
+                        'SELECT user_id, album_id FROM media WHERE id = ? AND is_deleted = 0',
+                        [(int)$n['ref_id']]
+                    );
+                    if ($photoCommentRow && $photoCommentRow['album_id'] !== null):
+                ?>
+                <a href="<?= e(SITE_URL . '/pages/gallery.php?user_id=' . (int)$photoCommentRow['user_id'] . '&album=' . (int)$photoCommentRow['album_id']) ?>">View photo</a>
+                <?php   endif;
+                endif; ?>
+                <?php break;
+
                 case 'blog_comment': ?>
                 <p><strong><?= e($n['from_username'] ?? 'Someone') ?></strong> commented on your blog post.</p>
                 <?php if ($n['ref_id']):

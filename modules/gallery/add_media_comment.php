@@ -39,15 +39,7 @@ $commentId = db_insert(
 );
 
 // Notify media owner (if not self-comment).
-// Use the wall-feed album-upload post ID so the notification links to index.php#post-{id}.
-// If multiple album-upload posts exist for the same album, use the most recent one.
-$feedPost = $media['album_id'] ? db_row(
-    'SELECT id FROM posts WHERE album_id = ? AND post_type = \'album_upload\' ORDER BY id DESC LIMIT 1',
-    [$media['album_id']]
-) : null;
-if ($feedPost) {
-    notify_user((int)$media['user_id'], 'comment', (int)$user['id'], (int)$feedPost['id']);
-}
+notify_user((int)$media['user_id'], 'photo_comment', (int)$user['id'], $mediaId);
 
 echo json_encode([
     'ok'          => true,

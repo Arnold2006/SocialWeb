@@ -145,7 +145,7 @@ CREATE TABLE IF NOT EXISTS `messages` (
 CREATE TABLE IF NOT EXISTS `notifications` (
   `id`          INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `user_id`     INT UNSIGNED NOT NULL,               -- recipient
-  `type`        ENUM('like','comment','message') NOT NULL,
+  `type`        ENUM('like','comment','message','blog_comment','photo_like','photo_comment') NOT NULL,
   `from_user_id` INT UNSIGNED DEFAULT NULL,          -- who triggered it
   `ref_id`      INT UNSIGNED DEFAULT NULL,           -- post/comment/message id
   `is_read`     TINYINT(1) NOT NULL DEFAULT 0,
