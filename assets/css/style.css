@@ -626,6 +626,27 @@ textarea { resize: vertical; min-height: 80px; }
     background: #000;
 }
 
+.post-album-thumbs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 0.5rem;
+}
+
+.post-album-thumbs .album-thumb {
+    width: 70px;
+    height: 70px;
+    object-fit: cover;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: opacity var(--transition);
+    display: block;
+}
+
+.post-album-thumbs .album-thumb:hover {
+    opacity: 0.85;
+}
+
 .post-footer {
     display: flex;
     gap: 1rem;

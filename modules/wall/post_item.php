@@ -26,6 +26,21 @@ if (!empty($post['media_id'])) {
     $postMedia = db_row('SELECT * FROM media WHERE id = ? AND is_deleted = 0', [(int)$post['media_id']]);
 }
 
+// For album_upload posts: load up to 4 preview media items from stored IDs
+$albumPreviewMedia = [];
+if (($post['post_type'] ?? 'user') === 'album_upload' && !empty($post['media_ids'])) {
+    $previewIds = json_decode($post['media_ids'], true);
+    if (is_array($previewIds) && !empty($previewIds)) {
+        $previewIds = array_slice(array_map('intval', $previewIds), 0, 4);
+        $placeholders = implode(',', array_fill(0, count($previewIds), '?'));
+        $albumPreviewMedia = db_query(
+            "SELECT id, type, storage_path, large_path, medium_path, thumb_path, thumbnail_path
+             FROM media WHERE id IN ($placeholders) AND type = 'image' AND is_deleted = 0 ORDER BY id ASC",
+            $previewIds
+        );
+    }
+}
+
 $postComments = db_query(
     'SELECT c.*, u.username, u.avatar_path
      FROM comments c
@@ -70,6 +85,22 @@ $moreComments = (int)$post['comment_count'] > 3;
         <?php if (($post['post_type'] ?? 'user') === 'album_upload' && !empty($post['album_id'])): ?>
         <a href="<?= e(SITE_URL . '/pages/gallery.php?user_id=' . (int)$post['user_id'] . '&album=' . (int)$post['album_id']) ?>"
            class="post-album-link">View Album →</a>
+        <?php endif; ?>
+        <?php if (!empty($albumPreviewMedia)): ?>
+        <div class="post-album-thumbs">
+            <?php foreach ($albumPreviewMedia as $previewItem): ?>
+            <a href="<?= e(get_media_url($previewItem, 'original')) ?>"
+               class="lightbox-trigger"
+               data-src="<?= e(get_media_url($previewItem, 'large')) ?>"
+               data-caption="<?= e($post['username']) ?>">
+                <img src="<?= e(get_media_url($previewItem, 'thumb')) ?>"
+                     alt="<?= e($post['username']) ?>"
+                     class="album-thumb"
+                     width="70" height="70"
+                     loading="lazy">
+            </a>
+            <?php endforeach; ?>
+        </div>
         <?php endif; ?>
         <?php if (($post['post_type'] ?? 'user') === 'blog_post' && !empty($post['blog_post_id'])): ?>
         <a href="<?= e(SITE_URL . '/pages/blog.php?user_id=' . (int)$post['user_id'] . '#blog-post-' . (int)$post['blog_post_id']) ?>"

@@ -73,6 +73,7 @@ CREATE TABLE IF NOT EXISTS `posts` (
   `is_deleted` TINYINT(1) NOT NULL DEFAULT 0,
   `post_type`  ENUM('user','album_upload','blog_post') NOT NULL DEFAULT 'user',
   `album_id`   INT UNSIGNED DEFAULT NULL,             -- set for album_upload system posts
+  `media_ids`  TEXT DEFAULT NULL,                     -- JSON array of up to 4 media IDs for album_upload preview thumbnails
   `blog_post_id` INT UNSIGNED DEFAULT NULL,           -- set for blog_post system posts
   PRIMARY KEY (`id`),
   KEY `idx_user_id` (`user_id`),

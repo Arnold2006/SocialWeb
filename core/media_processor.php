@@ -264,6 +264,12 @@ function create_album_upload_post(
         return;
     }
 
+    // Ensure all IDs are integers (prevents accidental non-integer values in IN clause)
+    $mediaIds = array_values(array_filter(array_map('intval', $mediaIds)));
+    if (empty($mediaIds)) {
+        return;
+    }
+
     // Count image records from the batch to determine content type
     $placeholders = implode(',', array_fill(0, count($mediaIds), '?'));
     $imageCount   = (int) db_val(
@@ -297,10 +303,26 @@ function create_album_upload_post(
         );
     }
 
+    // Collect up to 4 image IDs for the preview thumbnail strip
+    $previewIds = [];
+    if ($imageCount > 0) {
+        $previewRows = db_query(
+            "SELECT id FROM media
+             WHERE id IN ($placeholders) AND type = 'image' AND is_deleted = 0
+             ORDER BY id ASC
+             LIMIT 4",
+            $mediaIds
+        );
+        foreach ($previewRows as $row) {
+            $previewIds[] = (int)$row['id'];
+        }
+    }
+    $mediaIdsJson = !empty($previewIds) ? json_encode($previewIds) : null;
+
     db_insert(
-        'INSERT INTO posts (user_id, content, media_id, post_type, album_id)
-         VALUES (?, ?, NULL, "album_upload", ?)',
-        [$userId, $content, $albumId]
+        'INSERT INTO posts (user_id, content, media_id, post_type, album_id, media_ids)
+         VALUES (?, ?, NULL, "album_upload", ?, ?)',
+        [$userId, $content, $albumId, $mediaIdsJson]
     );
 
     cache_invalidate_wall();
