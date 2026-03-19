@@ -89,7 +89,7 @@ include SITE_ROOT . '/includes/header.php';
                     );
                     if ($photoRow && $photoRow['album_id'] !== null):
                 ?>
-                <a href="<?= e(SITE_URL . '/pages/gallery.php?user_id=' . (int)$photoRow['user_id'] . '&album=' . (int)$photoRow['album_id']) ?>">View photo</a>
+                <a href="<?= e(SITE_URL . '/pages/gallery.php?user_id=' . (int)$photoRow['user_id'] . '&album=' . (int)$photoRow['album_id'] . '&photo=' . (int)$n['ref_id']) ?>">View photo</a>
                 <?php   endif;
                 endif; ?>
                 <?php break;
@@ -120,7 +120,7 @@ include SITE_ROOT . '/includes/header.php';
                     );
                     if ($photoCommentRow && $photoCommentRow['album_id'] !== null):
                 ?>
-                <a href="<?= e(SITE_URL . '/pages/gallery.php?user_id=' . (int)$photoCommentRow['user_id'] . '&album=' . (int)$photoCommentRow['album_id']) ?>">View photo</a>
+                <a href="<?= e(SITE_URL . '/pages/gallery.php?user_id=' . (int)$photoCommentRow['user_id'] . '&album=' . (int)$photoCommentRow['album_id'] . '&photo=' . (int)$n['ref_id']) ?>">View photo</a>
                 <?php   endif;
                 endif; ?>
                 <?php break;

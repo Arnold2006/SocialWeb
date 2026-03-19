@@ -495,6 +495,26 @@
     }
 
     /**
+     * If the gallery grid has a data-open-photo attribute, automatically open
+     * the lightbox for that media item (used when following a notification link).
+     */
+    function autoOpenPhoto() {
+        const gallery = document.getElementById('lightbox-gallery');
+        if (!gallery || !gallery.dataset.openPhoto) return;
+        const photoId = gallery.dataset.openPhoto;
+        // Escape the value for safe use in a CSS attribute selector
+        const selector = '.lightbox-trigger[data-media-id="' + CSS.escape(photoId) + '"]';
+        const trigger = document.querySelector(selector);
+        if (!trigger) return;
+        const idx = triggers.indexOf(trigger);
+        if (idx !== -1) {
+            openLightbox(idx);
+        }
+        // If idx === -1 the trigger wasn't registered by bindTriggers (unexpected);
+        // in that case we don't open the lightbox to avoid showing an empty state.
+    }
+
+    /**
      * Bind click events to any new .lightbox-trigger elements found inside
      * the given container.  New triggers are appended to the existing triggers
      * array so that prev/next navigation still works across all posts.
@@ -528,9 +548,10 @@
 
     // Init when DOM is ready
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', bindTriggers);
+        document.addEventListener('DOMContentLoaded', () => { bindTriggers(); autoOpenPhoto(); });
     } else {
         bindTriggers();
+        autoOpenPhoto();
     }
 
     // Public API: bind lightbox triggers in dynamically loaded content
