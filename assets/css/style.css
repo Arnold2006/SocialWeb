@@ -481,7 +481,8 @@ textarea { resize: vertical; min-height: 80px; }
 }
 
 .latest-photos-thumb {
-    aspect-ratio: 1 / 1;
+    width: 70px;
+    height: 70px;
     overflow: hidden;
     border-radius: var(--radius-sm);
     position: relative;
