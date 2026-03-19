@@ -51,9 +51,9 @@ $offsetSql = (int) $offset;
 $members = db_query(
     "SELECT u.id, u.username, u.bio, u.avatar_path
      FROM users u $where
-     ORDER BY u.username ASC
+     ORDER BY (u.id = ?) DESC, u.username ASC
      LIMIT {$limitSql} OFFSET {$offsetSql}",
-    $params
+    array_merge($params, [(int)$currentUser['id']])
 );
 
 /* ── Tab 2: My Albums ────────────────────────────────────────── */
