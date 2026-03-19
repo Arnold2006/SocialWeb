@@ -186,5 +186,13 @@ function register_user(string $username, string $full_name, string $email, strin
     // Increment invite usage
     db_exec('UPDATE invites SET uses = uses + 1 WHERE id = ?', [$invite['id']]);
 
+    // Mark all existing threads as read so new users start with a clean slate
+    // (no unread indications on first login)
+    db_exec(
+        'INSERT INTO forum_reads (user_id, thread_id, read_at)
+         SELECT ?, id, NOW() FROM forum_threads WHERE is_deleted = 0',
+        [(int) $userId]
+    );
+
     return ['ok' => true, 'error' => '', 'user_id' => (int) $userId];
 }
