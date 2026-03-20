@@ -146,10 +146,10 @@
             imageBtn.disabled = false;
             if (data.ok) {
                 editor.focus();
-                // Insert 160px-wide thumbnail linked to the original (EXIF-stripped) version
+                // Insert 400px-wide thumbnail linked to the original (EXIF-stripped) version
                 document.execCommand('insertHTML', false,
                     '<a href="' + escAttr(data.original_url) + '">'
-                    + '<img src="' + escAttr(data.url) + '" alt="" width="160">'
+                    + '<img src="' + escAttr(data.url) + '" alt="" width="400">'
                     + '</a>');
                 updatePlaceholder();
                 setStatus('Image inserted.', 'success');
@@ -163,6 +163,92 @@
             setStatus('Image upload failed.', 'error');
         });
     }
+
+    // ── Image resize ──────────────────────────────────────────────────────────
+
+    var _resizeImg     = null; // image element currently selected for resize
+    var _resizeOverlay = document.createElement('div');
+    var _resizeHandle  = document.createElement('div');
+
+    _resizeOverlay.className = 'blog-img-resize-overlay';
+    _resizeHandle.className  = 'blog-img-resize-handle';
+    _resizeOverlay.appendChild(_resizeHandle);
+    document.body.appendChild(_resizeOverlay);
+
+    function _resizePosition() {
+        if (!_resizeImg) return;
+        var r = _resizeImg.getBoundingClientRect();
+        _resizeOverlay.style.top    = (r.top  + window.scrollY) + 'px';
+        _resizeOverlay.style.left   = (r.left + window.scrollX) + 'px';
+        _resizeOverlay.style.width  = r.width  + 'px';
+        _resizeOverlay.style.height = r.height + 'px';
+    }
+
+    function _resizeSelect(img) {
+        _resizeImg = img;
+        _resizeOverlay.style.display = 'block';
+        _resizePosition();
+    }
+
+    function _resizeDeselect() {
+        _resizeImg = null;
+        _resizeOverlay.style.display = 'none';
+    }
+
+    // Click an image inside the editor to select it and show the resize handle
+    editor.addEventListener('click', function (e) {
+        if (e.target.tagName === 'IMG') {
+            // Prevent the wrapping <a> from being followed when clicking the image
+            var anchor = e.target.closest('a');
+            if (anchor) e.preventDefault();
+            _resizeSelect(e.target);
+        } else {
+            _resizeDeselect();
+        }
+    });
+
+    // Deselect when clicking outside both the editor and the overlay
+    document.addEventListener('mousedown', function (e) {
+        if (_resizeImg &&
+            !editor.contains(e.target) &&
+            !_resizeOverlay.contains(e.target)) {
+            _resizeDeselect();
+        }
+    });
+
+    // Keep the overlay in sync when the editor content scrolls
+    editor.addEventListener('scroll', _resizePosition);
+    window.addEventListener('scroll', _resizePosition, { passive: true });
+
+    // Drag the handle to resize the selected image
+    _resizeHandle.addEventListener('mousedown', function (e) {
+        if (!_resizeImg) return;
+        e.preventDefault();
+        e.stopPropagation();
+
+        var startX  = e.clientX;
+        var startW  = _resizeImg.getBoundingClientRect().width;
+        var maxW    = editor.getBoundingClientRect().width;
+        var minW    = 50;
+
+        // Remove any height attribute so CSS `height: auto` maintains aspect ratio
+        _resizeImg.removeAttribute('height');
+
+        function onMove(ev) {
+            var requestedWidth = startW + ev.clientX - startX;
+            var w = Math.round(Math.min(maxW, Math.max(minW, requestedWidth)));
+            _resizeImg.setAttribute('width', w);
+            _resizePosition();
+        }
+
+        function onUp() {
+            document.removeEventListener('mousemove', onMove);
+            document.removeEventListener('mouseup',   onUp);
+        }
+
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup',   onUp);
+    });
 
     // ── Save / Update ─────────────────────────────────────────────────────────
 
@@ -314,6 +400,7 @@
         if (headingEl) headingEl.textContent = 'New Post';
         updatePlaceholder();
         setStatus('', '');
+        _resizeDeselect();
     }
 
     function setStatus(msg, type) {

@@ -3240,6 +3240,29 @@ textarea { resize: vertical; min-height: 80px; }
     margin: 0.5rem 0;
 }
 
+/* Resize overlay shown when an image is selected inside the blog editor */
+.blog-img-resize-overlay {
+    display: none;
+    position: absolute;
+    box-sizing: border-box;
+    outline: 2px solid var(--color-accent);
+    pointer-events: none;
+    z-index: 1000;
+}
+
+.blog-img-resize-handle {
+    position: absolute;
+    bottom: -5px;
+    right: -5px;
+    width: 10px;
+    height: 10px;
+    background: var(--color-accent);
+    border: 2px solid #fff;
+    border-radius: 2px;
+    pointer-events: all;
+    cursor: nwse-resize;
+}
+
 .blog-editor blockquote,
 .blog-post-content blockquote,
 .forum-post-content blockquote {
