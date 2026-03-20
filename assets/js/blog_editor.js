@@ -146,10 +146,10 @@
             imageBtn.disabled = false;
             if (data.ok) {
                 editor.focus();
-                // Insert 160px-wide thumbnail linked to the original (EXIF-stripped) version
+                // Insert 400px-wide thumbnail linked to the original (EXIF-stripped) version
                 document.execCommand('insertHTML', false,
                     '<a href="' + escAttr(data.original_url) + '">'
-                    + '<img src="' + escAttr(data.url) + '" alt="" width="160">'
+                    + '<img src="' + escAttr(data.url) + '" alt="" width="400">'
                     + '</a>');
                 updatePlaceholder();
                 setStatus('Image inserted.', 'success');
