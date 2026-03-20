@@ -107,17 +107,20 @@ CREATE TABLE IF NOT EXISTS `comments` (
 -- Table: likes
 -- --------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `likes` (
-  `id`         INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `user_id`    INT UNSIGNED NOT NULL,
-  `post_id`    INT UNSIGNED DEFAULT NULL,
-  `media_id`   INT UNSIGNED DEFAULT NULL,             -- album media item like
-  `comment_id` INT UNSIGNED DEFAULT NULL,
-  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `id`           INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `user_id`      INT UNSIGNED NOT NULL,
+  `post_id`      INT UNSIGNED DEFAULT NULL,
+  `media_id`     INT UNSIGNED DEFAULT NULL,           -- album media item like
+  `blog_post_id` INT UNSIGNED DEFAULT NULL,           -- blog post like
+  `comment_id`   INT UNSIGNED DEFAULT NULL,
+  `created_at`   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `unique_post_like` (`user_id`, `post_id`),
   UNIQUE KEY `unique_media_like` (`user_id`, `media_id`),
+  UNIQUE KEY `unique_blog_post_like` (`user_id`, `blog_post_id`),
   KEY `idx_post_id` (`post_id`),
   KEY `idx_media_id_likes` (`media_id`),
+  KEY `idx_blog_post_id_likes` (`blog_post_id`),
   KEY `idx_comment_id` (`comment_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -146,7 +149,7 @@ CREATE TABLE IF NOT EXISTS `messages` (
 CREATE TABLE IF NOT EXISTS `notifications` (
   `id`          INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `user_id`     INT UNSIGNED NOT NULL,               -- recipient
-  `type`        ENUM('like','comment','message','blog_comment','photo_like','photo_comment') NOT NULL,
+  `type`        ENUM('like','comment','message','blog_comment','photo_like','photo_comment','blog_like') NOT NULL,
   `from_user_id` INT UNSIGNED DEFAULT NULL,          -- who triggered it
   `ref_id`      INT UNSIGNED DEFAULT NULL,           -- post/comment/message id
   `is_read`     TINYINT(1) NOT NULL DEFAULT 0,

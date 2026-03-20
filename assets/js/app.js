@@ -281,6 +281,7 @@ if (postForm) {
 document.addEventListener('click', async (e) => {
     const btn = e.target.closest('.btn-like');
     if (!btn) return;
+    if (btn.classList.contains('btn-like-blog')) return; // handled separately
 
     e.preventDefault();
     btn.disabled = true;
@@ -300,6 +301,34 @@ document.addEventListener('click', async (e) => {
         }
     } catch (err) {
         console.error('Like failed:', err);
+    } finally {
+        btn.disabled = false;
+    }
+});
+
+// ── Blog post like button ─────────────────────────────────────────────────────
+
+document.addEventListener('click', async (e) => {
+    const btn = e.target.closest('.btn-like-blog');
+    if (!btn) return;
+
+    e.preventDefault();
+    btn.disabled = true;
+
+    const blogPostId = btn.dataset.blogPostId;
+    const data       = new URLSearchParams({ csrf_token: getCsrfToken(), blog_post_id: blogPostId });
+
+    try {
+        const baseUrl = document.querySelector('meta[name="site-url"]')?.content || '';
+        const result  = await apiPost(baseUrl + '/modules/blog/like_post.php', data);
+
+        if (result.ok) {
+            const countEl = btn.querySelector('.like-count');
+            if (countEl) countEl.textContent = result.count;
+            btn.classList.toggle('liked', result.liked);
+        }
+    } catch (err) {
+        console.error('Blog like failed:', err);
     } finally {
         btn.disabled = false;
     }
@@ -1897,6 +1926,11 @@ document.addEventListener('click', (e) => {
 
     // Wall comment forms
     document.querySelectorAll('.comment-form input[name="content"]').forEach((input) => {
+        input.insertAdjacentElement('afterend', createSmileyPicker(input));
+    });
+
+    // Blog comment forms
+    document.querySelectorAll('.blog-comment-form input[name="content"]').forEach((input) => {
         input.insertAdjacentElement('afterend', createSmileyPicker(input));
     });
 }());
