@@ -155,6 +155,14 @@ include SITE_ROOT . '/includes/header.php';
                     [(int)$post['id']]
                 );
                 $moreComments = $blogCommentCount > 3;
+                $blogLikeCount = (int)db_val(
+                    'SELECT COUNT(*) FROM likes WHERE blog_post_id = ?',
+                    [(int)$post['id']]
+                );
+                $userLiked = (int)db_val(
+                    'SELECT COUNT(*) FROM likes WHERE blog_post_id = ? AND user_id = ?',
+                    [(int)$post['id'], (int)$currentUser['id']]
+                );
             ?>
             <article class="blog-post card" id="blog-post-<?= (int)$post['id'] ?>">
                 <header class="blog-post-header">
@@ -177,6 +185,10 @@ include SITE_ROOT . '/includes/header.php';
                     <button type="button" class="btn btn-danger btn-xs blog-delete-btn"
                             data-post-id="<?= (int)$post['id'] ?>">Delete</button>
                     <?php endif; ?>
+                    <button type="button" class="btn-like btn-like-blog<?= $userLiked ? ' liked' : '' ?>"
+                            data-blog-post-id="<?= (int)$post['id'] ?>">
+                        ♥ <span class="like-count"><?= $blogLikeCount ?></span>
+                    </button>
                     <button class="btn-comment" data-blog-post-id="<?= (int)$post['id'] ?>">
                         💬 <span class="blog-comment-count"><?= $blogCommentCount ?></span>
                     </button>
