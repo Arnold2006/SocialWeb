@@ -40,9 +40,33 @@
     const linkBtn     = document.getElementById('blog-link-btn');
     const headingEl   = document.getElementById('blog-editor-heading');
 
-    if (!editor) return;
-
     const SITE_URL = (document.querySelector('meta[name="site-url"]') || {}).content || '';
+
+    // ── Copy Link (available to all visitors) ────────────────────────────────
+
+    document.addEventListener('click', function (e) {
+        const btn = e.target.closest('.blog-copy-link-btn');
+        if (!btn) return;
+        const postId = parseInt(btn.dataset.postId, 10);
+        const userId = parseInt(btn.dataset.userId, 10);
+        if (!postId || !userId) return;
+
+        const url = SITE_URL + '/pages/blog.php?user_id=' + encodeURIComponent(userId) + '&post_id=' + encodeURIComponent(postId);
+        const orig = btn.textContent;
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(url).then(function () {
+                btn.textContent = 'Copied!';
+                setTimeout(function () { btn.textContent = orig; }, 2000);
+            }).catch(function () {
+                prompt('Copy this link:', url);
+            });
+        } else {
+            prompt('Copy this link:', url);
+        }
+    });
+
+    if (!editor) return;
 
     function getCsrf() {
         return csrfInput ? csrfInput.value : '';
@@ -439,6 +463,7 @@
         const dateStr = now.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
         const csrfVal = getCsrf();
+        const userId  = parseInt(list.dataset.blogOwnerId, 10) || 0;
 
         const article = document.createElement('article');
         article.className = 'blog-post card';
@@ -454,6 +479,8 @@
             + ' data-post-id="' + postId + '" data-title="' + escAttr(title) + '">Edit</button>'
             + '<button type="button" class="btn btn-danger btn-xs blog-delete-btn"'
             + ' data-post-id="' + postId + '">Delete</button>'
+            + '<button type="button" class="btn btn-secondary btn-xs blog-copy-link-btn"'
+            + ' data-post-id="' + postId + '" data-user-id="' + userId + '">Copy Link</button>'
             + '<button class="btn-comment" data-blog-post-id="' + postId + '">'
             + '💬 <span class="blog-comment-count">0</span>'
             + '</button>'
