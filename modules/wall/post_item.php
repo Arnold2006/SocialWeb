@@ -92,6 +92,7 @@ $moreComments = (int)$post['comment_count'] > 3;
             <a href="<?= e(get_media_url($previewItem, 'original')) ?>"
                class="lightbox-trigger"
                data-src="<?= e(get_media_url($previewItem, 'large')) ?>"
+               data-media-id="<?= (int)$previewItem['id'] ?>"
                data-caption="<?= e($post['username']) ?>">
                 <img src="<?= e(get_media_url($previewItem, 'thumb')) ?>"
                      alt="<?= e($post['username']) ?>"
@@ -113,6 +114,7 @@ $moreComments = (int)$post['comment_count'] > 3;
         <?php if ($postMedia['type'] === 'image'): ?>
         <a href="<?= e(get_media_url($postMedia, 'original')) ?>" class="lightbox-trigger"
            data-src="<?= e(get_media_url($postMedia, 'large')) ?>"
+           data-media-id="<?= (int)$postMedia['id'] ?>"
            data-caption="<?= e($post['username']) ?>">
             <img src="<?= e(get_media_url($postMedia, 'thumb')) ?>"
                  data-src="<?= e(get_media_url($postMedia, 'medium')) ?>"
