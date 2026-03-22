@@ -48,6 +48,7 @@
     --transition:  0.2s ease;
     --container-w: 1200px;
     --sidebar-w:   300px;
+    --nav-height:  50px; /* approximate height of .main-nav; used for scroll-margin */
 }
 
 /* ── Theme: gray-orange ─────────────────────────────────────── */
@@ -3311,6 +3312,7 @@ textarea { resize: vertical; min-height: 80px; }
 /* Published posts */
 .blog-post {
     margin-bottom: 1.5rem;
+    scroll-margin-top: calc(var(--nav-height) + 8px);
 }
 
 .blog-post-header {
