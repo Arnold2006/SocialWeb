@@ -54,15 +54,36 @@
         const url = SITE_URL + '/pages/blog.php?user_id=' + encodeURIComponent(userId) + '&post_id=' + encodeURIComponent(postId);
         const orig = btn.textContent;
 
+        function showCopied() {
+            btn.textContent = 'Copied!';
+            setTimeout(function () { btn.textContent = orig; }, 2000);
+        }
+
+        function execCopy() {
+            const ta = document.createElement('textarea');
+            ta.value = url;
+            ta.setAttribute('aria-hidden', 'true');
+            ta.setAttribute('tabindex', '-1');
+            ta.style.position = 'fixed';
+            ta.style.top = '-9999px';
+            ta.style.left = '-9999px';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.focus({ preventScroll: true });
+            ta.select();
+            try {
+                if (document.execCommand('copy')) {
+                    showCopied();
+                }
+            } finally {
+                document.body.removeChild(ta);
+            }
+        }
+
         if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(url).then(function () {
-                btn.textContent = 'Copied!';
-                setTimeout(function () { btn.textContent = orig; }, 2000);
-            }).catch(function () {
-                prompt('Copy this link:', url);
-            });
+            navigator.clipboard.writeText(url).then(showCopied).catch(execCopy);
         } else {
-            prompt('Copy this link:', url);
+            execCopy();
         }
     });
 
