@@ -87,6 +87,34 @@
         }
     });
 
+    // ── Scroll to linked post on page load ───────────────────────────────────
+    // When arriving via a Copy Link redirect (e.g. blog.php?user_id=X&page=Y#blog-post-Z),
+    // the browser's native anchor scroll can be disrupted by CSS smooth-scroll combined
+    // with scripts that modify the layout after page load.  We explicitly scroll to the
+    // target element after layout has stabilised, accounting for the sticky nav bar.
+
+    (function () {
+        function scrollToLinkedPost() {
+            var hash = window.location.hash;
+            if (!hash || !/^#blog-post-\d+$/.test(hash)) return;
+            var el = document.getElementById(hash.slice(1));
+            if (!el) return;
+            var navEl = document.querySelector('.main-nav');
+            var navH  = navEl ? navEl.getBoundingClientRect().height : 0;
+            var top   = el.getBoundingClientRect().top + window.scrollY - navH - 8; /* 8px visual breathing room below the nav */
+            window.scrollTo({ top: Math.max(0, top), behavior: 'auto' });
+        }
+        // Two requestAnimationFrame calls ensure the browser has completed layout
+        // before we measure element positions and scroll.
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function () {
+                requestAnimationFrame(function () { requestAnimationFrame(scrollToLinkedPost); });
+            });
+        } else {
+            requestAnimationFrame(function () { requestAnimationFrame(scrollToLinkedPost); });
+        }
+    }());
+
     if (!editor) return;
 
     function getCsrf() {
