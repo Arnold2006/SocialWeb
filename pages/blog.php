@@ -46,6 +46,26 @@ $page    = max(1, sanitise_int($_GET['page'] ?? 1));
 $perPage = 10;
 $offset  = ($page - 1) * $perPage;
 
+// Handle direct post links: ?post_id=N redirects to the correct page + anchor
+if (isset($_GET['post_id']) && !isset($_GET['page'])) {
+    $directPostId = sanitise_int($_GET['post_id']);
+    if ($directPostId > 0) {
+        $position = (int)db_val(
+            'SELECT COUNT(*) FROM blog_posts
+             WHERE user_id = ? AND is_deleted = 0
+             AND created_at >= (
+                 SELECT created_at FROM blog_posts
+                 WHERE id = ? AND user_id = ? AND is_deleted = 0
+             )',
+            [$blogOwnerId, $directPostId, $blogOwnerId]
+        );
+        if ($position > 0) {
+            $targetPage = (int)ceil($position / $perPage);
+            redirect(SITE_URL . '/pages/blog.php?user_id=' . urlencode((string)$blogOwnerId) . '&page=' . urlencode((string)$targetPage) . '#blog-post-' . $directPostId);
+        }
+    }
+}
+
 $total = (int)db_val(
     'SELECT COUNT(*) FROM blog_posts WHERE user_id = ? AND is_deleted = 0',
     [$blogOwnerId]
@@ -136,7 +156,7 @@ include SITE_ROOT . '/includes/header.php';
         <?php endif; ?>
 
         <!-- ── Posts list ───────────────────────────────────────── -->
-        <div id="blog-posts-list">
+        <div id="blog-posts-list" data-blog-owner-id="<?= (int)$blogOwnerId ?>">
         <?php if (empty($posts)): ?>
             <p class="empty-state">No blog posts yet.</p>
         <?php else: ?>
@@ -185,6 +205,9 @@ include SITE_ROOT . '/includes/header.php';
                     <button type="button" class="btn btn-danger btn-xs blog-delete-btn"
                             data-post-id="<?= (int)$post['id'] ?>">Delete</button>
                     <?php endif; ?>
+                    <button type="button" class="btn btn-secondary btn-xs blog-copy-link-btn"
+                            data-post-id="<?= (int)$post['id'] ?>"
+                            data-user-id="<?= (int)$blogOwnerId ?>">Copy Link</button>
                     <button type="button" class="btn-like btn-like-blog<?= $userLiked ? ' liked' : '' ?>"
                             data-blog-post-id="<?= (int)$post['id'] ?>">
                         ♥ <span class="like-count"><?= $blogLikeCount ?></span>
@@ -246,7 +269,5 @@ include SITE_ROOT . '/includes/header.php';
 
 </div><!-- /.two-col-layout -->
 
-<?php if ($isOwn): ?>
 <?php $pageScript = ASSETS_URL . '/js/blog_editor.js'; ?>
-<?php endif; ?>
 <?php include SITE_ROOT . '/includes/footer.php'; ?>
