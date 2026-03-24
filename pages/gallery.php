@@ -116,7 +116,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwn) {
 
         case 'edit_description':
             $aId  = sanitise_int($_POST['album_id'] ?? 0);
-            $desc = sanitise_string($_POST['description'] ?? '', 2000);
+            $desc = sanitise_html($_POST['description'] ?? '', 50000);
             if ($aId) {
                 db_exec(
                     'UPDATE albums SET description = ? WHERE id = ? AND user_id = ?',
@@ -474,13 +474,46 @@ include SITE_ROOT . '/includes/header.php';
             </div>
 
             <div id="edit-description-form-<?= (int)$currentAlbum['id'] ?>" class="hidden inline-form-row">
-                <form method="POST">
+                <form method="POST" id="album-desc-form">
                     <?= csrf_field() ?>
                     <input type="hidden" name="action" value="edit_description">
                     <input type="hidden" name="album_id" value="<?= (int)$currentAlbum['id'] ?>">
-                    <textarea name="description" maxlength="2000" rows="3"
-                              placeholder="Add a description…" style="width:100%;margin-bottom:0.5rem"><?= e($currentAlbum['description'] ?? '') ?></textarea>
-                    <button type="submit" class="btn btn-primary btn-sm">Save</button>
+
+                    <!-- Toolbar -->
+                    <div class="blog-toolbar" id="album-desc-toolbar" role="toolbar" aria-label="Description formatting">
+                        <button type="button" class="blog-tb-btn" data-cmd="bold"               title="Bold"><b>B</b></button>
+                        <button type="button" class="blog-tb-btn" data-cmd="italic"             title="Italic"><i>I</i></button>
+                        <button type="button" class="blog-tb-btn" data-cmd="underline"          title="Underline"><u>U</u></button>
+                        <button type="button" class="blog-tb-btn" data-cmd="strikeThrough"      title="Strikethrough"><s>S</s></button>
+                        <span class="blog-tb-sep"></span>
+                        <button type="button" class="blog-tb-btn" data-cmd="formatBlock" data-val="h2" title="Heading 2">H2</button>
+                        <button type="button" class="blog-tb-btn" data-cmd="formatBlock" data-val="h3" title="Heading 3">H3</button>
+                        <span class="blog-tb-sep"></span>
+                        <button type="button" class="blog-tb-btn" data-cmd="insertUnorderedList" title="Bullet list">&#8226;&#8212;</button>
+                        <button type="button" class="blog-tb-btn" data-cmd="insertOrderedList"   title="Numbered list">1&#8212;</button>
+                        <button type="button" class="blog-tb-btn" data-cmd="formatBlock" data-val="blockquote" title="Blockquote">&#10078;</button>
+                        <span class="blog-tb-sep"></span>
+                        <button type="button" class="blog-tb-btn" id="album-desc-link-btn" title="Insert link">&#128279;</button>
+                    </div>
+
+                    <!-- Editable content area -->
+                    <div id="album-desc-editor"
+                         class="blog-editor"
+                         contenteditable="true"
+                         role="textbox"
+                         aria-multiline="true"
+                         aria-label="Album description"
+                         data-placeholder="Add a description…"><?php
+                        $descInit = $currentAlbum['description'] ?? '';
+                        echo strip_tags($descInit) === $descInit
+                            ? nl2br(e($descInit))
+                            : sanitise_html($descInit);
+                    ?></div>
+
+                    <!-- Hidden field populated by JS before submit -->
+                    <textarea name="description" id="album-desc-hidden" style="display:none" aria-hidden="true"></textarea>
+
+                    <button type="submit" class="btn btn-primary btn-sm" style="margin-top:0.5rem">Save</button>
                 </form>
             </div>
 
@@ -505,7 +538,12 @@ include SITE_ROOT . '/includes/header.php';
         </div>
 
         <?php if (!empty($currentAlbum['description'])): ?>
-        <p class="album-description"><?= nl2br(linkify($currentAlbum['description'])) ?></p>
+        <?php $albumDesc = $currentAlbum['description']; ?>
+        <div class="album-description card">
+            <?= strip_tags($albumDesc) === $albumDesc
+                ? nl2br(linkify($albumDesc))
+                : sanitise_html($albumDesc) ?>
+        </div>
         <?php endif; ?>
 
         <?php if ($isOwn): ?>
@@ -796,6 +834,9 @@ include SITE_ROOT . '/includes/header.php';
 <?php if ($albumId > 0): ?>
 <script src="<?= ASSETS_URL ?>/js/masonry_layout.js"></script>
 <script src="<?= ASSETS_URL ?>/js/gallery_infinite_scroll.js"></script>
+<?php endif; ?>
+<?php if ($albumId > 0 && $isOwn): ?>
+<script src="<?= ASSETS_URL ?>/js/album_desc_editor.js"></script>
 <?php endif; ?>
 
 <?php include SITE_ROOT . '/includes/footer.php'; ?>
