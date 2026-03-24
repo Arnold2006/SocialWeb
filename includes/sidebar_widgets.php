@@ -180,6 +180,7 @@ try {
     <ul class="site-stats">
         <li><strong><?= $sidebarMemberCount ?></strong> members</li>
     </ul>
+    <p><a href="https://artnet.accnet.eu/pages/blog.php?user_id=1&amp;post_id=4" target="_blank" rel="noopener">Why Artnet</a></p>
 </div>
 
 <!-- Plugin sidebar widgets -->
