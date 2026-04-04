@@ -95,6 +95,34 @@ function mark_thread_read(int $threadId): void
 }
 
 /**
+ * Record that $userId is currently active in $convId.
+ * Called whenever the user fetches messages for the conversation (polling or initial load).
+ */
+function mark_user_chat_active(int $userId, int $convId): void
+{
+    db_exec(
+        'INSERT INTO chat_activity (user_id, conversation_id, last_active_at)
+         VALUES (?, ?, NOW())
+         ON DUPLICATE KEY UPDATE last_active_at = NOW()',
+        [$userId, $convId]
+    );
+}
+
+/**
+ * Return true if $userId has fetched messages for $convId within the last $thresholdSeconds.
+ * Used to suppress notifications when the recipient already has the chat window open.
+ */
+function is_user_active_in_chat(int $userId, int $convId, int $thresholdSeconds = 10): bool
+{
+    return (bool) db_val(
+        'SELECT 1 FROM chat_activity
+         WHERE user_id = ? AND conversation_id = ?
+           AND last_active_at >= NOW() - INTERVAL ? SECOND',
+        [$userId, $convId, $thresholdSeconds]
+    );
+}
+
+/**
  * Create a notification for a user, skipping self-notifications.
  *
  * @param int    $recipientId  User to notify
