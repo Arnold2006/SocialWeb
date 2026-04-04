@@ -37,12 +37,13 @@
     /** Map<userId:number, WindowState> */
     const openWindows = new Map();
 
-    let csrfToken      = '';
-    let siteUrl        = '';
-    let sidebarOpen    = false;
-    let badgePollTimer = null;
-    let searchTimer    = null;
-    let storageKey     = 'chatOpenWindows';   // scoped per-user in init()
+    let csrfToken        = '';
+    let siteUrl          = '';
+    let sidebarOpen      = false;
+    let badgePollTimer   = null;
+    let searchTimer      = null;
+    let storageKey       = 'chatOpenWindows';   // scoped per-user in init()
+    let restoringWindows = false;               // suppress saves during restoration
 
     /**
      * WindowState shape:
@@ -239,9 +240,15 @@
             if (!raw) return;
             const windows = JSON.parse(raw);
             if (!Array.isArray(windows)) return;
-            windows.forEach(w => {
-                if (w && w.userId) openWindow(w.userId, w.username || '', w.avatarUrl || '');
-            });
+            const toRestore = windows.filter(w => w && w.userId);
+            if (!toRestore.length) return;
+            // Suppress per-window saves during restoration; do one write at the end.
+            restoringWindows = true;
+            Promise.all(toRestore.map(w => openWindow(w.userId, w.username || '', w.avatarUrl || '')))
+                .finally(() => {
+                    restoringWindows = false;
+                    saveOpenWindows();
+                });
         } catch (_) { /* ignore parse / access errors */ }
     }
 
@@ -285,7 +292,7 @@
         ws.elInput.focus();
 
         // Persist the set of open windows across page navigations
-        saveOpenWindows();
+        if (!restoringWindows) saveOpenWindows();
     }
 
     function closeWindow(userId) {
