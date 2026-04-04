@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
-# deploy.sh — Pull the latest code and fix file-system ownership / permissions.
+# deploy.sh — Pull the latest code, fix file-system ownership / permissions,
+#             and apply any pending database migrations.
 #
 # Run this script (as root or with sudo) from the project root after every
 # deployment instead of running "sudo git pull" on its own.  It pulls the
-# latest code and then transfers ownership of the writable directories to the
-# web-server user so that PHP can create cache files, store uploads, and
-# remove applied migration files without "permission denied" errors.
+# latest code, transfers ownership of the writable directories to the
+# web-server user, and then runs "php upgrade.php" to apply any new SQL
+# migrations automatically.
 #
 # Usage:
 #   sudo bash deploy.sh                       # default web-server user (www)
@@ -68,6 +69,9 @@ echo "==> Setting directory and file permissions..."
 chmod -R 755 cache/ database/migrations/
 chmod -R 755 uploads/
 
+echo "==> Running database migrations..."
+php upgrade.php
+
 echo ""
 echo "==> Deployment complete."
 echo "    Web-server user : ${WEB_USER}"
@@ -75,6 +79,3 @@ echo "    Writable paths  : cache/  uploads/  database/migrations/"
 echo ""
 echo "    If this is a fresh installation, visit http://yoursite/setup.php"
 echo "    to create the database tables and the first admin account."
-echo ""
-echo "    If you are upgrading, visit http://yoursite/upgrade.php (or run"
-echo "    'php upgrade.php' from the CLI) to apply any pending migrations."

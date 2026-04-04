@@ -27,11 +27,15 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/includes/bootstrap.php';
 
-// Only admins may run upgrades
-$currentUser = current_user();
-if ($currentUser === null || $currentUser['role'] !== 'admin') {
-    http_response_code(403);
-    die('Access denied. Admin login required.');
+$isCli = (php_sapi_name() === 'cli');
+
+// Only admins may run upgrades via the web; CLI is unrestricted (trusted process).
+if (!$isCli) {
+    $currentUser = current_user();
+    if ($currentUser === null || $currentUser['role'] !== 'admin') {
+        http_response_code(403);
+        die('Access denied. Admin login required.');
+    }
 }
 
 $error   = '';
@@ -50,6 +54,50 @@ db()->exec("
 $migrationsDir = __DIR__ . '/database/migrations';
 $files = is_dir($migrationsDir) ? (glob($migrationsDir . '/*.sql') ?: []) : [];
 sort($files);
+
+// CLI: run all pending migrations automatically and exit.
+if ($isCli) {
+    $anyPending = false;
+    foreach ($files as $file) {
+        $name    = basename($file);
+        $already = db_val('SELECT COUNT(*) FROM db_migrations WHERE migration = ?', [$name]);
+        if ((int)$already > 0) {
+            $deleted = @unlink($file);
+            echo "  [skip]  {$name}" . ($deleted ? ' (file removed)' : '') . PHP_EOL;
+            continue;
+        }
+
+        $anyPending = true;
+        echo "  [apply] {$name} ... ";
+        try {
+            $sql = file_get_contents($file);
+            foreach (array_filter(array_map('trim', explode(';', $sql))) as $stmt) {
+                try {
+                    db()->exec($stmt);
+                } catch (\Throwable $stmtEx) {
+                    $errCode = ($stmtEx instanceof \PDOException)
+                        ? (int)($stmtEx->errorInfo[1] ?? 0)
+                        : 0;
+                    if (!in_array($errCode, [1050, 1060, 1091], true)) {
+                        throw $stmtEx;
+                    }
+                }
+            }
+            db_insert('INSERT INTO db_migrations (migration) VALUES (?)', [$name]);
+        } catch (\Throwable $ex) {
+            echo "ERROR: " . $ex->getMessage() . PHP_EOL;
+            exit(1);
+        }
+
+        $deleted = @unlink($file);
+        echo "OK" . ($deleted ? ' (file removed)' : '') . PHP_EOL;
+    }
+
+    if (!$anyPending) {
+        echo "  All migrations are already up to date." . PHP_EOL;
+    }
+    exit(0);
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_verify();
