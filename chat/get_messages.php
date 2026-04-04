@@ -70,6 +70,10 @@ if (!$conv) {
     exit;
 }
 
+// Record that the current user is actively viewing this conversation so that
+// incoming messages do not trigger a notification while the window is open.
+mark_user_chat_active($uid, $convId);
+
 $afterId  = sanitise_int($_GET['after_id']  ?? 0);
 $beforeId = sanitise_int($_GET['before_id'] ?? 0);
 

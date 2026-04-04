@@ -34,7 +34,7 @@ $_footerUser = current_user();
 
 <?php if ($_footerUser): ?>
 <!-- ── Chat widget (Oxwall-style) ──────────────────────────── -->
-<div id="chat-widget">
+<div id="chat-widget" data-user-id="<?= (int) $_footerUser['id'] ?>">
 
     <!-- CSRF token for AJAX requests -->
     <input type="hidden" id="chat-csrf" value="<?= e(csrf_token()) ?>">

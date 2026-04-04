@@ -37,11 +37,12 @@
     /** Map<userId:number, WindowState> */
     const openWindows = new Map();
 
-    let csrfToken     = '';
-    let siteUrl       = '';
-    let sidebarOpen   = false;
+    let csrfToken      = '';
+    let siteUrl        = '';
+    let sidebarOpen    = false;
     let badgePollTimer = null;
     let searchTimer    = null;
+    let storageKey     = 'chatOpenWindows';   // scoped per-user in init()
 
     /**
      * WindowState shape:
@@ -220,6 +221,30 @@
         return div;
     }
 
+    /* ── localStorage persistence ────────────────────────────────────────── */
+
+    function saveOpenWindows() {
+        const windows = [];
+        openWindows.forEach(ws => {
+            windows.push({ userId: ws.userId, username: ws.username, avatarUrl: ws.avatarUrl });
+        });
+        try {
+            localStorage.setItem(storageKey, JSON.stringify(windows));
+        } catch (_) { /* quota exceeded or private-mode restriction */ }
+    }
+
+    function restoreOpenWindows() {
+        try {
+            const raw = localStorage.getItem(storageKey);
+            if (!raw) return;
+            const windows = JSON.parse(raw);
+            if (!Array.isArray(windows)) return;
+            windows.forEach(w => {
+                if (w && w.userId) openWindow(w.userId, w.username || '', w.avatarUrl || '');
+            });
+        } catch (_) { /* ignore parse / access errors */ }
+    }
+
     /* ── Open / close window ─────────────────────────────────────────────── */
 
     async function openWindow(userId, username, avatarUrl) {
@@ -258,6 +283,9 @@
         ws.pollTimer = setInterval(() => pollMessages(ws), POLL_MSG_MS);
 
         ws.elInput.focus();
+
+        // Persist the set of open windows across page navigations
+        saveOpenWindows();
     }
 
     function closeWindow(userId) {
@@ -266,6 +294,9 @@
         if (ws.pollTimer) clearInterval(ws.pollTimer);
         ws.el.remove();
         openWindows.delete(parseInt(userId, 10));
+
+        // Update persisted window list
+        saveOpenWindows();
     }
 
     /* ── Message loading ─────────────────────────────────────────────────── */
@@ -552,6 +583,11 @@
         siteUrl      = document.querySelector('meta[name="site-url"]')?.content
                        || window.location.origin;
 
+        // Scope the localStorage key to the logged-in user so that different
+        // accounts on the same browser do not share each other's open windows.
+        const userId = document.getElementById('chat-widget')?.dataset.userId;
+        if (userId) storageKey = 'chatOpenWindows_' + userId;
+
         // Toggle button
         document.getElementById('chat-toggle')?.addEventListener('click', openSidebar);
 
@@ -570,6 +606,9 @@
         // Background badge poll + immediate first run
         badgePollTimer = setInterval(pollBadge, POLL_BADGE_MS);
         pollBadge();
+
+        // Re-open any chat windows that were open before the last page navigation
+        restoreOpenWindows();
     }
 
     /* ── Public API ──────────────────────────────────────────────────────── */

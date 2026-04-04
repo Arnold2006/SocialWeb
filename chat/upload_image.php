@@ -135,8 +135,10 @@ db_exec(
     [$convId]
 );
 
-// Notify the receiver
-notify_user($receiverId, 'message', $uid, $convId);
+// Notify the receiver only if they do not have this conversation open right now
+if (!is_user_active_in_chat($receiverId, $convId)) {
+    notify_user($receiverId, 'message', $uid, $convId);
+}
 
 // Return the newly created message
 $msg = db_row(
