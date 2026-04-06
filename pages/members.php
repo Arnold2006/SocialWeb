@@ -43,7 +43,7 @@ $limitSql  = (int) $perPage;
 $offsetSql = (int) $offset;
 
 $members = db_query(
-    "SELECT u.id, u.username, u.bio, u.avatar_path, u.created_at
+    "SELECT u.id, u.username, u.bio, u.avatar_path, u.created_at, u.last_seen
      FROM users u $where
      ORDER BY u.created_at DESC
      LIMIT {$limitSql} OFFSET {$offsetSql}",
@@ -96,6 +96,7 @@ include SITE_ROOT . '/includes/header.php';
                 <a href="<?= e(SITE_URL . '/pages/profile.php?id=' . (int)$member['id']) ?>">Profile</a>
                 <a href="<?= e(SITE_URL . '/pages/gallery.php?user_id=' . (int)$member['id']) ?>">Gallery</a>
             </div>
+            <p class="member-last-online">Last online: <?= $member['last_seen'] ? e(time_ago($member['last_seen'])) : 'Never' ?></p>
         </div>
     </div>
     <?php endforeach; ?>
