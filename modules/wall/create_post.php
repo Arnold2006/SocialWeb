@@ -19,7 +19,6 @@ declare(strict_types=1);
 require_once dirname(dirname(__DIR__)) . '/includes/bootstrap.php';
 
 const WALL_IMAGES_ALBUM = 'Wall Images';
-const WALL_VIDEOS_ALBUM = 'Wall Videos';
 
 require_login();
 
@@ -46,7 +45,10 @@ if (!empty($_FILES['media']['name'])) {
     $finfo    = new finfo(FILEINFO_MIME_TYPE);
     $mimeType = $finfo->file($file['tmp_name']);
 
-    if (in_array($mimeType, ALLOWED_IMAGE_TYPES, true)) {
+    $isImage = in_array($mimeType, ALLOWED_IMAGE_TYPES, true);
+    $isVideo = in_array($mimeType, ALLOWED_VIDEO_TYPES, true);
+
+    if ($isImage || $isVideo) {
         // Get or create the "Wall Images" album for this user.
         // Use SELECT then INSERT; in the unlikely event of a concurrent duplicate
         // insert the oldest matching album is always used on subsequent requests.
@@ -63,32 +65,14 @@ if (!empty($_FILES['media']['name'])) {
             );
         }
 
-        $result  = process_image_upload($file, (int)$user['id'], $wallAlbumId);
+        $result = $isImage
+            ? process_image_upload($file, (int)$user['id'], $wallAlbumId)
+            : process_video_upload($file, (int)$user['id'], $wallAlbumId);
+
         if ($result['ok']) {
             $mediaId = $result['media_id'];
         } else {
             flash_set('error', 'Media upload failed: ' . $result['error']);
-        }
-    } elseif (in_array($mimeType, ALLOWED_VIDEO_TYPES, true)) {
-        // Get or create the "Wall Videos" album for this user.
-        $wallVideoAlbum = db_row(
-            'SELECT id FROM albums WHERE user_id = ? AND title = ? AND is_deleted = 0 ORDER BY id ASC LIMIT 1',
-            [(int)$user['id'], WALL_VIDEOS_ALBUM]
-        );
-        if ($wallVideoAlbum) {
-            $wallVideoAlbumId = (int)$wallVideoAlbum['id'];
-        } else {
-            $wallVideoAlbumId = (int)db_insert(
-                'INSERT INTO albums (user_id, title) VALUES (?, ?)',
-                [(int)$user['id'], WALL_VIDEOS_ALBUM]
-            );
-        }
-
-        $result  = process_video_upload($file, (int)$user['id'], $wallVideoAlbumId);
-        if ($result['ok']) {
-            $mediaId = $result['media_id'];
-        } else {
-            flash_set('error', 'Video upload failed: ' . $result['error']);
         }
     } else {
         flash_set('error', 'Unsupported media type.');
