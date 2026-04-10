@@ -113,6 +113,7 @@ $siteTheme    = active_theme();
                    class="<?= str_contains($_SERVER['PHP_SELF'] ?? '', '/admin/') ? 'active' : '' ?>">Admin<?= $pendingMigrations > 0 ? ' <span class="badge">' . $pendingMigrations . '</span>' : '' ?></a></li>
             <?php endif; ?>
             <li><a href="https://sf.tera-sat.com" target="_blank" rel="noopener noreferrer">SendFile</a></li>
+            <li><a href="https://print.tera-sat.com" target="_blank" rel="noopener noreferrer">PrintService</a></li>
             <li><a href="<?= SITE_URL ?>/pages/logout.php">Logout</a></li>
         </ul>
     </nav>
