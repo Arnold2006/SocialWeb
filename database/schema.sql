@@ -223,6 +223,7 @@ CREATE TABLE IF NOT EXISTS `media` (
   `size`             BIGINT UNSIGNED NOT NULL DEFAULT 0,
   `mime_type`        VARCHAR(100) NOT NULL,
   `original_name`    VARCHAR(255) DEFAULT NULL,
+  `description`      VARCHAR(500) DEFAULT NULL,
   `width`            INT UNSIGNED DEFAULT NULL,
   `height`           INT UNSIGNED DEFAULT NULL,
   `duration`         INT UNSIGNED DEFAULT NULL,        -- video duration in seconds

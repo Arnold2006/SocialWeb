@@ -94,6 +94,8 @@ $siteTheme    = active_theme();
                    class="<?= (str_ends_with($_SERVER['PHP_SELF'] ?? '', 'profile.php')) ? 'active' : '' ?>">My Profile</a></li>
             <li><a href="<?= SITE_URL ?>/pages/photos.php"
                    class="<?= (str_ends_with($_SERVER['PHP_SELF'] ?? '', 'photos.php')) ? 'active' : '' ?>">Photos</a></li>
+            <li><a href="<?= SITE_URL ?>/pages/video.php"
+                   class="<?= (str_ends_with($_SERVER['PHP_SELF'] ?? '', 'video.php') || str_ends_with($_SERVER['PHP_SELF'] ?? '', 'video_play.php')) ? 'active' : '' ?>">Videos</a></li>
             <li><a href="<?= SITE_URL ?>/forum/index.php"
                    class="<?= str_contains($_SERVER['PHP_SELF'] ?? '', '/forum/') ? 'active' : '' ?>">Forum<?= $forumCount > 0 ? ' <span class="badge">' . $forumCount . '</span>' : '' ?></a></li>
             <li>

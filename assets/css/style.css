@@ -4107,3 +4107,219 @@ textarea { resize: vertical; min-height: 80px; }
     text-align: center;
     flex-shrink: 0;
 }
+
+/* ── Video page ──────────────────────────────────────────────── */
+.video-page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+}
+
+.video-upload-panel {
+    background: var(--color-card-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.video-upload-panel h2 {
+    margin: 0 0 1rem;
+    font-size: 1.1rem;
+}
+
+/* 3-column video grid */
+.video-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.25rem;
+    margin-bottom: 1.5rem;
+}
+
+@media (max-width: 900px) {
+    .video-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 560px) {
+    .video-grid { grid-template-columns: 1fr; }
+}
+
+.video-card {
+    background: var(--color-card-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    transition: border-color .18s, transform .18s;
+}
+
+.video-card:hover {
+    border-color: var(--color-accent);
+    transform: translateY(-2px);
+}
+
+.video-card-thumb {
+    display: block;
+    position: relative;
+    overflow: hidden;
+    aspect-ratio: 16/9;
+    background: #111;
+}
+
+.video-card-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform .25s;
+}
+
+.video-card:hover .video-card-thumb img {
+    transform: scale(1.05);
+}
+
+.video-card-thumb .video-play-icon {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 2.5rem;
+    color: #fff;
+    text-shadow: 0 2px 8px rgba(0,0,0,.7);
+    pointer-events: none;
+    transition: transform .18s;
+}
+
+.video-card:hover .video-card-thumb .video-play-icon {
+    transform: translate(-50%, -50%) scale(1.15);
+}
+
+.video-duration {
+    position: absolute;
+    bottom: .4rem;
+    right: .5rem;
+    background: rgba(0,0,0,.72);
+    color: #fff;
+    font-size: .72rem;
+    padding: .1rem .35rem;
+    border-radius: 3px;
+    pointer-events: none;
+}
+
+.video-card-info {
+    padding: .6rem .75rem .75rem;
+}
+
+.video-card-desc {
+    margin: 0 0 .4rem;
+    font-size: .88rem;
+    line-height: 1.4;
+    color: var(--color-text);
+    min-height: 1.2em;
+}
+
+.video-card-meta {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    font-size: .78rem;
+    flex-wrap: wrap;
+}
+
+.video-card-user {
+    display: flex;
+    align-items: center;
+    gap: .3rem;
+    color: var(--color-accent);
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.video-card-user:hover { text-decoration: underline; }
+
+.video-card-avatar {
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+/* ── Video playback page ─────────────────────────────────────── */
+.video-play-wrap {
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.video-player-box {
+    background: #000;
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-bottom: 1rem;
+}
+
+.video-player {
+    width: 100%;
+    max-height: 540px;
+    display: block;
+}
+
+.video-play-meta {
+    background: var(--color-card-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: 1rem 1.25rem;
+}
+
+.video-play-uploader {
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+    margin-bottom: .75rem;
+}
+
+.video-play-avatar {
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.video-play-username {
+    font-weight: 700;
+    color: var(--color-accent);
+    text-decoration: none;
+    display: block;
+}
+
+.video-play-username:hover { text-decoration: underline; }
+
+.video-play-date {
+    font-size: .8rem;
+}
+
+.video-play-owner-actions {
+    display: flex;
+    gap: .5rem;
+    flex-wrap: wrap;
+    margin-bottom: .75rem;
+}
+
+.video-play-description {
+    font-size: .95rem;
+    line-height: 1.6;
+    margin: .5rem 0;
+    white-space: pre-wrap;
+}
+
+.video-play-duration {
+    font-size: .82rem;
+    margin: .25rem 0 0;
+}
+
+.video-edit-desc-form {
+    margin-top: .5rem;
+    margin-bottom: .75rem;
+}
+
+.video-edit-desc-form textarea {
+    width: 100%;
+    resize: vertical;
+}
