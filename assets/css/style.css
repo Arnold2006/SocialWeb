@@ -4249,6 +4249,10 @@ textarea { resize: vertical; min-height: 80px; }
     margin: 0 auto;
 }
 
+.video-play-back {
+    margin-bottom: .75rem;
+}
+
 .video-player-box {
     background: #000;
     border-radius: var(--radius);
