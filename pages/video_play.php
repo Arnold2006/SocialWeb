@@ -46,6 +46,28 @@ if (!$video) {
 
 $isOwn = ((int) $currentUser['id'] === (int) $video['owner_id']) || is_admin();
 
+// ── Like state ────────────────────────────────────────────────────────────────
+
+$likeCount = (int) db_val('SELECT COUNT(*) FROM likes WHERE media_id = ?', [$mediaId]);
+$userLiked = (int) db_val(
+    'SELECT COUNT(*) FROM likes WHERE user_id = ? AND media_id = ?',
+    [(int)$currentUser['id'], $mediaId]
+) > 0;
+
+$commentCount = (int) db_val(
+    'SELECT COUNT(*) FROM comments WHERE media_id = ? AND is_deleted = 0',
+    [$mediaId]
+);
+
+$comments = db_query(
+    'SELECT c.id, c.content, c.created_at, u.id AS user_id, u.username, u.avatar_path
+     FROM comments c
+     JOIN users u ON u.id = c.user_id
+     WHERE c.media_id = ? AND c.is_deleted = 0
+     ORDER BY c.created_at ASC',
+    [$mediaId]
+);
+
 // ── Handle POST actions ───────────────────────────────────────────────────────
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -163,6 +185,64 @@ include SITE_ROOT . '/includes/header.php';
             ?>
         </p>
         <?php endif; ?>
+
+        <!-- ── Like button ──────────────────────────────────────────── -->
+        <div class="video-play-actions">
+            <button type="button"
+                    class="btn-like-media<?= $userLiked ? ' liked' : '' ?>"
+                    id="video-like-btn"
+                    data-media-id="<?= $mediaId ?>"
+                    aria-label="Like video"
+                    aria-pressed="<?= $userLiked ? 'true' : 'false' ?>">
+                &#9829; <span id="video-like-count"><?= $likeCount ?></span>
+            </button>
+            <span class="muted video-comment-count-label">
+                <span id="video-comment-count"><?= $commentCount ?></span><span id="video-comment-suffix"> comment<?= $commentCount !== 1 ? 's' : '' ?></span>
+            </span>
+        </div>
+    </div>
+
+    <!-- ── Comments section ──────────────────────────────────────────── -->
+    <div class="video-play-comments">
+        <h3 class="video-comments-heading">Comments</h3>
+
+        <!-- Comment form -->
+        <form class="video-comment-form" id="video-comment-form">
+            <?= csrf_field() ?>
+            <input type="hidden" name="media_id" value="<?= $mediaId ?>">
+            <input type="text" name="content"
+                   class="form-control video-comment-input"
+                   placeholder="Write a comment…"
+                   maxlength="1000"
+                   autocomplete="off"
+                   aria-label="Comment text">
+            <button type="submit" class="btn btn-primary btn-sm">Post</button>
+        </form>
+
+        <!-- Comments list -->
+        <div id="video-comments-list" class="video-comments-list">
+            <?php if (empty($comments)): ?>
+            <p class="video-comments-empty muted">No comments yet. Be the first!</p>
+            <?php else: ?>
+            <?php foreach ($comments as $c): ?>
+            <div class="video-comment-item">
+                <a href="<?= e(SITE_URL . '/pages/profile.php?id=' . (int)$c['user_id']) ?>"
+                   class="video-comment-avatar-link">
+                    <img src="<?= e(avatar_url($c, 'small')) ?>"
+                         alt="<?= e($c['username']) ?>"
+                         width="32" height="32"
+                         class="avatar avatar-small">
+                </a>
+                <div class="video-comment-body">
+                    <a href="<?= e(SITE_URL . '/pages/profile.php?id=' . (int)$c['user_id']) ?>"
+                       class="video-comment-author"><?= e($c['username']) ?></a>
+                    <span class="muted video-comment-time"><?= e(time_ago($c['created_at'])) ?></span>
+                    <p class="video-comment-text"><?= e($c['content']) ?></p>
+                </div>
+            </div>
+            <?php endforeach; ?>
+            <?php endif; ?>
+        </div>
     </div>
 
 </div><!-- /.video-play-wrap -->

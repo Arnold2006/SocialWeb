@@ -4345,3 +4345,104 @@ textarea { resize: vertical; min-height: 80px; }
     width: 100%;
     resize: vertical;
 }
+
+/* ── Video card stats overlay (video.php grid) ────────────────── */
+.video-card-stats {
+    position: absolute;
+    bottom: .4rem;
+    left: .5rem;
+    display: flex;
+    gap: .35rem;
+    pointer-events: none;
+}
+
+.video-card-stat {
+    background: rgba(0,0,0,.72);
+    color: #fff;
+    font-size: .72rem;
+    padding: .1rem .35rem;
+    border-radius: 3px;
+}
+
+/* ── Video playback: like button + actions bar ────────────────── */
+.video-play-actions {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    margin-top: .75rem;
+    padding-top: .75rem;
+    border-top: 1px solid var(--color-border);
+}
+
+.video-comment-count-label {
+    font-size: .85rem;
+}
+
+/* ── Video playback: comments section ────────────────────────── */
+.video-play-comments {
+    background: var(--color-card-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: 1rem 1.25rem;
+    margin-top: 1rem;
+}
+
+.video-comments-heading {
+    font-size: 1rem;
+    font-weight: 700;
+    margin: 0 0 .75rem;
+}
+
+.video-comment-form {
+    display: flex;
+    gap: .5rem;
+    margin-bottom: 1rem;
+}
+
+.video-comment-input {
+    flex: 1;
+}
+
+.video-comments-list {
+    display: flex;
+    flex-direction: column;
+    gap: .75rem;
+}
+
+.video-comments-empty {
+    text-align: center;
+    font-size: .9rem;
+}
+
+.video-comment-item {
+    display: flex;
+    gap: .6rem;
+    align-items: flex-start;
+}
+
+.video-comment-avatar-link {
+    flex-shrink: 0;
+}
+
+.video-comment-body {
+    flex: 1;
+}
+
+.video-comment-author {
+    font-weight: 700;
+    color: var(--color-accent);
+    text-decoration: none;
+    margin-right: .4rem;
+}
+
+.video-comment-author:hover { text-decoration: underline; }
+
+.video-comment-time {
+    font-size: .78rem;
+}
+
+.video-comment-text {
+    margin: .2rem 0 0;
+    font-size: .9rem;
+    word-break: break-word;
+}

@@ -108,7 +108,9 @@ $limitSql  = (int) $perPage;
 $offsetSql = (int) $offset;
 
 $videos = db_query(
-    "SELECT m.*, u.username, u.avatar_path
+    "SELECT m.*, u.username, u.avatar_path,
+            (SELECT COUNT(*) FROM likes    WHERE media_id = m.id) AS like_count,
+            (SELECT COUNT(*) FROM comments WHERE media_id = m.id AND is_deleted = 0) AS comment_count
      FROM media m
      JOIN users u ON u.id = m.user_id
      WHERE m.type = 'video' AND m.is_deleted = 0 AND u.is_banned = 0
@@ -187,6 +189,16 @@ include SITE_ROOT . '/includes/header.php';
             <span class="video-play-icon" aria-hidden="true">&#9654;</span>
             <?php if ($durationStr): ?>
             <span class="video-duration"><?= e($durationStr) ?></span>
+            <?php endif; ?>
+            <?php if ((int)$v['like_count'] > 0 || (int)$v['comment_count'] > 0): ?>
+            <div class="video-card-stats">
+                <?php if ((int)$v['like_count'] > 0): ?>
+                <span class="video-card-stat">&#9829; <?= (int)$v['like_count'] ?></span>
+                <?php endif; ?>
+                <?php if ((int)$v['comment_count'] > 0): ?>
+                <span class="video-card-stat">&#128172; <?= (int)$v['comment_count'] ?></span>
+                <?php endif; ?>
+            </div>
             <?php endif; ?>
         </a>
         <div class="video-card-info">
