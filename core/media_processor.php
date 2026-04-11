@@ -303,12 +303,25 @@ function create_album_upload_post(
         );
     }
 
-    // Collect up to 4 image IDs for the preview thumbnail strip
+    // Collect up to 4 image IDs for the preview thumbnail strip.
+    // Fall back to video IDs when the upload contains no images.
     $previewIds = [];
     if ($imageCount > 0) {
         $previewRows = db_query(
             "SELECT id FROM media
              WHERE id IN ($placeholders) AND type = 'image' AND is_deleted = 0
+             ORDER BY id ASC
+             LIMIT 4",
+            $mediaIds
+        );
+        foreach ($previewRows as $row) {
+            $previewIds[] = (int)$row['id'];
+        }
+    }
+    if (empty($previewIds)) {
+        $previewRows = db_query(
+            "SELECT id FROM media
+             WHERE id IN ($placeholders) AND type = 'video' AND is_deleted = 0
              ORDER BY id ASC
              LIMIT 4",
             $mediaIds

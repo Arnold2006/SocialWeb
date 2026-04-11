@@ -648,6 +648,24 @@ textarea { resize: vertical; min-height: 80px; }
     opacity: 0.85;
 }
 
+.post-album-thumbs .video-thumb-wrap {
+    width: 70px;
+    height: 70px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: opacity var(--transition);
+}
+
+.post-album-thumbs .video-thumb-wrap:hover {
+    opacity: 0.85;
+}
+
+.post-album-thumbs .video-thumb-wrap .video-play-icon {
+    width: 1.75rem;
+    height: 1.75rem;
+    font-size: 0.7rem;
+}
+
 .post-footer {
     display: flex;
     gap: 1rem;
