@@ -25,6 +25,7 @@ require_login();
 
 $currentUser = current_user();
 $pageTitle   = 'Videos';
+$pageScript  = ASSETS_URL . '/js/video.js';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -136,7 +137,7 @@ include SITE_ROOT . '/includes/header.php';
 </div>
 
 <!-- ── Upload panel ───────────────────────────────────────────── -->
-<div id="video-upload-panel" class="video-upload-panel" style="display:none">
+<div id="video-upload-panel" class="video-upload-panel hidden">
     <h2>Upload a Video</h2>
     <form method="POST" enctype="multipart/form-data" id="video-upload-form">
         <?= csrf_field() ?>
@@ -215,28 +216,5 @@ echo pagination_links($page, $pages, $baseUrl);
     </main>
 
 </div><!-- /.two-col-layout -->
-
-<script>
-(function () {
-    var btn   = document.getElementById('video-upload-toggle');
-    var panel = document.getElementById('video-upload-panel');
-    if (!btn || !panel) return;
-    btn.addEventListener('click', function () {
-        var shown = panel.style.display !== 'none';
-        panel.style.display = shown ? 'none' : 'block';
-        btn.textContent = shown ? '\u25b2 Upload Video' : '\u25bc Upload Video';
-    });
-
-    var form    = document.getElementById('video-upload-form');
-    var spinner = document.getElementById('video-upload-progress');
-    var upBtn   = document.getElementById('video-upload-btn');
-    if (form) {
-        form.addEventListener('submit', function () {
-            if (spinner) spinner.style.display = 'inline';
-            if (upBtn)   upBtn.disabled = true;
-        });
-    }
-})();
-</script>
 
 <?php include SITE_ROOT . '/includes/footer.php'; ?>

@@ -78,6 +78,7 @@ $thumbUrl  = !empty($video['thumbnail_path'])
     : SITE_URL . '/assets/images/placeholder.svg';
 
 $pageTitle = 'Video';
+$pageScript = ASSETS_URL . '/js/video.js';
 
 include SITE_ROOT . '/includes/header.php';
 ?>
@@ -93,6 +94,10 @@ include SITE_ROOT . '/includes/header.php';
     <main class="col-right">
 
 <div class="video-play-wrap">
+
+    <div class="video-play-back">
+        <a href="<?= e(SITE_URL . '/pages/video.php') ?>" class="btn btn-secondary btn-sm">&#8592; Go Back</a>
+    </div>
 
     <!-- ── Video player ──────────────────────────────────────────── -->
     <div class="video-player-box">
@@ -132,7 +137,7 @@ include SITE_ROOT . '/includes/header.php';
             </form>
         </div>
 
-        <div id="video-edit-desc-form" style="display:none" class="video-edit-desc-form">
+        <div id="video-edit-desc-form" class="hidden video-edit-desc-form">
             <form method="POST">
                 <?= csrf_field() ?>
                 <input type="hidden" name="action" value="update_description">
@@ -165,18 +170,5 @@ include SITE_ROOT . '/includes/header.php';
     </main>
 
 </div><!-- /.two-col-layout -->
-
-<script>
-(function () {
-    var btn  = document.getElementById('video-edit-desc-toggle');
-    var form = document.getElementById('video-edit-desc-form');
-    if (!btn || !form) return;
-    btn.addEventListener('click', function () {
-        var shown = form.style.display !== 'none';
-        form.style.display = shown ? 'none' : 'block';
-        btn.textContent = shown ? 'Edit Description' : 'Cancel';
-    });
-})();
-</script>
 
 <?php include SITE_ROOT . '/includes/footer.php'; ?>
