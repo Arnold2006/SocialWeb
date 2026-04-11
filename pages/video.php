@@ -50,6 +50,15 @@ function get_or_create_videos_album(int $userId): int
 // ── Handle POST: upload ───────────────────────────────────────────────────────
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // When the uploaded file exceeds PHP's post_max_size the entire request
+    // body is silently discarded, leaving $_POST empty.  Detect this before
+    // calling csrf_verify() so the user sees a clear "file too large" message
+    // instead of a misleading CSRF error.
+    if (empty($_POST) && isset($_SERVER['CONTENT_LENGTH']) && (int) $_SERVER['CONTENT_LENGTH'] > 0) {
+        flash_set('error', 'Upload too large. The video exceeds the server\'s maximum upload size.');
+        redirect(SITE_URL . '/pages/video.php');
+    }
+
     csrf_verify();
     $action = $_POST['action'] ?? '';
 
