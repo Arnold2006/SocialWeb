@@ -94,9 +94,10 @@ function process_video_upload(array $file, int $userId, int $albumId = 0): array
             return ['ok' => false, 'error' => 'Video exceeds maximum duration of ' . MAX_VIDEO_DURATION . ' seconds.', 'media_id' => 0];
         }
 
-        // Generate thumbnail at 1s
+        // Generate thumbnail at 5s (fall back to 1s for very short videos)
+        $thumbTime = ($duration !== null && $duration >= 5) ? '00:00:05' : '00:00:01';
         shell_exec(
-            escapeshellarg($ffmpeg) . ' -y -ss 00:00:01 -i ' . escapeshellarg($origPath) .
+            escapeshellarg($ffmpeg) . ' -y -ss ' . $thumbTime . ' -i ' . escapeshellarg($origPath) .
             ' -vframes 1 -vf ' . escapeshellarg('scale=300:-1') . ' ' . escapeshellarg($thumbPath) . ' 2>/dev/null'
         );
 
