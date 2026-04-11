@@ -35,7 +35,7 @@ if (($post['post_type'] ?? 'user') === 'album_upload' && !empty($post['media_ids
         $placeholders = implode(',', array_fill(0, count($previewIds), '?'));
         $albumPreviewMedia = db_query(
             "SELECT id, type, storage_path, large_path, medium_path, thumb_path, thumbnail_path
-             FROM media WHERE id IN ($placeholders) AND type = 'image' AND is_deleted = 0 ORDER BY id ASC",
+             FROM media WHERE id IN ($placeholders) AND is_deleted = 0 ORDER BY id ASC",
             $previewIds
         );
     }
@@ -88,7 +88,23 @@ $moreComments = (int)$post['comment_count'] > 3;
         <?php endif; ?>
         <?php if (!empty($albumPreviewMedia)): ?>
         <div class="post-album-thumbs">
-            <?php foreach ($albumPreviewMedia as $previewItem): ?>
+        <?php foreach ($albumPreviewMedia as $previewItem): ?>
+            <?php if ($previewItem['type'] === 'video'): ?>
+            <a href="<?= e(SITE_URL . '/pages/video_play.php?id=' . (int)$previewItem['id']) ?>"
+               class="video-thumb-wrap">
+                <?php
+                $vThumbUrl = !empty($previewItem['thumbnail_path'])
+                    ? e(get_media_url($previewItem, 'thumbnail'))
+                    : e(SITE_URL . '/assets/images/placeholder.svg');
+                ?>
+                <img src="<?= $vThumbUrl ?>"
+                     alt="Video"
+                     class="album-thumb"
+                     width="70" height="70"
+                     loading="lazy">
+                <span class="video-play-icon" aria-hidden="true">&#9654;</span>
+            </a>
+            <?php else: ?>
             <a href="<?= e(get_media_url($previewItem, 'original')) ?>"
                class="lightbox-trigger"
                data-src="<?= e(get_media_url($previewItem, 'large')) ?>"
@@ -100,7 +116,8 @@ $moreComments = (int)$post['comment_count'] > 3;
                      width="70" height="70"
                      loading="lazy">
             </a>
-            <?php endforeach; ?>
+            <?php endif; ?>
+        <?php endforeach; ?>
         </div>
         <?php endif; ?>
         <?php if (($post['post_type'] ?? 'user') === 'blog_post' && !empty($post['blog_post_id'])): ?>
