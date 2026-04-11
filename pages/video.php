@@ -176,8 +176,8 @@ include SITE_ROOT . '/includes/header.php';
         $durationStr = '';
         if ($duration !== null) {
             $durationStr = ($duration >= 3600)
-                ? sprintf('%d:%02d:%02d', $duration / 3600, ($duration % 3600) / 60, $duration % 60)
-                : sprintf('%d:%02d', $duration / 60, $duration % 60);
+                ? sprintf('%d:%02d:%02d', intdiv($duration, 3600), intdiv($duration % 3600, 60), $duration % 60)
+                : sprintf('%d:%02d', intdiv($duration, 60), $duration % 60);
         }
     ?>
     <div class="video-card">
@@ -189,7 +189,8 @@ include SITE_ROOT . '/includes/header.php';
             <?php endif; ?>
         </a>
         <div class="video-card-info">
-            <p class="video-card-desc"><?= e(mb_substr($v['description'] ?? '', 0, 120)) ?><?= mb_strlen($v['description'] ?? '') > 120 ? '…' : '' ?></p>
+            <?php $vDesc = $v['description'] ?? ''; ?>
+            <p class="video-card-desc"><?= e(mb_substr($vDesc, 0, 120)) ?><?= mb_strlen($vDesc) > 120 ? '…' : '' ?></p>
             <div class="video-card-meta">
                 <a href="<?= e(SITE_URL . '/pages/gallery.php?user_id=' . (int)$v['user_id']) ?>"
                    class="video-card-user">

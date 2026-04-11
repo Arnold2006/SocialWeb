@@ -153,8 +153,8 @@ include SITE_ROOT . '/includes/header.php';
             Duration: <?php
                 $d = (int) $video['duration'];
                 echo $d >= 3600
-                    ? sprintf('%d:%02d:%02d', $d / 3600, ($d % 3600) / 60, $d % 60)
-                    : sprintf('%d:%02d', $d / 60, $d % 60);
+                    ? sprintf('%d:%02d:%02d', intdiv($d, 3600), intdiv($d % 3600, 60), $d % 60)
+                    : sprintf('%d:%02d', intdiv($d, 60), $d % 60);
             ?>
         </p>
         <?php endif; ?>
