@@ -54,7 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // body is silently discarded, leaving $_POST empty.  Detect this before
     // calling csrf_verify() so the user sees a clear "file too large" message
     // instead of a misleading CSRF error.
-    if (empty($_POST) && !empty($_SERVER['CONTENT_LENGTH'])) {
+    if (empty($_POST) && isset($_SERVER['CONTENT_LENGTH']) && (int) $_SERVER['CONTENT_LENGTH'] > 0) {
         flash_set('error', 'Upload too large. The video exceeds the server\'s maximum upload size.');
         redirect(SITE_URL . '/pages/video.php');
     }
