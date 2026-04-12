@@ -41,15 +41,35 @@ if (($post['post_type'] ?? 'user') === 'album_upload' && !empty($post['media_ids
     }
 }
 
-$postComments = db_query(
-    'SELECT c.*, u.username, u.avatar_path
-     FROM comments c
-     JOIN users u ON u.id = c.user_id
-     WHERE c.post_id = ? AND c.is_deleted = 0
-     ORDER BY c.created_at ASC
-     LIMIT 3',
-    [(int)$post['id']]
-);
+$postId      = (int)$post['id'];
+$postMediaId = !empty($post['media_id']) ? (int)$post['media_id'] : null;
+
+if ($postMediaId !== null) {
+    $postComments = db_query(
+        'SELECT c.id, c.user_id, c.content, c.created_at, u.username, u.avatar_path
+         FROM comments c
+         JOIN users u ON u.id = c.user_id
+         WHERE c.post_id = ? AND c.is_deleted = 0
+         UNION
+         SELECT c.id, c.user_id, c.content, c.created_at, u.username, u.avatar_path
+         FROM comments c
+         JOIN users u ON u.id = c.user_id
+         WHERE c.media_id = ? AND c.is_deleted = 0
+         ORDER BY created_at ASC
+         LIMIT 3',
+        [$postId, $postMediaId]
+    );
+} else {
+    $postComments = db_query(
+        'SELECT c.id, c.user_id, c.content, c.created_at, u.username, u.avatar_path
+         FROM comments c
+         JOIN users u ON u.id = c.user_id
+         WHERE c.post_id = ? AND c.is_deleted = 0
+         ORDER BY c.created_at ASC
+         LIMIT 3',
+        [$postId]
+    );
+}
 $moreComments = (int)$post['comment_count'] > 3;
 ?>
 <article class="post-item" id="post-<?= (int)$post['id'] ?>">

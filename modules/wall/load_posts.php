@@ -39,15 +39,21 @@ try {
 
     $posts = db_query(
         "SELECT p.*, u.username, u.avatar_path,
-                (SELECT COUNT(*) FROM likes   WHERE post_id = p.id) AS like_count,
-                (SELECT COUNT(*) FROM comments WHERE post_id = p.id AND is_deleted = 0) AS comment_count,
-                (SELECT COUNT(*) FROM likes WHERE post_id = p.id AND user_id = ?) AS user_liked
+                (SELECT COUNT(*) FROM (
+                    SELECT user_id FROM likes WHERE post_id = p.id
+                    UNION
+                    SELECT user_id FROM likes WHERE media_id = p.media_id
+                ) _lc) AS like_count,
+                (SELECT COUNT(*) FROM comments WHERE post_id = p.id AND is_deleted = 0) +
+                    CASE WHEN p.media_id IS NOT NULL THEN (SELECT COUNT(*) FROM comments WHERE media_id = p.media_id AND is_deleted = 0) ELSE 0 END AS comment_count,
+                (SELECT COUNT(*) FROM likes WHERE post_id = p.id AND user_id = ?) +
+                    CASE WHEN p.media_id IS NOT NULL THEN (SELECT COUNT(*) FROM likes WHERE media_id = p.media_id AND user_id = ?) ELSE 0 END AS user_liked
          FROM posts p
          JOIN users u ON u.id = p.user_id
          WHERE p.is_deleted = 0
          ORDER BY COALESCE(p.bumped_at, p.created_at) DESC
          LIMIT {$limitSql} OFFSET {$offsetSql}",
-        [$user['id']]
+        [$user['id'], $user['id']]
     );
 
     $hasMore = count($posts) > $limit;
