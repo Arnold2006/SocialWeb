@@ -349,6 +349,44 @@ if ($categoryId === 0 && $albumId === 0) {
          ORDER BY a.created_at DESC',
         [$galleryOwner]
     );
+
+    // Pre-fetch cover media and first-image thumbnails for all uncategorized albums
+    // in bulk to avoid N+1 queries in the template loop.
+    $uncatCoverMedia   = [];  // cover_id -> {thumb_path, thumbnail_path}
+    $uncatFirstImages  = [];  // album_id -> {thumb_path, thumbnail_path}
+
+    if (!empty($uncategorizedAlbums)) {
+        $uncatAlbumIds = array_column($uncategorizedAlbums, 'id');
+        $coverIds      = array_filter(array_column($uncategorizedAlbums, 'cover_id'));
+
+        if (!empty($coverIds)) {
+            $ph   = implode(',', array_fill(0, count($coverIds), '?'));
+            $rows = db_query(
+                "SELECT id, thumb_path, thumbnail_path FROM media WHERE id IN ($ph) AND is_deleted = 0",
+                array_values($coverIds)
+            );
+            foreach ($rows as $row) {
+                $uncatCoverMedia[(int)$row['id']] = $row;
+            }
+        }
+
+        // Fetch the earliest media item per album (for albums that lack a cover)
+        $ph   = implode(',', array_fill(0, count($uncatAlbumIds), '?'));
+        $rows = db_query(
+            "SELECT m.album_id, m.thumb_path, m.thumbnail_path
+               FROM media m
+               JOIN (
+                   SELECT album_id, MIN(id) AS min_id
+                   FROM media
+                   WHERE album_id IN ($ph) AND is_deleted = 0
+                   GROUP BY album_id
+               ) sub ON m.id = sub.min_id",
+            $uncatAlbumIds
+        );
+        foreach ($rows as $row) {
+            $uncatFirstImages[(int)$row['album_id']] = $row;
+        }
+    }
 }
 
 // Load media for selected album (first page only)
@@ -852,28 +890,22 @@ include SITE_ROOT . '/includes/header.php';
                     if (!empty($album['cover_path'])) {
                         $coverUrl = SITE_URL . $album['cover_path'];
                     } elseif (!empty($album['cover_id'])) {
-                        $coverMedia = db_row(
-                            'SELECT thumb_path, thumbnail_path FROM media WHERE id = ? AND is_deleted = 0',
-                            [(int)$album['cover_id']]
-                        );
-                        if ($coverMedia) {
-                            if (!empty($coverMedia['thumb_path'])) {
-                                $coverUrl = get_media_url($coverMedia, 'thumb');
-                            } elseif (!empty($coverMedia['thumbnail_path'])) {
-                                $coverUrl = get_media_url($coverMedia, 'thumbnail');
+                        $cm = $uncatCoverMedia[(int)$album['cover_id']] ?? null;
+                        if ($cm) {
+                            if (!empty($cm['thumb_path'])) {
+                                $coverUrl = get_media_url($cm, 'thumb');
+                            } elseif (!empty($cm['thumbnail_path'])) {
+                                $coverUrl = get_media_url($cm, 'thumbnail');
                             }
                         }
                     }
                     if (!$coverUrl) {
-                        $firstImg = db_row(
-                            'SELECT thumb_path, thumbnail_path FROM media WHERE album_id = ? AND is_deleted = 0 ORDER BY created_at ASC LIMIT 1',
-                            [(int)$album['id']]
-                        );
-                        if ($firstImg) {
-                            if (!empty($firstImg['thumb_path'])) {
-                                $coverUrl = get_media_url($firstImg, 'thumb');
-                            } elseif (!empty($firstImg['thumbnail_path'])) {
-                                $coverUrl = get_media_url($firstImg, 'thumbnail');
+                        $fi = $uncatFirstImages[(int)$album['id']] ?? null;
+                        if ($fi) {
+                            if (!empty($fi['thumb_path'])) {
+                                $coverUrl = get_media_url($fi, 'thumb');
+                            } elseif (!empty($fi['thumbnail_path'])) {
+                                $coverUrl = get_media_url($fi, 'thumbnail');
                             }
                         }
                     }
