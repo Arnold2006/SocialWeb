@@ -34,20 +34,38 @@ if ($postId < 1) {
     exit;
 }
 
-$post = db_row('SELECT id FROM posts WHERE id = ? AND is_deleted = 0', [$postId]);
+$post = db_row('SELECT id, media_id FROM posts WHERE id = ? AND is_deleted = 0', [$postId]);
 if ($post === null) {
     echo json_encode(['ok' => false, 'error' => 'Post not found']);
     exit;
 }
 
-$comments = db_query(
-    'SELECT c.id, c.user_id, c.content, c.created_at, u.username, u.avatar_path
-     FROM comments c
-     JOIN users u ON u.id = c.user_id
-     WHERE c.post_id = ? AND c.is_deleted = 0
-     ORDER BY c.created_at ASC',
-    [$postId]
-);
+$postMediaId = !empty($post['media_id']) ? (int)$post['media_id'] : null;
+
+if ($postMediaId !== null) {
+    $comments = db_query(
+        'SELECT c.id, c.user_id, c.content, c.created_at, u.username, u.avatar_path
+         FROM comments c
+         JOIN users u ON u.id = c.user_id
+         WHERE c.post_id = ? AND c.is_deleted = 0
+         UNION
+         SELECT c.id, c.user_id, c.content, c.created_at, u.username, u.avatar_path
+         FROM comments c
+         JOIN users u ON u.id = c.user_id
+         WHERE c.media_id = ? AND c.is_deleted = 0
+         ORDER BY created_at ASC',
+        [$postId, $postMediaId]
+    );
+} else {
+    $comments = db_query(
+        'SELECT c.id, c.user_id, c.content, c.created_at, u.username, u.avatar_path
+         FROM comments c
+         JOIN users u ON u.id = c.user_id
+         WHERE c.post_id = ? AND c.is_deleted = 0
+         ORDER BY c.created_at ASC',
+        [$postId]
+    );
+}
 
 $result = [];
 foreach ($comments as $comment) {
