@@ -116,22 +116,15 @@ declare(strict_types=1);
     </div>
     <?php endif; ?>
     <?php elseif ($isOwn): ?>
+    <?php if (!empty($allOwnerAlbums ?? [])): ?>
     <div class="media-item-top-actions">
-        <form method="POST">
-            <?= csrf_field() ?>
-            <input type="hidden" name="action" value="delete_media">
-            <input type="hidden" name="media_id" value="<?= (int)$media['id'] ?>">
-            <button type="submit" class="btn btn-danger btn-xs"
-                    data-confirm="Delete this media?">✕</button>
-        </form>
-        <?php if (!empty($allOwnerAlbums ?? [])): ?>
         <button type="button"
                 class="btn btn-xs btn-secondary move-media-btn"
                 data-media-id="<?= (int)$media['id'] ?>">
             ↗ Move
         </button>
-        <?php endif; ?>
     </div>
+    <?php endif; ?>
     <div class="media-item-actions">
         <button type="button"
                 class="btn btn-xs btn-secondary set-cover-btn"
@@ -142,6 +135,13 @@ declare(strict_types=1);
                 data-orig-height="<?= (int)$media['height'] ?>">
             <?= $isCover ? '★' : '☆' ?> Cover
         </button>
+        <form method="POST" class="media-delete-form">
+            <?= csrf_field() ?>
+            <input type="hidden" name="action" value="delete_media">
+            <input type="hidden" name="media_id" value="<?= (int)$media['id'] ?>">
+            <button type="submit" class="btn btn-danger btn-xs"
+                    data-confirm="Delete this media?">✕</button>
+        </form>
     </div>
     <?php endif; ?>
 </div>
