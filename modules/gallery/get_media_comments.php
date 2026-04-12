@@ -32,21 +32,58 @@ if ($media === null) {
     exit;
 }
 
-$comments = db_query(
-    'SELECT c.id, c.content, c.created_at, u.id AS user_id, u.username, u.avatar_path
-     FROM comments c
-     JOIN users u ON u.id = c.user_id
-     WHERE c.media_id = ? AND c.is_deleted = 0
-     ORDER BY c.created_at ASC',
+// Find any wall post linked to this media item so its engagement can be merged.
+$linkedPost = db_row(
+    'SELECT id FROM posts WHERE media_id = ? AND is_deleted = 0 ORDER BY id ASC LIMIT 1',
     [$mediaId]
 );
+$linkedPostId = $linkedPost ? (int)$linkedPost['id'] : null;
+
+// Merge wall-post comments if a linked post exists.
+if ($linkedPostId !== null) {
+    $comments = db_query(
+        'SELECT c.id, c.content, c.created_at, u.id AS user_id, u.username, u.avatar_path
+         FROM comments c
+         JOIN users u ON u.id = c.user_id
+         WHERE c.media_id = ? AND c.is_deleted = 0
+         UNION
+         SELECT c.id, c.content, c.created_at, u.id AS user_id, u.username, u.avatar_path
+         FROM comments c
+         JOIN users u ON u.id = c.user_id
+         WHERE c.post_id = ? AND c.is_deleted = 0
+         ORDER BY created_at ASC',
+        [$mediaId, $linkedPostId]
+    );
+} else {
+    $comments = db_query(
+        'SELECT c.id, c.content, c.created_at, u.id AS user_id, u.username, u.avatar_path
+         FROM comments c
+         JOIN users u ON u.id = c.user_id
+         WHERE c.media_id = ? AND c.is_deleted = 0
+         ORDER BY c.created_at ASC',
+        [$mediaId]
+    );
+}
 
 $likeCount = (int) db_val('SELECT COUNT(*) FROM likes WHERE media_id = ?', [$mediaId]);
+
+// Add wall-post likes to the count.
+if ($linkedPostId !== null) {
+    $likeCount += (int) db_val('SELECT COUNT(*) FROM likes WHERE post_id = ?', [$linkedPostId]);
+}
 
 $userLiked = (int) db_val(
     'SELECT COUNT(*) FROM likes WHERE user_id = ? AND media_id = ?',
     [(int)$user['id'], $mediaId]
 ) > 0;
+
+// Also check if the user liked the linked wall post.
+if (!$userLiked && $linkedPostId !== null) {
+    $userLiked = (int) db_val(
+        'SELECT COUNT(*) FROM likes WHERE user_id = ? AND post_id = ?',
+        [(int)$user['id'], $linkedPostId]
+    ) > 0;
+}
 
 $commentData = [];
 foreach ($comments as $comment) {
