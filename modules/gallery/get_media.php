@@ -55,6 +55,19 @@ if (!$album) {
 
 $isOwn = ((int)$currentUser['id'] === $galleryOwner);
 
+// Load other albums for the move-media button (only needed for owner)
+$allOwnerAlbums = [];
+if ($isOwn) {
+    $allOwnerAlbums = db_query(
+        'SELECT a.id, a.title, c.title AS category_title
+         FROM albums a
+         LEFT JOIN album_categories c ON c.id = a.category_id AND c.is_deleted = 0
+         WHERE a.user_id = ? AND a.is_deleted = 0 AND a.id != ?
+         ORDER BY c.title ASC, a.title ASC',
+        [$galleryOwner, $albumId]
+    );
+}
+
 try {
     $fetchLimit = $limit + 1; // fetch one extra to detect whether more items exist
 

@@ -1200,6 +1200,37 @@ if (avatarInput && cropContainer && cropCanvas) {
     }
 })();
 
+// ── Move media modal ───────────────────────────────────────────────────────────
+
+(function initMoveMediaModal() {
+    const modal    = document.getElementById('move-media-modal');
+    const mediaIdEl = document.getElementById('move-media-id');
+    const cancelBtn = document.getElementById('move-media-cancel');
+
+    if (!modal) return;
+
+    function openModal(mediaId) {
+        mediaIdEl.value = mediaId;
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal() {
+        modal.style.display = 'none';
+        document.body.style.overflow = '';
+    }
+
+    document.addEventListener('click', (e) => {
+        const btn = e.target.closest('.move-media-btn');
+        if (!btn) return;
+        openModal(btn.dataset.mediaId);
+    });
+
+    cancelBtn && cancelBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
+})();
+
 // ── Banner crop tool (admin/settings.php) ─────────────────────────────────────
 
 (function initBannerCrop() {

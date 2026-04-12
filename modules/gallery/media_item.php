@@ -15,10 +15,11 @@
  * media_item.php — Shared template for a single album media item.
  *
  * Expected variables in scope:
- *   $media    array   Media row (with like_count, comment_count columns)
- *   $isCover  bool    Whether this item is the album cover
- *   $isOwn    bool    Whether the viewer owns the album
- *   $albumId  int     Current album ID
+ *   $media           array   Media row (with like_count, comment_count columns)
+ *   $isCover         bool    Whether this item is the album cover
+ *   $isOwn           bool    Whether the viewer owns the album
+ *   $albumId         int     Current album ID
+ *   $allOwnerAlbums  array   Other albums of the owner (for Move button; may be empty)
  */
 
 declare(strict_types=1);
@@ -83,6 +84,15 @@ declare(strict_types=1);
             <button type="submit" class="btn btn-danger btn-xs"
                     data-confirm="Delete this media?">✕</button>
         </form>
+        <?php if (empty($media['thumbnail_path'])): ?>
+        <?php if (!empty($allOwnerAlbums ?? [])): ?>
+        <button type="button"
+                class="btn btn-xs btn-secondary move-media-btn"
+                data-media-id="<?= (int)$media['id'] ?>">
+            ↗ Move
+        </button>
+        <?php endif; ?>
+        <?php endif; ?>
         <?php endif; ?>
     </div>
     <?php if ($isOwn && !empty($media['thumbnail_path'])): ?>
@@ -96,6 +106,13 @@ declare(strict_types=1);
                 data-orig-height="0">
             <?= $isCover ? '★' : '☆' ?> Cover
         </button>
+        <?php if (!empty($allOwnerAlbums ?? [])): ?>
+        <button type="button"
+                class="btn btn-xs btn-secondary move-media-btn"
+                data-media-id="<?= (int)$media['id'] ?>">
+            ↗ Move
+        </button>
+        <?php endif; ?>
     </div>
     <?php endif; ?>
     <?php elseif ($isOwn): ?>
@@ -116,6 +133,13 @@ declare(strict_types=1);
             <button type="submit" class="btn btn-danger btn-xs"
                     data-confirm="Delete this media?">✕</button>
         </form>
+        <?php if (!empty($allOwnerAlbums ?? [])): ?>
+        <button type="button"
+                class="btn btn-xs btn-secondary move-media-btn"
+                data-media-id="<?= (int)$media['id'] ?>">
+            ↗ Move
+        </button>
+        <?php endif; ?>
     </div>
     <?php endif; ?>
 </div>
