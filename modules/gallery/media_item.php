@@ -116,17 +116,8 @@ declare(strict_types=1);
     </div>
     <?php endif; ?>
     <?php elseif ($isOwn): ?>
-    <div class="media-item-actions">
-        <button type="button"
-                class="btn btn-xs btn-secondary set-cover-btn"
-                data-media-id="<?= (int)$media['id'] ?>"
-                data-media-src="<?= e(get_media_url($media, 'medium')) ?>"
-                data-album-id="<?= $albumId ?>"
-                data-orig-width="<?= (int)$media['width'] ?>"
-                data-orig-height="<?= (int)$media['height'] ?>">
-            <?= $isCover ? '★' : '☆' ?> Cover
-        </button>
-        <form method="POST" class="media-delete-form">
+    <div class="media-item-top-actions">
+        <form method="POST">
             <?= csrf_field() ?>
             <input type="hidden" name="action" value="delete_media">
             <input type="hidden" name="media_id" value="<?= (int)$media['id'] ?>">
@@ -140,6 +131,17 @@ declare(strict_types=1);
             ↗ Move
         </button>
         <?php endif; ?>
+    </div>
+    <div class="media-item-actions">
+        <button type="button"
+                class="btn btn-xs btn-secondary set-cover-btn"
+                data-media-id="<?= (int)$media['id'] ?>"
+                data-media-src="<?= e(get_media_url($media, 'medium')) ?>"
+                data-album-id="<?= $albumId ?>"
+                data-orig-width="<?= (int)$media['width'] ?>"
+                data-orig-height="<?= (int)$media['height'] ?>">
+            <?= $isCover ? '★' : '☆' ?> Cover
+        </button>
     </div>
     <?php endif; ?>
 </div>
