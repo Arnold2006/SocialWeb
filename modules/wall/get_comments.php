@@ -44,12 +44,12 @@ $postMediaId = !empty($post['media_id']) ? (int)$post['media_id'] : null;
 
 if ($postMediaId !== null) {
     $comments = db_query(
-        'SELECT c.id, c.user_id, c.content, c.created_at, u.username, u.avatar_path
+        'SELECT c.id, c.user_id, c.content, c.created_at, c.updated_at, u.username, u.avatar_path
          FROM comments c
          JOIN users u ON u.id = c.user_id
          WHERE c.post_id = ? AND c.is_deleted = 0
          UNION
-         SELECT c.id, c.user_id, c.content, c.created_at, u.username, u.avatar_path
+         SELECT c.id, c.user_id, c.content, c.created_at, c.updated_at, u.username, u.avatar_path
          FROM comments c
          JOIN users u ON u.id = c.user_id
          WHERE c.media_id = ? AND c.is_deleted = 0
@@ -58,7 +58,7 @@ if ($postMediaId !== null) {
     );
 } else {
     $comments = db_query(
-        'SELECT c.id, c.user_id, c.content, c.created_at, u.username, u.avatar_path
+        'SELECT c.id, c.user_id, c.content, c.created_at, c.updated_at, u.username, u.avatar_path
          FROM comments c
          JOIN users u ON u.id = c.user_id
          WHERE c.post_id = ? AND c.is_deleted = 0
@@ -75,6 +75,7 @@ foreach ($comments as $comment) {
         'username'    => $comment['username'],
         'avatar'      => avatar_url($comment, 'small'),
         'content'     => $comment['content'],
+        'edited'      => !empty($comment['updated_at']),
         'time_ago'    => time_ago($comment['created_at']),
         'profile_url' => SITE_URL . '/pages/profile.php?id=' . (int)$comment['user_id'],
     ];

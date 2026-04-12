@@ -46,12 +46,12 @@ $postMediaId = !empty($post['media_id']) ? (int)$post['media_id'] : null;
 
 if ($postMediaId !== null) {
     $postComments = db_query(
-        'SELECT c.id, c.user_id, c.content, c.created_at, u.username, u.avatar_path
+        'SELECT c.id, c.user_id, c.content, c.created_at, c.updated_at, u.username, u.avatar_path
          FROM comments c
          JOIN users u ON u.id = c.user_id
          WHERE c.post_id = ? AND c.is_deleted = 0
          UNION
-         SELECT c.id, c.user_id, c.content, c.created_at, u.username, u.avatar_path
+         SELECT c.id, c.user_id, c.content, c.created_at, c.updated_at, u.username, u.avatar_path
          FROM comments c
          JOIN users u ON u.id = c.user_id
          WHERE c.media_id = ? AND c.is_deleted = 0
@@ -61,7 +61,7 @@ if ($postMediaId !== null) {
     );
 } else {
     $postComments = db_query(
-        'SELECT c.id, c.user_id, c.content, c.created_at, u.username, u.avatar_path
+        'SELECT c.id, c.user_id, c.content, c.created_at, c.updated_at, u.username, u.avatar_path
          FROM comments c
          JOIN users u ON u.id = c.user_id
          WHERE c.post_id = ? AND c.is_deleted = 0
@@ -190,7 +190,12 @@ $moreComments = (int)$post['comment_count'] > 3;
                 <a href="<?= e(SITE_URL . '/pages/profile.php?id=' . (int)$comment['user_id']) ?>"
                    class="comment-author"><?= e($comment['username']) ?></a>
                 <span class="comment-time"><?= e(time_ago($comment['created_at'])) ?></span>
-                <p class="comment-text"><?= nl2br(linkify(smilify($comment['content']))) ?></p>
+                <?php if ($comment['updated_at']): ?><span class="comment-edited">(edited)</span><?php endif; ?>
+                <?php if ((int)$comment['user_id'] === (int)$user['id']): ?>
+                <button type="button" class="comment-edit-btn btn btn-xs btn-secondary"
+                        data-comment-id="<?= (int)$comment['id'] ?>">Edit</button>
+                <?php endif; ?>
+                <p class="comment-text" data-raw="<?= e($comment['content']) ?>"><?= nl2br(linkify(smilify($comment['content']))) ?></p>
             </div>
         </div>
         <?php endforeach; ?>

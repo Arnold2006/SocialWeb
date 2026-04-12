@@ -230,7 +230,12 @@ include SITE_ROOT . '/includes/header.php';
                             <a href="<?= e(SITE_URL . '/pages/profile.php?id=' . (int)$comment['user_id']) ?>"
                                class="comment-author"><?= e($comment['username']) ?></a>
                             <span class="comment-time"><?= e(time_ago($comment['created_at'])) ?></span>
-                            <p class="comment-text"><?= nl2br(linkify(smilify($comment['content']))) ?></p>
+                            <?php if ($comment['updated_at']): ?><span class="comment-edited">(edited)</span><?php endif; ?>
+                            <?php if ((int)$comment['user_id'] === (int)$currentUser['id']): ?>
+                            <button type="button" class="comment-edit-btn btn btn-xs btn-secondary"
+                                    data-comment-id="<?= (int)$comment['id'] ?>">Edit</button>
+                            <?php endif; ?>
+                            <p class="comment-text" data-raw="<?= e($comment['content']) ?>"><?= nl2br(linkify(smilify($comment['content']))) ?></p>
                         </div>
                     </div>
                     <?php endforeach; ?>
