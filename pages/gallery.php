@@ -327,7 +327,7 @@ $categories = db_query(
     [$galleryOwner]
 );
 
-// Load albums for the current category (or uncategorised when cat=0 is selected)
+// Load albums for the current category
 $albums = [];
 if ($categoryId > 0) {
     $albums = db_query(
@@ -336,6 +336,18 @@ if ($categoryId > 0) {
          WHERE a.user_id = ? AND a.category_id = ? AND a.is_deleted = 0
          ORDER BY a.created_at DESC',
         [$galleryOwner, $categoryId]
+    );
+}
+
+// Load uncategorised albums (category_id IS NULL) for the root gallery view
+$uncategorizedAlbums = [];
+if ($categoryId === 0 && $albumId === 0) {
+    $uncategorizedAlbums = db_query(
+        'SELECT a.*, (SELECT COUNT(*) FROM media WHERE album_id = a.id AND is_deleted = 0) AS media_count
+         FROM albums a
+         WHERE a.user_id = ? AND a.category_id IS NULL AND a.is_deleted = 0
+         ORDER BY a.created_at DESC',
+        [$galleryOwner]
     );
 }
 
@@ -826,6 +838,94 @@ include SITE_ROOT . '/includes/header.php';
             <?php endforeach; ?>
         <?php endif; ?>
     </div>
+
+    <?php if (!empty($uncategorizedAlbums)): ?>
+    <!-- ── Uncategorised albums (e.g. "Wall Images") ──────────── -->
+    <h2 class="gallery-section-heading">Albums</h2>
+    <div class="albums-grid">
+        <?php foreach ($uncategorizedAlbums as $album): ?>
+        <div class="album-card">
+            <a href="<?= e(SITE_URL . '/pages/gallery.php?user_id=' . $galleryOwner . '&album=' . (int)$album['id']) ?>">
+                <div class="album-cover">
+                    <?php
+                    $coverUrl = null;
+                    if (!empty($album['cover_path'])) {
+                        $coverUrl = SITE_URL . $album['cover_path'];
+                    } elseif (!empty($album['cover_id'])) {
+                        $coverMedia = db_row(
+                            'SELECT thumb_path, thumbnail_path FROM media WHERE id = ? AND is_deleted = 0',
+                            [(int)$album['cover_id']]
+                        );
+                        if ($coverMedia) {
+                            if (!empty($coverMedia['thumb_path'])) {
+                                $coverUrl = get_media_url($coverMedia, 'thumb');
+                            } elseif (!empty($coverMedia['thumbnail_path'])) {
+                                $coverUrl = get_media_url($coverMedia, 'thumbnail');
+                            }
+                        }
+                    }
+                    if (!$coverUrl) {
+                        $firstImg = db_row(
+                            'SELECT thumb_path, thumbnail_path FROM media WHERE album_id = ? AND is_deleted = 0 ORDER BY created_at ASC LIMIT 1',
+                            [(int)$album['id']]
+                        );
+                        if ($firstImg) {
+                            if (!empty($firstImg['thumb_path'])) {
+                                $coverUrl = get_media_url($firstImg, 'thumb');
+                            } elseif (!empty($firstImg['thumbnail_path'])) {
+                                $coverUrl = get_media_url($firstImg, 'thumbnail');
+                            }
+                        }
+                    }
+                    ?>
+                    <?php if ($coverUrl): ?>
+                    <img src="<?= e($coverUrl) ?>" alt="" loading="lazy">
+                    <?php else: ?>
+                    <div class="album-cover-placeholder">📁</div>
+                    <?php endif; ?>
+                </div>
+                <h3 class="album-title"><?= e($album['title']) ?></h3>
+                <p class="album-count"><?= (int)$album['media_count'] ?> item<?= (int)$album['media_count'] !== 1 ? 's' : '' ?></p>
+            </a>
+            <?php if ($isOwn): ?>
+            <div class="album-actions">
+                <?php if ((int)$currentUser['id'] === $galleryOwner): ?>
+                <!-- Download album as ZIP -->
+                <a href="<?= e(SITE_URL . '/modules/gallery/download_album.php?album_id=' . (int)$album['id']) ?>"
+                   class="btn btn-secondary btn-xs">Download ZIP</a>
+                <?php endif; ?>
+                <!-- Move album to a category -->
+                <button type="button" class="btn btn-secondary btn-xs"
+                        data-toggle="move-uncat-album-form-<?= (int)$album['id'] ?>">Move</button>
+                <div id="move-uncat-album-form-<?= (int)$album['id'] ?>" class="hidden inline-form-row">
+                    <form method="POST" class="inline-form">
+                        <?= csrf_field() ?>
+                        <input type="hidden" name="action" value="move_album">
+                        <input type="hidden" name="album_id" value="<?= (int)$album['id'] ?>">
+                        <input type="hidden" name="source_category_id" value="0">
+                        <select name="new_category_id">
+                            <option value="0">(No category)</option>
+                            <?php foreach ($categories as $cat): ?>
+                            <option value="<?= (int)$cat['id'] ?>"><?= e($cat['title']) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                        <button type="submit" class="btn btn-primary btn-xs">Move</button>
+                    </form>
+                </div>
+                <!-- Delete album -->
+                <form method="POST" class="inline-form">
+                    <?= csrf_field() ?>
+                    <input type="hidden" name="action" value="delete_album">
+                    <input type="hidden" name="album_id" value="<?= (int)$album['id'] ?>">
+                    <button type="submit" class="btn btn-danger btn-xs"
+                            data-confirm="Delete album?">Delete</button>
+                </form>
+            </div>
+            <?php endif; ?>
+        </div>
+        <?php endforeach; ?>
+    </div>
+    <?php endif; ?>
     <?php endif; ?>
 
     </main>
