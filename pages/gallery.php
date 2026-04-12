@@ -446,8 +446,12 @@ if ($albumId > 0) {
     );
     $mediaItems = db_query(
         'SELECT m.*,
-            (SELECT COUNT(*) FROM likes    WHERE media_id = m.id) AS like_count,
-            (SELECT COUNT(*) FROM comments WHERE media_id = m.id AND is_deleted = 0) AS comment_count
+            (SELECT COUNT(*) FROM likes WHERE media_id = m.id)
+              + (SELECT COUNT(*) FROM likes l2 JOIN posts p2 ON l2.post_id = p2.id
+                 WHERE p2.media_id = m.id AND p2.is_deleted = 0) AS like_count,
+            (SELECT COUNT(*) FROM comments WHERE media_id = m.id AND is_deleted = 0)
+              + (SELECT COUNT(*) FROM comments c2 JOIN posts p3 ON c2.post_id = p3.id
+                 WHERE p3.media_id = m.id AND p3.is_deleted = 0 AND c2.is_deleted = 0) AS comment_count
          FROM media m
          WHERE m.album_id = ? AND m.user_id = ? AND m.is_deleted = 0
          ORDER BY m.created_at DESC
