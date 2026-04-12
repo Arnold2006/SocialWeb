@@ -314,6 +314,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwn) {
             flash_set('success', 'Media deleted.');
             redirect(SITE_URL . '/pages/gallery.php?user_id=' . $galleryOwner . '&album=' . $albumId);
             break;
+
+        case 'move_media':
+            $mediaId       = sanitise_int($_POST['media_id'] ?? 0);
+            $targetAlbumId = sanitise_int($_POST['target_album_id'] ?? 0);
+            if ($mediaId && $targetAlbumId) {
+                $mediaRow = db_row(
+                    'SELECT * FROM media WHERE id = ? AND user_id = ? AND is_deleted = 0',
+                    [$mediaId, (int)$currentUser['id']]
+                );
+                $targetAlbum = db_row(
+                    'SELECT id FROM albums WHERE id = ? AND user_id = ? AND is_deleted = 0',
+                    [$targetAlbumId, (int)$currentUser['id']]
+                );
+                if ($mediaRow && $targetAlbum) {
+                    db_exec(
+                        'UPDATE media SET album_id = ? WHERE id = ? AND user_id = ?',
+                        [$targetAlbumId, $mediaId, (int)$currentUser['id']]
+                    );
+                    flash_set('success', 'Media moved.');
+                    redirect(SITE_URL . '/pages/gallery.php?user_id=' . $galleryOwner . '&album=' . $targetAlbumId);
+                }
+            }
+            redirect(SITE_URL . '/pages/gallery.php?user_id=' . $galleryOwner . '&album=' . $albumId);
+            break;
     }
 }
 
@@ -429,6 +453,19 @@ if ($albumId > 0) {
          ORDER BY m.created_at DESC
          LIMIT ' . (int)$mediaLimit,
         [$albumId, $galleryOwner]
+    );
+}
+
+// Load all albums for the move-media modal (only needed in album view for owners)
+$allOwnerAlbums = [];
+if ($albumId > 0 && $isOwn) {
+    $allOwnerAlbums = db_query(
+        'SELECT a.id, a.title, c.title AS category_title
+         FROM albums a
+         LEFT JOIN album_categories c ON c.id = a.category_id AND c.is_deleted = 0
+         WHERE a.user_id = ? AND a.is_deleted = 0 AND a.id != ?
+         ORDER BY c.title ASC, a.title ASC',
+        [$galleryOwner, $albumId]
     );
 }
 
@@ -665,6 +702,43 @@ include SITE_ROOT . '/includes/header.php';
                 <div class="crop-modal-actions">
                     <button type="button" id="cover-crop-cancel" class="btn btn-secondary">Cancel</button>
                     <button type="submit" class="btn btn-primary">Save Cover</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <?php endif; ?>
+
+    <!-- Move Media Modal -->
+    <?php if ($isOwn): ?>
+    <div id="move-media-modal" class="crop-modal" style="display:none"
+         role="dialog" aria-modal="true" aria-label="Move Media to Another Album">
+        <div class="crop-modal-inner">
+            <h3>Move to Another Album</h3>
+            <form method="POST" id="move-media-form">
+                <?= csrf_field() ?>
+                <input type="hidden" name="action" value="move_media">
+                <input type="hidden" name="media_id" id="move-media-id" value="">
+                <div style="margin-bottom:1rem">
+                    <label for="move-target-album" style="display:block;margin-bottom:0.35rem;font-weight:600">Destination album</label>
+                    <select name="target_album_id" id="move-target-album" style="width:100%">
+                        <?php
+                        $lastCat = false;
+                        foreach ($allOwnerAlbums as $a):
+                            $catLabel = $a['category_title'] ?? null;
+                            if ($catLabel !== $lastCat):
+                                if ($lastCat !== false) echo '</optgroup>';
+                                echo '<optgroup label="' . e($catLabel ?? '(Uncategorised)') . '">';
+                                $lastCat = $catLabel;
+                            endif;
+                        ?>
+                        <option value="<?= (int)$a['id'] ?>"><?= e($a['title']) ?></option>
+                        <?php endforeach; ?>
+                        <?php if ($lastCat !== false) echo '</optgroup>'; ?>
+                    </select>
+                </div>
+                <div class="crop-modal-actions">
+                    <button type="button" id="move-media-cancel" class="btn btn-secondary">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Move</button>
                 </div>
             </form>
         </div>
