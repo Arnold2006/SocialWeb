@@ -722,6 +722,32 @@ textarea { resize: vertical; min-height: 80px; }
 
 .comment-text { margin-top: 3px; }
 
+.comment-edit-btn {
+    float: right;
+    margin-left: 0.4rem;
+}
+
+.comment-edited {
+    font-size: 0.72rem;
+    color: var(--color-text-muted);
+    margin-left: 0.3rem;
+}
+
+.comment-edit-form {
+    display: flex;
+    gap: 0.4rem;
+    margin-top: 0.4rem;
+    flex-wrap: wrap;
+}
+.comment-edit-form input {
+    flex: 1;
+    min-width: 0;
+}
+.comment-edit-form .comment-edit-actions {
+    display: flex;
+    gap: 0.3rem;
+}
+
 .comment-form {
     display: flex;
     gap: 0.5rem;
@@ -2601,6 +2627,11 @@ textarea { resize: vertical; min-height: 80px; }
     margin-top: 0.15rem;
     word-break: break-word;
     color: var(--color-text);
+}
+
+.lightbox-comment-edit-btn {
+    float: right;
+    margin-left: 0.4rem;
 }
 
 .lightbox-comment-form {

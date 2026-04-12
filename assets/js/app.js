@@ -230,6 +230,28 @@ async function apiPost(url, data) {
     return resp.json();
 }
 
+/** Get the current logged-in user's ID from the meta tag (0 if not found) */
+function getCurrentUserId() {
+    const meta = document.querySelector('meta[name="current-user-id"]');
+    return meta ? parseInt(meta.content, 10) || 0 : 0;
+}
+
+/**
+ * Build the inner HTML for a comment item body.
+ * Includes an Edit button if userId matches the current user.
+ */
+function buildCommentBodyHtml(commentId, profileUrl, username, timeAgo, rawContent, userId, edited) {
+    const currentUserId = getCurrentUserId();
+    const editedBadge   = edited ? '<span class="comment-edited">(edited)</span>' : '';
+    const editBtn       = (userId && userId === currentUserId)
+        ? `<button type="button" class="comment-edit-btn btn btn-xs btn-secondary" data-comment-id="${parseInt(commentId, 10)}">Edit</button>`
+        : '';
+    return `<a href="${escapeHtml(profileUrl)}" class="comment-author">${escapeHtml(username)}</a>` +
+        `<span class="comment-time">${escapeHtml(timeAgo)}</span>` +
+        editedBadge + editBtn +
+        `<p class="comment-text" data-raw="${escapeHtml(rawContent)}">${linkifyHtml(smilifyText(rawContent))}</p>`;
+}
+
 // ── AJAX post creation ────────────────────────────────────────────────────────
 
 const postForm = document.getElementById('post-form');
@@ -361,18 +383,15 @@ document.addEventListener('submit', async (e) => {
             // Insert new comment before the comment form so it appears above the input
             const section = document.getElementById('comments-' + postId);
             if (section) {
+                const currentUserId = getCurrentUserId();
                 const commentHtml = `
-                <div class="comment-item" id="comment-${escapeHtml(result.comment_id)}">
+                <div class="comment-item" id="comment-${parseInt(result.comment_id, 10)}">
                     <a href="${escapeHtml(result.profile_url)}">
                         <img src="${escapeHtml(result.avatar)}" alt=""
                              class="avatar avatar-small" width="28" height="28" loading="lazy">
                     </a>
                     <div class="comment-body">
-                        <a href="${escapeHtml(result.profile_url)}" class="comment-author">
-                            ${escapeHtml(result.username)}
-                        </a>
-                        <span class="comment-time">${escapeHtml(result.time_ago)}</span>
-                        <p class="comment-text">${linkifyHtml(smilifyText(result.content))}</p>
+                        ${buildCommentBodyHtml(result.comment_id, result.profile_url, result.username, result.time_ago, result.content, currentUserId, false)}
                     </div>
                 </div>`;
                 const commentForm = section.querySelector('.comment-form');
@@ -431,11 +450,7 @@ document.addEventListener('click', async (e) => {
                              class="avatar avatar-small" width="28" height="28" loading="lazy">
                     </a>
                     <div class="comment-body">
-                        <a href="${escapeHtml(c.profile_url)}" class="comment-author">
-                            ${escapeHtml(c.username)}
-                        </a>
-                        <span class="comment-time">${escapeHtml(c.time_ago)}</span>
-                        <p class="comment-text">${linkifyHtml(smilifyText(c.content))}</p>
+                        ${buildCommentBodyHtml(c.id, c.profile_url, c.username, c.time_ago, c.content, c.user_id, !!c.edited)}
                     </div>
                 </div>`).join('');
 
@@ -478,6 +493,7 @@ document.addEventListener('submit', async (e) => {
         if (result.ok) {
             const section = document.getElementById('blog-comments-' + blogPostId);
             if (section) {
+                const currentUserId = getCurrentUserId();
                 const commentHtml = `
                 <div class="comment-item" id="comment-${parseInt(result.comment_id, 10)}">
                     <a href="${escapeHtml(result.profile_url)}">
@@ -485,11 +501,7 @@ document.addEventListener('submit', async (e) => {
                              class="avatar avatar-small" width="28" height="28" loading="lazy">
                     </a>
                     <div class="comment-body">
-                        <a href="${escapeHtml(result.profile_url)}" class="comment-author">
-                            ${escapeHtml(result.username)}
-                        </a>
-                        <span class="comment-time">${escapeHtml(result.time_ago)}</span>
-                        <p class="comment-text">${linkifyHtml(smilifyText(result.content))}</p>
+                        ${buildCommentBodyHtml(result.comment_id, result.profile_url, result.username, result.time_ago, result.content, currentUserId, false)}
                     </div>
                 </div>`;
                 const commentForm = section.querySelector('.blog-comment-form');
@@ -542,17 +554,13 @@ document.addEventListener('click', async (e) => {
 
                 // Build HTML for all comments and insert before the "load more" button
                 const html = result.comments.map(c => `
-                <div class="comment-item" id="comment-${escapeHtml(c.id)}">
+                <div class="comment-item" id="comment-${parseInt(c.id, 10)}">
                     <a href="${escapeHtml(c.profile_url)}">
                         <img src="${escapeHtml(c.avatar)}" alt=""
                              class="avatar avatar-small" width="28" height="28" loading="lazy">
                     </a>
                     <div class="comment-body">
-                        <a href="${escapeHtml(c.profile_url)}" class="comment-author">
-                            ${escapeHtml(c.username)}
-                        </a>
-                        <span class="comment-time">${escapeHtml(c.time_ago)}</span>
-                        <p class="comment-text">${linkifyHtml(smilifyText(c.content))}</p>
+                        ${buildCommentBodyHtml(c.id, c.profile_url, c.username, c.time_ago, c.content, c.user_id, !!c.edited)}
                     </div>
                 </div>`).join('');
 
@@ -568,6 +576,117 @@ document.addEventListener('click', async (e) => {
         console.error('Load blog comments failed:', err);
         btn.disabled    = false;
         btn.textContent = 'Could not load comments. Try again.';
+    }
+});
+
+// ── Comment edit (inline, AJAX) ────────────────────────────────────────────────
+
+document.addEventListener('click', async (e) => {
+    // ── Edit button click: show inline form ──
+    const editBtn = e.target.closest('.comment-edit-btn');
+    if (editBtn) {
+        const commentId  = editBtn.dataset.commentId;
+        const body       = editBtn.closest('.comment-body');
+        if (!body) return;
+        const textEl = body.querySelector('.comment-text');
+        if (!textEl) return;
+
+        // Don't open a second form if one already exists
+        if (body.querySelector('.comment-edit-form')) return;
+
+        const rawContent = textEl.dataset.raw || '';
+
+        textEl.style.display = 'none';
+        editBtn.style.display = 'none';
+
+        const form = document.createElement('div');
+        form.className = 'comment-edit-form';
+
+        const input = document.createElement('input');
+        input.type      = 'text';
+        input.value     = rawContent;
+        input.maxLength = 1000;
+
+        const actions = document.createElement('div');
+        actions.className = 'comment-edit-actions';
+
+        const saveBtn = document.createElement('button');
+        saveBtn.type      = 'button';
+        saveBtn.className = 'btn btn-xs btn-primary';
+        saveBtn.textContent = 'Save';
+
+        const cancelBtn = document.createElement('button');
+        cancelBtn.type      = 'button';
+        cancelBtn.className = 'btn btn-xs btn-secondary';
+        cancelBtn.textContent = 'Cancel';
+
+        actions.appendChild(saveBtn);
+        actions.appendChild(cancelBtn);
+        form.appendChild(input);
+        form.appendChild(actions);
+        body.appendChild(form);
+        input.focus();
+        input.setSelectionRange(input.value.length, input.value.length);
+
+        // Cancel: restore original display
+        cancelBtn.addEventListener('click', () => {
+            form.remove();
+            textEl.style.display = '';
+            editBtn.style.display = '';
+        });
+
+        // Save: submit edit
+        saveBtn.addEventListener('click', async () => {
+            const newContent = input.value.trim();
+            if (!newContent) return;
+
+            saveBtn.disabled   = true;
+            cancelBtn.disabled = true;
+
+            const baseUrl = document.querySelector('meta[name="site-url"]')?.content || '';
+            try {
+                const result = await apiPost(baseUrl + '/modules/wall/edit_comment.php', new URLSearchParams({
+                    csrf_token: getCsrfToken(),
+                    comment_id: commentId,
+                    content:    newContent,
+                }));
+
+                if (result.ok) {
+                    // Update the raw content and rendered text
+                    textEl.dataset.raw   = result.content;
+                    textEl.innerHTML     = linkifyHtml(smilifyText(result.content));
+                    textEl.style.display = '';
+                    editBtn.style.display = '';
+
+                    // Add or update the "(edited)" badge
+                    let editedBadge = body.querySelector('.comment-edited');
+                    if (!editedBadge) {
+                        editedBadge = document.createElement('span');
+                        editedBadge.className   = 'comment-edited';
+                        editedBadge.textContent = '(edited)';
+                        editBtn.insertAdjacentElement('beforebegin', editedBadge);
+                    }
+
+                    form.remove();
+                } else {
+                    saveBtn.disabled   = false;
+                    cancelBtn.disabled = false;
+                    alert('Error: ' + (result.error || 'Could not save comment'));
+                }
+            } catch (err) {
+                console.error('Comment edit failed:', err);
+                saveBtn.disabled   = false;
+                cancelBtn.disabled = false;
+            }
+        });
+
+        // Allow submitting with Enter key
+        input.addEventListener('keydown', (ev) => {
+            if (ev.key === 'Enter') { ev.preventDefault(); saveBtn.click(); }
+            if (ev.key === 'Escape') { cancelBtn.click(); }
+        });
+
+        return;
     }
 });
 

@@ -312,10 +312,27 @@
         comments.forEach((c) => appendComment(c));
     }
 
-    function appendComment(c) {
+    /** Get the current user's ID from the meta tag (0 if not found) */
+    function getCurrentUserId() {
+        const meta = document.querySelector('meta[name="current-user-id"]');
+        return meta ? parseInt(meta.content, 10) || 0 : 0;
+    }
+
+    function appendComment(c, isOwn) {
         const item = document.createElement('div');
         item.className = 'lightbox-comment-item';
-        const smilified = (typeof smilifyText === 'function') ? smilifyText(c.content) : c.content;
+        item.dataset.commentId = c.id;
+
+        const smilified  = (typeof smilifyText === 'function') ? smilifyText(c.content) : c.content;
+        const linkified  = (typeof linkifyHtml === 'function') ? linkifyHtml(smilified) : escapeHtml(smilified);
+        const ownComment = (isOwn !== undefined) ? isOwn : (c.user_id && c.user_id === getCurrentUserId());
+
+        const editedBadge = c.edited ? '<span class="comment-edited">(edited)</span>' : '';
+        let editBtnHtml = '';
+        if (ownComment) {
+            editBtnHtml = '<button type="button" class="lightbox-comment-edit-btn btn btn-xs btn-secondary" data-comment-id="' + parseInt(c.id, 10) + '">Edit</button>';
+        }
+
         item.innerHTML =
             '<a href="' + escapeHtml(c.profile_url) + '" class="lightbox-comment-avatar">' +
                 '<img src="' + escapeHtml(c.avatar) + '" alt="" class="avatar avatar-small" width="28" height="28" loading="lazy">' +
@@ -323,10 +340,121 @@
             '<div class="lightbox-comment-body">' +
                 '<a href="' + escapeHtml(c.profile_url) + '" class="lightbox-comment-author">' + escapeHtml(c.username) + '</a>' +
                 '<span class="lightbox-comment-time">' + escapeHtml(c.time_ago) + '</span>' +
-                '<p class="lightbox-comment-text">' + escapeHtml(smilified) + '</p>' +
+                editedBadge + editBtnHtml +
+                '<p class="lightbox-comment-text" data-raw="' + escapeHtml(c.content) + '">' + linkified + '</p>' +
             '</div>';
+
+        if (ownComment) {
+            const editBtn = item.querySelector('.lightbox-comment-edit-btn');
+            if (editBtn) {
+                editBtn.addEventListener('click', () => startLightboxCommentEdit(item));
+            }
+        }
+
         commentsList.appendChild(item);
         commentsList.scrollTop = commentsList.scrollHeight;
+    }
+
+    /** Show inline edit form for a lightbox comment item */
+    function startLightboxCommentEdit(item) {
+        const body   = item.querySelector('.lightbox-comment-body');
+        const textEl = item.querySelector('.lightbox-comment-text');
+        const editBtn = item.querySelector('.lightbox-comment-edit-btn');
+        if (!body || !textEl || item.querySelector('.comment-edit-form')) return;
+
+        const rawContent = textEl.dataset.raw || '';
+        textEl.style.display  = 'none';
+        editBtn.style.display = 'none';
+
+        const form = document.createElement('div');
+        form.className = 'comment-edit-form';
+
+        const input = document.createElement('input');
+        input.type      = 'text';
+        input.value     = rawContent;
+        input.maxLength = 1000;
+
+        const actions = document.createElement('div');
+        actions.className = 'comment-edit-actions';
+
+        const saveBtn = document.createElement('button');
+        saveBtn.type      = 'button';
+        saveBtn.className = 'btn btn-xs btn-primary';
+        saveBtn.textContent = 'Save';
+
+        const cancelBtn = document.createElement('button');
+        cancelBtn.type      = 'button';
+        cancelBtn.className = 'btn btn-xs btn-secondary';
+        cancelBtn.textContent = 'Cancel';
+
+        actions.appendChild(saveBtn);
+        actions.appendChild(cancelBtn);
+        form.appendChild(input);
+        form.appendChild(actions);
+        body.appendChild(form);
+        input.focus();
+        input.setSelectionRange(input.value.length, input.value.length);
+
+        cancelBtn.addEventListener('click', () => {
+            form.remove();
+            textEl.style.display  = '';
+            editBtn.style.display = '';
+        });
+
+        saveBtn.addEventListener('click', () => {
+            const newContent = input.value.trim();
+            if (!newContent) return;
+
+            saveBtn.disabled   = true;
+            cancelBtn.disabled = true;
+
+            const commentId = item.dataset.commentId;
+            const siteUrl   = baseUrl();
+            const csrfEl    = commentForm ? commentForm.querySelector('input[name="csrf_token"]') : null;
+            const csrfToken = csrfEl ? csrfEl.value : (document.querySelector('input[name="csrf_token"]')?.value || '');
+
+            fetch(siteUrl + '/modules/wall/edit_comment.php', {
+                method:      'POST',
+                credentials: 'same-origin',
+                headers:     { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body:        new URLSearchParams({ csrf_token: csrfToken, comment_id: commentId, content: newContent }),
+            })
+            .then((r) => r.json())
+            .then((data) => {
+                if (data.ok) {
+                    const smilified = (typeof smilifyText === 'function') ? smilifyText(data.content) : data.content;
+                    const linkified = (typeof linkifyHtml === 'function') ? linkifyHtml(smilified) : escapeHtml(smilified);
+                    textEl.dataset.raw   = data.content;
+                    textEl.innerHTML     = linkified;
+                    textEl.style.display = '';
+                    editBtn.style.display = '';
+
+                    // Add or update the "(edited)" badge
+                    let editedBadge = body.querySelector('.comment-edited');
+                    if (!editedBadge) {
+                        editedBadge = document.createElement('span');
+                        editedBadge.className   = 'comment-edited';
+                        editedBadge.textContent = '(edited)';
+                        editBtn.insertAdjacentElement('beforebegin', editedBadge);
+                    }
+
+                    form.remove();
+                } else {
+                    saveBtn.disabled   = false;
+                    cancelBtn.disabled = false;
+                    alert('Error: ' + (data.error || 'Could not save comment'));
+                }
+            })
+            .catch(() => {
+                saveBtn.disabled   = false;
+                cancelBtn.disabled = false;
+            });
+        });
+
+        input.addEventListener('keydown', (ev) => {
+            if (ev.key === 'Enter')  { ev.preventDefault(); saveBtn.click(); }
+            if (ev.key === 'Escape') { cancelBtn.click(); }
+        });
     }
 
     function updateCommentCountText(count) {
@@ -390,7 +518,7 @@
             const placeholder = commentsList ? commentsList.querySelector('.lightbox-empty-comments') : null;
             if (placeholder) placeholder.remove();
 
-            appendComment(data);
+            appendComment(data, true);
 
             const currentCount = commentsList ? commentsList.querySelectorAll('.lightbox-comment-item').length : 0;
             updateCommentCountText(currentCount);

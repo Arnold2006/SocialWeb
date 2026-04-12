@@ -60,6 +60,9 @@ $siteTheme    = active_theme();
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= e($pageTitle) ?> — <?= e(SITE_NAME) ?></title>
     <meta name="site-url" content="<?= SITE_URL ?>">
+    <?php if ($user): ?>
+    <meta name="current-user-id" content="<?= (int)$user['id'] ?>">
+    <?php endif; ?>
     <link rel="stylesheet" href="<?= ASSETS_URL ?>/css/style.css">
     <?php if (!empty($customFonts)): ?>
     <style>
