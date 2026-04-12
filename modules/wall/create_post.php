@@ -59,9 +59,24 @@ if (!empty($_FILES['media']['name'])) {
         if ($wallAlbum) {
             $wallAlbumId = (int)$wallAlbum['id'];
         } else {
+            // Ensure the album lands in the user's "Main" category so it is
+            // visible in the gallery root view without any extra steps.
+            $mainCat = db_row(
+                'SELECT id FROM album_categories WHERE user_id = ? AND title = ? AND is_deleted = 0 ORDER BY id ASC LIMIT 1',
+                [(int)$user['id'], 'Main']
+            );
+            if ($mainCat) {
+                $mainCatId = (int)$mainCat['id'];
+            } else {
+                $mainCatId = (int)db_insert(
+                    'INSERT INTO album_categories (user_id, title) VALUES (?, ?)',
+                    [(int)$user['id'], 'Main']
+                );
+            }
+
             $wallAlbumId = (int)db_insert(
-                'INSERT INTO albums (user_id, title) VALUES (?, ?)',
-                [(int)$user['id'], WALL_IMAGES_ALBUM]
+                'INSERT INTO albums (user_id, category_id, title) VALUES (?, ?, ?)',
+                [(int)$user['id'], $mainCatId, WALL_IMAGES_ALBUM]
             );
         }
 
