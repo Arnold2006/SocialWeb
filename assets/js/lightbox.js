@@ -324,7 +324,7 @@
         item.dataset.commentId = c.id;
 
         const smilified  = (typeof smilifyText === 'function') ? smilifyText(c.content) : c.content;
-        const linkified  = (typeof linkifyHtml === 'function') ? linkifyHtml(smilifyText(c.content)) : escapeHtml(smilified);
+        const linkified  = (typeof linkifyHtml === 'function') ? linkifyHtml(smilified) : escapeHtml(smilified);
         const ownComment = (isOwn !== undefined) ? isOwn : (c.user_id && c.user_id === getCurrentUserId());
 
         const editedBadge = c.edited ? '<span class="comment-edited">(edited)</span>' : '';
@@ -423,7 +423,7 @@
             .then((data) => {
                 if (data.ok) {
                     const smilified = (typeof smilifyText === 'function') ? smilifyText(data.content) : data.content;
-                    const linkified = (typeof linkifyHtml === 'function') ? linkifyHtml(smilifyText(data.content)) : escapeHtml(smilified);
+                    const linkified = (typeof linkifyHtml === 'function') ? linkifyHtml(smilified) : escapeHtml(smilified);
                     textEl.dataset.raw   = data.content;
                     textEl.innerHTML     = linkified;
                     textEl.style.display = '';
