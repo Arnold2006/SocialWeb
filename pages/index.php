@@ -85,7 +85,8 @@ include SITE_ROOT . '/includes/header.php';
                     "SELECT p.*, u.username, u.avatar_path,
                             (SELECT COUNT(DISTINCT user_id) FROM likes WHERE post_id = p.id OR (p.media_id IS NOT NULL AND media_id = p.media_id)) AS like_count,
                             (SELECT COUNT(*) FROM comments WHERE post_id = p.id AND is_deleted = 0) +
-                                CASE WHEN p.media_id IS NOT NULL THEN (SELECT COUNT(*) FROM comments WHERE media_id = p.media_id AND is_deleted = 0) ELSE 0 END AS comment_count,
+                                CASE WHEN p.media_id IS NOT NULL THEN (SELECT COUNT(*) FROM comments WHERE media_id = p.media_id AND is_deleted = 0) ELSE 0 END +
+                                CASE WHEN p.media_ids IS NOT NULL THEN (SELECT COUNT(*) FROM comments c2 WHERE c2.media_id IS NOT NULL AND c2.is_deleted = 0 AND JSON_CONTAINS(p.media_ids, CAST(c2.media_id AS CHAR))) ELSE 0 END AS comment_count,
                             (SELECT COUNT(*) FROM likes WHERE post_id = p.id AND user_id = ?) +
                                 CASE WHEN p.media_id IS NOT NULL THEN (SELECT COUNT(*) FROM likes WHERE media_id = p.media_id AND user_id = ?) ELSE 0 END AS user_liked
                      FROM posts p

@@ -303,15 +303,14 @@ function create_album_upload_post(
         );
     }
 
-    // Collect up to 4 image IDs for the preview thumbnail strip.
+    // Collect image IDs for the preview thumbnail strip (display uses first 4).
     // Fall back to video IDs when the upload contains no images.
     $previewIds = [];
     if ($imageCount > 0) {
         $previewRows = db_query(
             "SELECT id FROM media
              WHERE id IN ($placeholders) AND type = 'image' AND is_deleted = 0
-             ORDER BY id ASC
-             LIMIT 4",
+             ORDER BY id ASC",
             $mediaIds
         );
         foreach ($previewRows as $row) {
@@ -322,14 +321,16 @@ function create_album_upload_post(
         $previewRows = db_query(
             "SELECT id FROM media
              WHERE id IN ($placeholders) AND type = 'video' AND is_deleted = 0
-             ORDER BY id ASC
-             LIMIT 4",
+             ORDER BY id ASC",
             $mediaIds
         );
         foreach ($previewRows as $row) {
             $previewIds[] = (int)$row['id'];
         }
     }
+    // Store ALL media IDs so that comments on any uploaded photo/video are
+    // associated with this wall post.  The preview thumbnail strip in
+    // post_item.php slices this list to the first 4 items for display.
     $mediaIdsJson = !empty($previewIds) ? json_encode($previewIds) : null;
 
     db_insert(

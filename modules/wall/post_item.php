@@ -44,6 +44,15 @@ if (($post['post_type'] ?? 'user') === 'album_upload' && !empty($post['media_ids
 $postId      = (int)$post['id'];
 $postMediaId = !empty($post['media_id']) ? (int)$post['media_id'] : null;
 
+// For album_upload posts, collect all associated media IDs for comment merging.
+$albumMediaIds = [];
+if (($post['post_type'] ?? 'user') === 'album_upload' && !empty($post['media_ids'])) {
+    $decoded = json_decode($post['media_ids'], true);
+    if (is_array($decoded)) {
+        $albumMediaIds = array_slice(array_values(array_filter(array_map('intval', $decoded))), 0, 100);
+    }
+}
+
 if ($postMediaId !== null) {
     $postComments = db_query(
         'SELECT c.id, c.user_id, c.content, c.created_at, u.username, u.avatar_path
@@ -58,6 +67,17 @@ if ($postMediaId !== null) {
          ORDER BY created_at ASC
          LIMIT 3',
         [$postId, $postMediaId]
+    );
+} elseif (!empty($albumMediaIds)) {
+    $placeholders = implode(',', array_fill(0, count($albumMediaIds), '?'));
+    $postComments = db_query(
+        "SELECT c.id, c.user_id, c.content, c.created_at, u.username, u.avatar_path
+         FROM comments c
+         JOIN users u ON u.id = c.user_id
+         WHERE (c.post_id = ? OR c.media_id IN ($placeholders)) AND c.is_deleted = 0
+         ORDER BY c.created_at ASC
+         LIMIT 3",
+        array_merge([$postId], $albumMediaIds)
     );
 } else {
     $postComments = db_query(
