@@ -46,11 +46,7 @@ try {
 
     $posts = db_query(
         "SELECT p.*, u.username, u.avatar_path,
-                (SELECT COUNT(*) FROM (
-                    SELECT user_id FROM likes WHERE post_id = p.id
-                    UNION
-                    SELECT user_id FROM likes WHERE media_id = p.media_id
-                ) _lc) AS like_count,
+                (SELECT COUNT(DISTINCT user_id) FROM likes WHERE post_id = p.id OR (p.media_id IS NOT NULL AND media_id = p.media_id)) AS like_count,
                 (SELECT COUNT(*) FROM comments WHERE post_id = p.id AND is_deleted = 0) +
                     CASE WHEN p.media_id IS NOT NULL THEN (SELECT COUNT(*) FROM comments WHERE media_id = p.media_id AND is_deleted = 0) ELSE 0 END AS comment_count,
                 (SELECT COUNT(*) FROM likes WHERE post_id = p.id AND user_id = ?) +
