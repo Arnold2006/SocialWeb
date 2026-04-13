@@ -142,14 +142,15 @@ function notify_user(int $recipientId, string $type, int $fromUserId, int $refId
 }
 
 /**
- * Parse @username mentions from comment content and send 'mention' notifications
- * to each mentioned user (skipping the commenter themselves).
+ * Parse @username mentions from content and send notifications
+ * to each mentioned user (skipping the author themselves).
  *
- * @param string $content     Raw comment text
- * @param int    $fromUserId  ID of the user who wrote the comment
+ * @param string $content     Raw text content
+ * @param int    $fromUserId  ID of the user who wrote the content
  * @param int    $refId       Reference ID to include in the notification (e.g. post ID)
+ * @param string $type        Notification type ('mention' for comments, 'mention_post' for wall posts)
  */
-function notify_mentions(string $content, int $fromUserId, int $refId): void
+function notify_mentions(string $content, int $fromUserId, int $refId, string $type = 'mention'): void
 {
     preg_match_all('/@([a-zA-Z0-9_\-]+)/u', $content, $matches);
     if (empty($matches[1])) {
@@ -165,7 +166,7 @@ function notify_mentions(string $content, int $fromUserId, int $refId): void
 
     foreach ($rows as $row) {
         if ((int)$row['id'] !== $fromUserId) {
-            notify_user((int)$row['id'], 'mention', $fromUserId, $refId);
+            notify_user((int)$row['id'], $type, $fromUserId, $refId);
         }
     }
 }

@@ -142,8 +142,10 @@ include SITE_ROOT . '/includes/header.php';
                 endif; ?>
                 <?php break;
 
-                case 'mention': ?>
-                <p><strong><?= e($n['from_username'] ?? 'Someone') ?></strong> mentioned you in a comment.</p>
+                case 'mention':
+                case 'mention_post': ?>
+                <p><strong><?= e($n['from_username'] ?? 'Someone') ?></strong>
+                    mentioned you in a <?= $n['type'] === 'mention_post' ? 'post' : 'comment' ?>.</p>
                 <?php if ($n['ref_id']): ?>
                 <a href="<?= e(SITE_URL . '/pages/index.php#post-' . (int)$n['ref_id']) ?>">View post</a>
                 <?php endif; ?>
