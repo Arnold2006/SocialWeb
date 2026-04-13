@@ -393,6 +393,9 @@ document.addEventListener('submit', async (e) => {
                     </a>
                     <div class="comment-body">
                         ${buildCommentBodyHtml(result.comment_id, result.profile_url, result.username, result.time_ago, result.content, currentUserId, false, result.content_html)}
+                    </div>
+                </div>`;
+                const commentForm = section.querySelector('.comment-form');
                 if (commentForm) {
                     commentForm.insertAdjacentHTML('beforebegin', commentHtml);
                 } else {
@@ -500,6 +503,9 @@ document.addEventListener('submit', async (e) => {
                     </a>
                     <div class="comment-body">
                         ${buildCommentBodyHtml(result.comment_id, result.profile_url, result.username, result.time_ago, result.content, currentUserId, false, result.content_html)}
+                    </div>
+                </div>`;
+                const commentForm = section.querySelector('.blog-comment-form');
                 if (commentForm) {
                     commentForm.insertAdjacentHTML('beforebegin', commentHtml);
                 } else {
