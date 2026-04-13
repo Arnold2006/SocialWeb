@@ -22,7 +22,7 @@ $user   = json_api_guard('GET');
 $uid    = (int) $user['id'];
 $notifs = (int) db_val('SELECT COUNT(*) FROM notifications WHERE user_id = ? AND is_read = 0', [$uid]);
 $msgs   = (int) db_val(
-    'SELECT COUNT(*) FROM messages WHERE receiver_id = ? AND is_read = 0 AND is_deleted_receiver = 0',
+    'SELECT COUNT(*) FROM messages WHERE receiver_id = ? AND is_read = 0 AND is_deleted_receiver = 0 AND is_draft = 0',
     [$uid]
 );
 $chat   = (int) db_val(

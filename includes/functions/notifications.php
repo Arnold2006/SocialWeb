@@ -38,7 +38,7 @@ function unread_messages_count(): int
     $user = current_user();
     if (!$user) return 0;
     return (int) db_val(
-        'SELECT COUNT(*) FROM messages WHERE receiver_id = ? AND is_read = 0 AND is_deleted_receiver = 0',
+        'SELECT COUNT(*) FROM messages WHERE receiver_id = ? AND is_read = 0 AND is_deleted_receiver = 0 AND is_draft = 0',
         [$user['id']]
     );
 }
