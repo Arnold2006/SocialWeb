@@ -449,6 +449,10 @@ document.addEventListener('click', async (e) => {
                     </a>
                     <div class="comment-body">
                         ${buildCommentBodyHtml(c.id, c.profile_url, c.username, c.time_ago, c.content, c.user_id, !!c.edited, c.content_html)}
+                    </div>
+                </div>`).join('');
+
+                link.insertAdjacentHTML('beforebegin', html);
             }
             // Remove the "View all" link — all comments are now visible
             link.remove();
@@ -552,6 +556,10 @@ document.addEventListener('click', async (e) => {
                     </a>
                     <div class="comment-body">
                         ${buildCommentBodyHtml(c.id, c.profile_url, c.username, c.time_ago, c.content, c.user_id, !!c.edited, c.content_html)}
+                    </div>
+                </div>`).join('');
+
+                btn.insertAdjacentHTML('beforebegin', html);
             }
             // Remove the "Load more" button — all comments are now visible
             btn.remove();
