@@ -114,7 +114,8 @@
 
         if (msg.image_url) {
             bubble += '<div class="chat-img-wrap">'
-                + '<a href="#" class="chat-img-link" data-img-url="' + esc(msg.image_url) + '">'
+                + '<a href="' + esc(msg.image_url) + '" target="_blank"'
+                + ' rel="noopener noreferrer" class="chat-img-link" data-img-url="' + esc(msg.image_url) + '">'
                 + '<img src="' + esc(msg.image_url) + '" alt="Shared image"'
                 + ' class="chat-img-preview" loading="lazy"></a>'
                 + (msg.is_mine

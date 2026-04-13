@@ -61,8 +61,8 @@ if ((int) $msg['sender_id'] !== $uid) {
 // Remove the uploaded image file from disk
 if ($msg['image_path'] !== null && $msg['image_path'] !== '') {
     $absPath = SITE_ROOT . '/' . $msg['image_path'];
-    if (is_file($absPath)) {
-        @unlink($absPath);
+    if (is_file($absPath) && !unlink($absPath)) {
+        error_log('chat/delete_message.php: failed to unlink ' . $absPath);
     }
 }
 
