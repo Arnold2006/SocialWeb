@@ -131,8 +131,9 @@
         activeInput.setSelectionRange(pos, pos);
         activeInput.focus();
 
+        const inputEl = activeInput; // save ref before hideDropdown() nulls activeInput
         hideDropdown();
-        activeInput.dispatchEvent(new Event('input', { bubbles: true }));
+        inputEl.dispatchEvent(new Event('input', { bubbles: true }));
     }
 
     // ── Fetch suggestions (debounced) ─────────────────────────────────────────
@@ -222,7 +223,9 @@
             e.preventDefault();
             setActiveItem(Math.max(activeIndex - 1, 0));
         } else if ((e.key === 'Enter' || e.key === 'Tab') && activeIndex >= 0) {
-            e.preventDefault();
+            // Tab: complete the mention without submitting the form.
+            // Enter: complete the mention AND let the default action (form submit) proceed.
+            if (e.key === 'Tab') e.preventDefault();
             selectUser(currentUsers[activeIndex]);
         } else if (e.key === 'Escape') {
             hideDropdown();
