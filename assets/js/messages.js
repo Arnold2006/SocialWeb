@@ -176,6 +176,20 @@
         });
     });
 
+    /* ── Scroll to latest message when a thread is open ─────────── */
+    const mailViewer = document.querySelector('.mail-viewer');
+    const mailThread = document.querySelector('.mail-thread-wrap');
+    if (mailViewer && mailThread) {
+        mailViewer.scrollTop = mailViewer.scrollHeight;
+        mailViewer.querySelectorAll('img').forEach(img => {
+            if (!img.complete) {
+                img.addEventListener('load', () => {
+                    mailViewer.scrollTop = mailViewer.scrollHeight;
+                }, { once: true });
+            }
+        });
+    }
+
     /* ── Lightbox integration for attachment thumbnails ─────────── */
     document.querySelectorAll('.mail-attachment-link[data-img-url]').forEach(link => {
         link.addEventListener('click', e => {

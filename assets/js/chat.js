@@ -97,6 +97,15 @@
         elMessages.scrollTop = elMessages.scrollHeight;
     }
 
+    function scrollToBottomAfterImages(elMessages) {
+        scrollToBottom(elMessages);
+        elMessages.querySelectorAll('img').forEach(img => {
+            if (!img.complete) {
+                img.addEventListener('load', () => scrollToBottom(elMessages), { once: true });
+            }
+        });
+    }
+
     /* ── Message bubble builder ──────────────────────────────────────────── */
 
     function buildMessageEl(msg) {
@@ -357,7 +366,7 @@
             data.messages.forEach(msg => ws.elMessages.appendChild(buildMessageEl(msg)));
             ws.newestMsgId = data.messages[data.messages.length - 1].id;
             ws.oldestMsgId = data.messages[0].id;
-            scrollToBottom(ws.elMessages);
+            scrollToBottomAfterImages(ws.elMessages);
 
             if (ws.convId) markRead(ws.convId);
         } catch (_) { /* silent */ }
@@ -404,7 +413,7 @@
                         data.messages.forEach(msg => ws.elMessages.appendChild(buildMessageEl(msg)));
                         ws.newestMsgId = data.messages[data.messages.length - 1].id;
                         ws.oldestMsgId = data.messages[0].id;
-                        scrollToBottom(ws.elMessages);
+                        scrollToBottomAfterImages(ws.elMessages);
                         markRead(ws.convId);
                     }
                 }
@@ -492,7 +501,7 @@
                 ws.elMessages.appendChild(buildMessageEl(data.message));
                 ws.newestMsgId = data.message.id;
                 if (!ws.oldestMsgId) ws.oldestMsgId = data.message.id;
-                scrollToBottom(ws.elMessages);
+                scrollToBottomAfterImages(ws.elMessages);
             } else {
                 alert('Upload failed: ' + (data.error || 'Unknown error'));
             }
