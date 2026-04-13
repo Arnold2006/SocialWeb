@@ -211,7 +211,7 @@ include SITE_ROOT . '/includes/header.php';
             <?= csrf_field() ?>
             <input type="hidden" name="media_id" value="<?= $mediaId ?>">
             <input type="text" name="content"
-                   class="form-control video-comment-input"
+                   class="form-control video-comment-input mention-input"
                    placeholder="Write a comment…"
                    maxlength="1000"
                    autocomplete="off"

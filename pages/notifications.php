@@ -141,6 +141,13 @@ include SITE_ROOT . '/includes/header.php';
                 <?php   endif;
                 endif; ?>
                 <?php break;
+
+                case 'mention': ?>
+                <p><strong><?= e($n['from_username'] ?? 'Someone') ?></strong> mentioned you in a comment.</p>
+                <?php if ($n['ref_id']): ?>
+                <a href="<?= e(SITE_URL . '/pages/index.php#post-' . (int)$n['ref_id']) ?>">View post</a>
+                <?php endif; ?>
+                <?php break;
             endswitch; ?>
         </div>
         <time class="notif-time"><?= e(time_ago($n['created_at'])) ?></time>

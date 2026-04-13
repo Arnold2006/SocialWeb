@@ -212,7 +212,7 @@ $moreComments = (int)$post['comment_count'] > 3;
 
         <form class="comment-form" data-post-id="<?= (int)$post['id'] ?>">
             <?= csrf_field() ?>
-            <input type="text" name="content" placeholder="Write a comment…" maxlength="1000" autocomplete="off" required>
+            <input type="text" name="content" placeholder="Write a comment…" maxlength="1000" autocomplete="off" required class="mention-input">
             <button type="submit" class="btn btn-sm">Post</button>
         </form>
     </div>

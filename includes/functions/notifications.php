@@ -142,6 +142,35 @@ function notify_user(int $recipientId, string $type, int $fromUserId, int $refId
 }
 
 /**
+ * Parse @username mentions from comment content and send 'mention' notifications
+ * to each mentioned user (skipping the commenter themselves).
+ *
+ * @param string $content     Raw comment text
+ * @param int    $fromUserId  ID of the user who wrote the comment
+ * @param int    $refId       Reference ID to include in the notification (e.g. post ID)
+ */
+function notify_mentions(string $content, int $fromUserId, int $refId): void
+{
+    preg_match_all('/@([a-zA-Z0-9_\-]+)/u', $content, $matches);
+    if (empty($matches[1])) {
+        return;
+    }
+
+    $unique = array_values(array_unique($matches[1]));
+    $phs    = implode(',', array_fill(0, count($unique), '?'));
+    $rows   = db_query(
+        "SELECT id FROM users WHERE username IN ($phs) AND is_banned = 0",
+        $unique
+    );
+
+    foreach ($rows as $row) {
+        if ((int)$row['id'] !== $fromUserId) {
+            notify_user((int)$row['id'], 'mention', $fromUserId, $refId);
+        }
+    }
+}
+
+/**
  * Count pending (unapplied) database migrations.
  *
  * Scans database/migrations/ for *.sql files not yet recorded in db_migrations.

@@ -185,6 +185,7 @@ $_footerUser = current_user();
 <script src="<?= ASSETS_URL ?>/js/lightbox.js"></script>
 <script src="<?= ASSETS_URL ?>/js/progressive_loader.js"></script>
 <script src="<?= ASSETS_URL ?>/js/notifications.js"></script>
+<script src="<?= ASSETS_URL ?>/js/mention.js"></script>
 <?php if ($_footerUser): ?>
 <script src="<?= ASSETS_URL ?>/js/chat.js"></script>
 <?php endif; ?>

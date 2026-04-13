@@ -127,6 +127,7 @@
         commentInput.placeholder = 'Write a comment\u2026';
         commentInput.maxLength = 1000;
         commentInput.autocomplete = 'off';
+        commentInput.className = 'mention-input';
         commentInput.setAttribute('aria-label', 'Comment text');
 
         const commentSubmit = document.createElement('button');

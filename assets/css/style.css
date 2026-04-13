@@ -4785,3 +4785,55 @@ textarea { resize: vertical; min-height: 80px; }
     flex-shrink: 0;
 }
 .attach-remove-btn:hover { color: var(--color-danger, #dc3545); }
+
+/* ── @mention autocomplete dropdown ──────────────────────────────────────── */
+.mention-dropdown {
+    position: absolute;
+    z-index: 9999;
+    background: var(--color-surface, #fff);
+    border: 1px solid var(--color-border, #ddd);
+    border-radius: 6px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+    min-width: 180px;
+    max-width: 280px;
+    max-height: 220px;
+    overflow-y: auto;
+    padding: 4px 0;
+}
+.mention-dropdown.hidden { display: none; }
+
+.mention-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-size: 0.875rem;
+    transition: background 0.1s;
+}
+.mention-item:hover,
+.mention-item--active {
+    background: var(--color-hover, #f0f0f0);
+}
+.mention-avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+.mention-username {
+    font-weight: 600;
+    color: var(--color-primary, #1a73e8);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Rendered @mention links inside comment text */
+a.mention {
+    color: var(--color-primary, #1a73e8);
+    font-weight: 600;
+    text-decoration: none;
+}
+a.mention:hover { text-decoration: underline; }
