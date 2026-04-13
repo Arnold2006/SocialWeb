@@ -96,6 +96,10 @@ $moreComments = (int)$post['comment_count'] > 3;
                 <input type="hidden" name="post_id" value="<?= (int)$post['id'] ?>">
                 <button type="submit" class="btn btn-danger btn-xs">Delete</button>
             </form>
+            <?php if ((int)$user['id'] === (int)$post['user_id'] && $postMedia && $postMedia['type'] === 'image'): ?>
+            <button type="button" class="btn btn-xs btn-secondary move-media-btn"
+                    data-media-id="<?= (int)$postMedia['id'] ?>">&#8599; Move</button>
+            <?php endif; ?>
         </div>
         <?php endif; ?>
     </div>
