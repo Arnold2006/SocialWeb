@@ -225,9 +225,11 @@
             e.preventDefault();
             setActiveItem(Math.max(activeIndex - 1, 0));
         } else if ((e.key === 'Enter' || e.key === 'Tab') && activeIndex >= 0) {
-            // Tab: complete the mention without submitting the form.
-            // Enter: complete the mention AND let the default action (form submit) proceed.
-            if (e.key === 'Tab') e.preventDefault();
+            // Prevent both Tab and Enter from doing their default actions (Tab moves
+            // focus; Enter submits the form) so that confirming a mention via keyboard
+            // does not simultaneously submit the comment form.  The user can press
+            // Enter again (or click Post) to submit after the mention is inserted.
+            e.preventDefault();
             selectUser(currentUsers[activeIndex]);
         } else if (e.key === 'Escape') {
             hideDropdown();
