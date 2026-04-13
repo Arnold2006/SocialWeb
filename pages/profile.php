@@ -398,4 +398,51 @@ include SITE_ROOT . '/includes/header.php';
 
 </div>
 
+<?php
+// Move Media Modal — only render for the profile owner when they have albums
+if ($isOwnProfile):
+    $wallOwnerAlbums = db_query(
+        'SELECT a.id, a.title, c.title AS category_title
+         FROM albums a
+         LEFT JOIN album_categories c ON c.id = a.category_id AND c.is_deleted = 0
+         WHERE a.user_id = ? AND a.is_deleted = 0
+         ORDER BY c.title ASC, a.title ASC',
+        [(int)$currentUser['id']]
+    );
+    if (!empty($wallOwnerAlbums)):
+?>
+<div id="move-media-modal" class="crop-modal" style="display:none"
+     role="dialog" aria-modal="true" aria-label="Move Image to Album">
+    <div class="crop-modal-inner">
+        <h3>Move Image to Album</h3>
+        <form method="POST" action="<?= e(SITE_URL . '/modules/wall/move_media.php') ?>" id="move-media-form">
+            <?= csrf_field() ?>
+            <input type="hidden" name="media_id" id="move-media-id" value="">
+            <div style="margin-bottom:1rem">
+                <label for="move-target-album" style="display:block;margin-bottom:0.35rem;font-weight:600">Destination album</label>
+                <select name="target_album_id" id="move-target-album" style="width:100%">
+                    <?php
+                    $lastCat = false;
+                    foreach ($wallOwnerAlbums as $a):
+                        $catLabel = $a['category_title'] ?? null;
+                        if ($catLabel !== $lastCat):
+                            if ($lastCat !== false) echo '</optgroup>';
+                            echo '<optgroup label="' . e($catLabel ?? '(Uncategorised)') . '">';
+                            $lastCat = $catLabel;
+                        endif;
+                    ?>
+                    <option value="<?= (int)$a['id'] ?>"><?= e($a['title']) ?></option>
+                    <?php endforeach; ?>
+                    <?php if ($lastCat !== false) echo '</optgroup>'; ?>
+                </select>
+            </div>
+            <div class="crop-modal-actions">
+                <button type="button" id="move-media-cancel" class="btn btn-secondary">Cancel</button>
+                <button type="submit" class="btn btn-primary">Move</button>
+            </div>
+        </form>
+    </div>
+</div>
+<?php endif; endif; ?>
+
 <?php include SITE_ROOT . '/includes/footer.php'; ?>
