@@ -248,15 +248,60 @@ function _sanitise_html_node(
  */
 function linkify(string $rawText): string
 {
-    $parts    = preg_split('/(\bhttps?:\/\/\S+)/u', $rawText, -1, PREG_SPLIT_DELIM_CAPTURE);
+    $urlParts = preg_split('/(\bhttps?:\/\/\S+)/u', $rawText, -1, PREG_SPLIT_DELIM_CAPTURE);
     // Normalise: strip trailing slash so "SITE_URL/" and "SITE_URL/path" both match,
     // but "SITE_URLOther" does not (we check for the slash boundary below).
     $siteBase = defined('SITE_URL') ? rtrim(SITE_URL, '/') : '';
-    $result   = '';
-    foreach ($parts as $i => $part) {
+
+    // Pre-collect all @mention candidates from plain-text segments for a single batch lookup.
+    $mentionCandidates = [];
+    foreach ($urlParts as $i => $part) {
         if ($i % 2 === 0) {
-            // Plain text segment — HTML-escape it
-            $result .= e($part);
+            preg_match_all('/@([a-zA-Z0-9_\-]+)/u', $part, $m);
+            foreach ($m[1] as $u) {
+                $mentionCandidates[] = $u;
+            }
+        }
+    }
+
+    // Resolve candidates to user IDs in one query.
+    $mentionMap = [];
+    if (!empty($mentionCandidates) && function_exists('db_query')) {
+        $unique = array_values(array_unique($mentionCandidates));
+        $phs    = implode(',', array_fill(0, count($unique), '?'));
+        try {
+            $rows = db_query(
+                "SELECT id, username FROM users WHERE username IN ($phs) AND is_banned = 0",
+                $unique
+            );
+            foreach ($rows as $row) {
+                $mentionMap[$row['username']] = (int)$row['id'];
+            }
+        } catch (\Throwable $e) {
+            // Non-fatal: mentions simply won't be linked.
+        }
+    }
+
+    $profileBase = (defined('SITE_URL') ? SITE_URL : '') . '/pages/profile.php?id=';
+
+    $result = '';
+    foreach ($urlParts as $i => $part) {
+        if ($i % 2 === 0) {
+            // Plain-text segment — process @mentions, then HTML-escape the rest.
+            $textParts = preg_split('/(@[a-zA-Z0-9_\-]+)/u', $part, -1, PREG_SPLIT_DELIM_CAPTURE);
+            foreach ($textParts as $j => $tp) {
+                if ($j % 2 === 0) {
+                    $result .= e($tp);
+                } else {
+                    $username = substr($tp, 1);
+                    if (isset($mentionMap[$username])) {
+                        $uid = $mentionMap[$username];
+                        $result .= '<a href="' . e($profileBase . $uid) . '" class="mention">@' . e($username) . '</a>';
+                    } else {
+                        $result .= e($tp);
+                    }
+                }
+            }
         } else {
             // URL segment — strip trailing punctuation, then HTML-escape
             $url      = rtrim($part, '.,;:!?)\'"');

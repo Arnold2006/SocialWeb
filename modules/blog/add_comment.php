@@ -42,6 +42,9 @@ $commentId = db_insert(
 // Use the comment ID as ref_id so the notification can link directly to the comment.
 notify_user((int)$blogPost['user_id'], 'blog_comment', (int)$user['id'], (int)$commentId);
 
+// Notify any @mentioned users
+notify_mentions($content, (int)$user['id'], (int)$blogPostId);
+
 echo json_encode([
     'ok'          => true,
     'comment_id'  => (int)$commentId,
