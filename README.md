@@ -6,19 +6,23 @@ An invite-only social network platform built with PHP 8.3, MySQL/MariaDB, and va
 
 - **Invite-only registration** — Admins generate invite codes with expiry dates and usage limits
 - **Wall / News Feed** — Posts with text and media, likes, comments, cached HTML feed
-- **User Profiles** — Avatar (with crop tool), bio, friend list, recent posts
-- **Private Messaging** — Inbox, threaded conversations, unread indicators
-- **Gallery** — Albums, image/video uploads, lightbox viewer, progressive loading
+- **User Profiles** — Avatar (with crop tool), full name, bio, recent posts, media download
+- **Private Messaging** — Inbox, threaded conversations with subjects, unread indicators
+- **Real-time Chat** — One-on-one WebSocket-style AJAX chat with image sharing and unread counters
+- **Gallery** — Albums organised into categories, image/video uploads, lightbox viewer with likes & comments, progressive loading, masonry layout, album mosaic previews
+- **Videos** — Community video hub with upload, descriptions, per-video playback page, and feed integration
 - **Shoutbox** — Real-time AJAX polling in the sidebar
-- **Blog** — Personal blogs with a rich-text editor, drag-and-drop image uploads, and activity-feed integration
-- **Forum** — Threaded discussion boards with categories, forums, thread locking, unread tracking, and image attachments
-- **Notifications** — Likes, comments, friend requests, messages
-- **Admin Panel** — User management, invite management, content moderation, media management
+- **Blog** — Personal blogs with a rich-text editor, drag-and-drop image uploads, comments, likes, and activity-feed integration
+- **Forum** — Threaded discussion boards with categories, forums, thread locking, unread tracking, rich-text post editor, image attachments, and edit history
+- **Members directory** — Paginated, searchable list of all members
+- **Notifications** — Likes, comments, messages, blog comments, blog likes, photo likes, photo comments
+- **Admin Panel** — User management, invite management, content moderation, media management, site settings (banner, description, theme, custom fonts), orphan-file cleanup
 - **Plugin System** — Drop-in plugins can add sidebar widgets, wall widgets, menu items, and profile extensions
-- **Dark Theme** — Minimalist Oxwall-inspired dark UI using system fonts only
-- **Security** — CSRF tokens, prepared statements, session hardening, rate limiting, security headers
-- **Media Processing** — EXIF stripping, multi-size image generation, video thumbnail generation, SHA256 deduplication
+- **Multiple colour themes** — Six built-in dark themes (blue-red, gray-orange, purple-red, green-teal, dark-gold, navy-cyan), selectable from the admin panel
+- **Security** — CSRF tokens, prepared statements, session hardening, rate limiting, security headers, whitelist HTML sanitiser with smart internal/external link handling
+- **Media Processing** — EXIF stripping, multi-size image generation, video thumbnail generation, SHA256 deduplication, deduplication-safe file deletion
 - **Performance** — File-based HTML cache, progressive image loading, IntersectionObserver lazy loading
+- **Modular architecture** — Security, media, and utility helpers are split into focused sub-modules; centralised type-safe request validation via `RequestValidator`
 
 ## Requirements
 
@@ -118,35 +122,79 @@ sudo systemctl restart php-fpm
 
 ```
 /
-├── admin/              Admin panel pages
+├── admin/                  Admin panel pages
+│   ├── forum/              Forum category/forum/moderation management
+│   ├── dashboard.php       Admin overview
+│   ├── invites.php         Invite code management
+│   ├── media.php           Media management
+│   ├── moderation.php      Content moderation
+│   ├── orphans.php         Orphan-file scanner and cleanup
+│   ├── settings.php        Site settings (banner, description, theme, fonts)
+│   └── users.php           User management
 ├── assets/
-│   ├── css/style.css   Dark theme CSS
-│   ├── js/             Vanilla JS modules
-│   └── images/         Static assets (SVG icons)
-├── cache/              HTML cache files (auto-managed)
-├── chat/               AJAX/JSON API endpoints for the chat system
-├── core/               Framework files (db, auth, security, etc.)
+│   ├── css/style.css       Multi-theme dark UI CSS
+│   ├── js/                 Vanilla JS modules (lightbox, masonry, chat, forum, blog editor, …)
+│   └── images/             Static assets (SVG icons, placeholders)
+├── cache/                  HTML cache files (auto-managed)
+├── chat/                   AJAX/JSON API endpoints for the real-time chat system
+├── core/                   Framework files
+│   ├── security/           Security sub-modules (csrf, headers, rate_limiter, sanitizer, session)
+│   ├── media/              Media-processing sub-modules (image_processor, video_processor)
+│   ├── auth.php            Authentication helpers
+│   ├── cache.php           File-based HTML cache
+│   ├── compat.php          mbstring / iconv polyfills
+│   ├── config.php          Configuration constants
+│   ├── db.php              PDO database helpers
+│   ├── media_processor.php Media module loader
+│   ├── plugin_loader.php   Plugin discovery and registration
+│   ├── RequestValidator.php Centralised type-safe request parameter extraction
+│   ├── router.php          Lightweight front-controller / URL dispatcher
+│   └── security.php        Security module loader
 ├── database/
-│   ├── schema.sql      Full database schema
-│   └── migrations/     Incremental SQL migration scripts
-├── includes/           Shared PHP includes (header, footer, functions)
-├── forum/              Forum pages (index, forum view, thread view, new thread, reply, edit)
-├── modules/            Feature modules (wall, profile, gallery, blog, etc.)
-├── pages/              Public-facing pages (includes blog.php)
-├── plugins/            Drop-in plugin directory
-├── uploads/            User-uploaded content
-│   ├── avatars/        Avatar sizes: small/medium/large
-│   ├── images/         Photo sizes: original/large/medium/thumbs
-│   └── videos/         Videos: original/processed/thumbnails
-├── deploy.sh           Deployment helper (git pull + ownership / permissions)
-├── index.php           Entry point (redirects to login or wall)
-├── setup.php           One-time installation wizard
-└── upgrade.php         Database migration runner (run after updates)
+│   ├── schema.sql          Full database schema
+│   └── migrations/         Incremental SQL migration scripts (001–026)
+├── forum/                  Forum pages (index, forum view, thread view, new thread, reply, edit)
+├── includes/               Shared PHP includes
+│   ├── functions/          Helper sub-modules (cache, media, notifications, pagination, theme)
+│   ├── bootstrap.php       Application bootstrap
+│   ├── footer.php          Page footer
+│   ├── functions.php       Functions module loader
+│   ├── header.php          Page header
+│   ├── overlay_maps.php    JS overlay helpers
+│   └── sidebar_widgets.php Sidebar rendering
+├── modules/                Feature modules
+│   ├── blog/               Blog AJAX endpoints
+│   ├── forum/              Forum AJAX endpoint (user image picker)
+│   ├── gallery/            Gallery AJAX endpoints (comments, likes, media item)
+│   ├── notifications/      Notifications AJAX endpoint
+│   ├── profile/            Profile AJAX endpoints (avatar, media download, account deletion)
+│   ├── shoutbox/           Shoutbox AJAX endpoint
+│   └── wall/               Wall AJAX endpoints (posts, comments, comment editing, likes)
+├── pages/                  Public-facing pages
+│   ├── blog.php            Personal blog viewer
+│   ├── gallery.php         User gallery / album browser
+│   ├── members.php         Members directory with search and pagination
+│   ├── messages.php        Private messaging inbox and threads
+│   ├── notifications.php   Notification centre
+│   ├── photos.php          Photos hub (members grid + own albums)
+│   ├── profile.php         User profile page
+│   ├── settings.php        (Redirects to profile settings)
+│   ├── video.php           Community video hub
+│   └── video_play.php      Single video playback page
+├── plugins/                Drop-in plugin directory
+├── uploads/                User-uploaded content
+│   ├── avatars/            Avatar sizes: small/medium/large
+│   ├── images/             Photo sizes: original/large/medium/thumbs + mosaics
+│   └── videos/             Videos: original/processed/thumbnails
+├── deploy.sh               Deployment helper (git pull + ownership / permissions)
+├── index.php               Entry point (redirects to login or wall)
+├── setup.php               One-time installation wizard
+└── upgrade.php             Database migration runner (run after updates)
 ```
 
 ## Security
 
-- All user input is sanitised and validated
+- All user input is sanitised and validated via `RequestValidator` or dedicated helpers
 - All database queries use prepared statements
 - CSRF tokens on all forms
 - Passwords hashed with `password_hash()` (bcrypt)
@@ -155,6 +203,275 @@ sudo systemctl restart php-fpm
 - Rate limiting on login and registration
 - Media: MIME type validated with `finfo`, EXIF stripped via GD re-encoding
 - Uploads directory protected by `.htaccess`
+- HTML sanitiser (`sanitise_html()`) uses a DOM-based whitelist approach; distinguishes internal links (relative paths and same-host absolute URLs) from external links — only external links receive `target="_blank"` and `rel="noopener noreferrer nofollow"`
+- `linkify()` applies the same internal/external distinction when converting plain-text URLs to clickable links
+- Security logic is split into focused sub-modules under `core/security/`: `csrf.php`, `headers.php`, `rate_limiter.php`, `sanitizer.php`, `session.php`
+
+## Blog
+
+Each user has a personal blog accessible from their profile page.
+
+### Features
+
+- **Rich-text editor** — Formatting toolbar supports bold, italic, underline, strikethrough, headings (H2/H3), ordered/unordered lists, blockquotes, and hyperlink insertion
+- **Image uploads** — Insert images via drag-and-drop or the toolbar button; images are EXIF-stripped and resized server-side, then stored in a dedicated *Blog* gallery album
+- **Comments** — Readers can leave comments on blog posts; authors and admins can delete comments
+- **Likes** — Blog posts can be liked; likes generate a notification for the post author
+- **Activity-feed integration** — Publishing a new post creates a wall entry of type `blog_post` so it appears in the news feed for followers
+- **Edit & delete** — Authors can edit or soft-delete their own posts; admins can delete any post
+- **Pagination** — Posts are listed newest-first, 10 per page
+
+### Accessing the blog
+
+| URL | Description |
+|-----|-------------|
+| `/pages/blog.php` | Your own blog (defaults to the logged-in user) |
+| `/pages/blog.php?user_id=N` | Blog of user with ID *N* |
+| `/pages/blog.php?user_id=N&page=P` | Page *P* of user *N*'s blog |
+
+A **View Blog** button also appears on every user profile page.
+
+### Database schema
+
+The blog uses the `blog_posts` table created by migration `009_add_blog.sql`:
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | `INT UNSIGNED` | Primary key |
+| `user_id` | `INT UNSIGNED` | Author |
+| `title` | `VARCHAR(255)` | Post title |
+| `content` | `MEDIUMTEXT` | Sanitised HTML content |
+| `created_at` | `DATETIME` | Publication timestamp |
+| `updated_at` | `DATETIME` | Last-edited timestamp (auto-updated) |
+| `is_deleted` | `TINYINT(1)` | Soft-delete flag |
+
+## Forum
+
+A threaded discussion board accessible from the main navigation.
+
+### Features
+
+- **Categories & forums** — Admins organise forums into top-level categories; each category holds one or more named forums
+- **Threads & replies** — Logged-in users can start new threads and post replies; posts are written in a **rich-text editor** (bold, italic, underline, strikethrough, lists, blockquotes, hyperlinks); legacy plain-text posts are auto-linked and rendered with smiley conversion
+- **Thread locking** — Admins can lock threads to prevent further replies (🔒 icon shown)
+- **Unread tracking** — The forum index displays an unread counter (🔵) per forum; threads are automatically marked as read when opened
+- **Edit & delete** — Post authors and admins can edit or soft-delete threads and individual posts; edited posts show an "(edited)" indicator and timestamp
+- **Image attachments** — Users can attach an image from their gallery to any post
+- **Pagination** — Thread lists and post lists are paginated (20 items per page)
+- **Admin panel** — Full category/forum management and a moderation dashboard (delete, restore, lock/unlock threads and posts)
+
+### Accessing the forum
+
+| URL | Description |
+|-----|-------------|
+| `/forum/` | Forum index — all categories and forums with unread counters |
+| `/forum/forum.php?id=N` | Thread list for forum *N* |
+| `/forum/thread.php?id=N` | Posts in thread *N* |
+| `/forum/new_thread.php` | Create a new thread (login required) |
+| `/forum/edit_thread.php?id=N` | Edit thread title and opening post (owner or admin) |
+
+### Admin panel routes
+
+| URL | Description |
+|-----|-------------|
+| `/admin/forum/` | Forum admin dashboard with recent-activity stats |
+| `/admin/forum/categories.php` | Create, edit, and delete categories |
+| `/admin/forum/forums.php` | Create, edit, and delete forums |
+| `/admin/forum/moderation.php` | Delete/restore threads and posts; lock/unlock threads |
+
+### Database schema
+
+The forum uses five tables created by migration `012_add_forum.sql` (with additions in `013_add_forum_post_media.sql`, `014_add_forum_reads.sql`, and `015_add_forum_post_edited_at.sql`):
+
+**`forum_categories`**
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | `INT UNSIGNED` | Primary key |
+| `title` | `VARCHAR(100)` | Category name |
+| `description` | `TEXT` | Optional description |
+| `sort_order` | `INT` | Display order |
+
+**`forum_forums`**
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | `INT UNSIGNED` | Primary key |
+| `category_id` | `INT UNSIGNED` | Parent category |
+| `title` | `VARCHAR(100)` | Forum name |
+| `description` | `TEXT` | Optional description |
+| `sort_order` | `INT` | Display order within category |
+
+**`forum_threads`**
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | `INT UNSIGNED` | Primary key |
+| `forum_id` | `INT UNSIGNED` | Parent forum |
+| `user_id` | `INT UNSIGNED` | Thread author |
+| `title` | `VARCHAR(200)` | Thread title |
+| `is_locked` | `TINYINT(1)` | Lock flag (1 = no new replies) |
+| `is_deleted` | `TINYINT(1)` | Soft-delete flag |
+| `created_at` | `DATETIME` | Creation timestamp |
+| `last_post_at` | `DATETIME` | Timestamp of most recent reply |
+| `reply_count` | `INT UNSIGNED` | Number of replies |
+
+**`forum_posts`**
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | `INT UNSIGNED` | Primary key |
+| `thread_id` | `INT UNSIGNED` | Parent thread |
+| `user_id` | `INT UNSIGNED` | Post author |
+| `content` | `TEXT` | Post body (HTML from rich editor or legacy plain text) |
+| `media_id` | `INT UNSIGNED` | Optional attached image (from gallery) |
+| `is_deleted` | `TINYINT(1)` | Soft-delete flag |
+| `created_at` | `DATETIME` | Creation timestamp |
+| `edited_at` | `DATETIME` | Last-edited timestamp (NULL if never edited) |
+
+**`forum_reads`**
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `user_id` | `INT UNSIGNED` | Reader (composite PK with `thread_id`) |
+| `thread_id` | `INT UNSIGNED` | Thread that was read |
+| `read_at` | `DATETIME` | When the thread was last opened |
+
+## Chat
+
+A real-time one-on-one chat system separate from the private-messaging inbox.
+
+### Features
+
+- **Conversations** — Each pair of users shares a single conversation thread; starting a new chat with someone you have already messaged opens the existing thread
+- **Image sharing** — Users can send inline images alongside text messages
+- **Unread counters** — The navigation bar badge counts unread chat messages independently of private-message unread counts
+- **Activity tracking** — The `chat_activity` table records the last time each user was active in chat, enabling "online" indicators
+
+### Accessing chat
+
+| URL | Description |
+|-----|-------------|
+| `/chat/` | Chat inbox — list of all active conversations |
+| `/chat/?user_id=N` | Open (or start) a conversation with user *N* |
+
+## Gallery
+
+A full-featured media gallery for photos and videos.
+
+### Features
+
+- **Categories** — Each user's gallery is organised into categories (e.g. "Main", "Travel"); albums live inside categories
+- **Albums** — Users create named albums with optional descriptions and cover images; albums can be moved between categories
+- **Multi-upload** — Drag-and-drop or file-picker upload of multiple images or videos in one batch
+- **Lightbox** — Click any photo or video thumbnail to open a full-screen lightbox; supports keyboard navigation (← →, Esc) and closing by clicking the overlay
+- **Likes & comments in lightbox** — The lightbox panel shows a per-media like button and live comment thread without leaving the page
+- **Masonry layout** — Photos are displayed in a responsive masonry grid
+- **Progressive loading** — Images are loaded lazily as they scroll into view via `IntersectionObserver`
+- **Album mosaic** — When photos are uploaded, a 2×2 mosaic composite thumbnail is generated automatically and used as the wall-feed preview
+- **SHA256 deduplication** — Duplicate uploads are detected by file hash; the existing record is reused instead of storing the file twice
+
+### Accessing the gallery
+
+| URL | Description |
+|-----|-------------|
+| `/pages/photos.php` | Photos hub: members grid and your own albums |
+| `/pages/photos.php?tab=my_albums` | Your own albums directly |
+| `/pages/gallery.php?user_id=N` | Gallery for user *N* |
+| `/pages/gallery.php?user_id=N&album=A` | Album *A* of user *N* |
+
+## Videos
+
+A community-wide video hub for uploading and watching videos.
+
+### Features
+
+- **Upload** — Videos (MP4, WebM, OGG) are accepted; thumbnails are generated via `ffmpeg` if available, otherwise a placeholder is used
+- **Description** — Each video has an optional caption/description that the owner can edit
+- **Community grid** — All community videos are shown in a grid on the Videos page with thumbnails and titles
+- **Playback page** — Each video has its own page for full-screen playback, description display, and owner management (edit description, delete)
+- **Feed integration** — Uploading videos through an album triggers an `album_upload` wall post, keeping the news feed up to date
+
+### Accessing videos
+
+| URL | Description |
+|-----|-------------|
+| `/pages/video.php` | Community video hub |
+| `/pages/video_play.php?id=N` | Play video with ID *N* |
+
+## Members Directory
+
+A paginated, searchable directory of all registered members.
+
+| URL | Description |
+|-----|-------------|
+| `/pages/members.php` | Members list (first page) |
+| `/pages/members.php?search=alice` | Search members by username or name |
+| `/pages/members.php?page=N` | Page *N* of results |
+
+## Admin Panel
+
+The admin panel is accessible at `/admin/` and is restricted to users with the `admin` role.
+
+### Pages
+
+| URL | Description |
+|-----|-------------|
+| `/admin/dashboard.php` | Overview statistics |
+| `/admin/users.php` | Ban, unban, promote, or delete users |
+| `/admin/invites.php` | Generate and manage invite codes |
+| `/admin/moderation.php` | Review and remove flagged content |
+| `/admin/media.php` | Browse and delete uploaded media |
+| `/admin/settings.php` | Site banner, description, colour theme, custom fonts |
+| `/admin/orphans.php` | Scan uploads for unreferenced files and delete them |
+| `/admin/forum/` | Forum administration (categories, forums, moderation) |
+
+### Site settings
+
+- **Banner image** — Upload a JPEG/PNG/WebP banner shown at the top of every page
+- **Site description** — Short tagline displayed in the header
+- **Colour theme** — Choose one of six built-in dark themes: `blue-red`, `gray-orange`, `purple-red`, `green-teal`, `dark-gold`, `navy-cyan`
+- **Custom fonts** — Upload WOFF2/WOFF/TTF/OTF fonts to replace the default system-font stack
+
+### Orphan cleanup
+
+`/admin/orphans.php` scans `uploads/` and cross-references every file against the database (media records, user avatars, album covers, chat images, site banner, and custom fonts). Files with no database reference are listed and can be bulk-deleted to reclaim disk space.
+
+## Architecture
+
+SocialWeb uses a modular flat-file architecture — no framework, no Composer dependencies.
+
+### Module layout
+
+| Path | Contents |
+|------|----------|
+| `core/security/` | `csrf.php`, `headers.php`, `rate_limiter.php`, `sanitizer.php`, `session.php` |
+| `core/media/` | `image_processor.php`, `video_processor.php` |
+| `includes/functions/` | `cache.php`, `media.php`, `notifications.php`, `pagination.php`, `theme.php` |
+| `core/security.php` | Loader — `require_once`s all security sub-modules |
+| `core/media_processor.php` | Loader — shared helpers + loads media sub-modules |
+| `includes/functions.php` | Loader — loads all function sub-modules |
+
+### RequestValidator
+
+`core/RequestValidator.php` provides a centralised, type-safe way to extract and coerce HTTP request parameters instead of calling `sanitise_int()`, `sanitise_string()`, etc. ad-hoc across pages:
+
+```php
+$v     = new RequestValidator($_GET);
+$id    = $v->int('id');            // unsigned int, default 0
+$page  = $v->int('page', 1);       // with custom default
+$name  = $v->string('name', 50);   // trimmed/stripped, max 50 chars
+$email = $v->email('email');       // validated email or ''
+$q     = $v->raw('q');             // raw string for downstream sanitisation
+```
+
+### Compat layer
+
+`core/compat.php` provides lightweight polyfills for `mb_substr`, `mb_strlen`, `mb_strtolower`, `mb_strtoupper`, and `mb_convert_encoding` using `iconv` (when available) or byte-string functions as a last resort, so the application degrades gracefully on servers without the `mbstring` extension.
+
+### Router
+
+`core/router.php` provides a minimal front-controller with `route()` / `dispatch()` helpers used by AJAX endpoints. Routes support `{param}` placeholders that are injected into `$_GET` on match.
 
 ## Deployment
 
@@ -253,130 +570,3 @@ This project is free to use, modify, fork and distribute.
 You may **NOT** sell this software or redistribute it for profit.
 
 See [LICENSE](LICENSE) for full terms.
-
-## Blog
-
-Each user has a personal blog accessible from their profile page.
-
-### Features
-
-- **Rich-text editor** — Formatting toolbar supports bold, italic, underline, strikethrough, headings (H2/H3), ordered/unordered lists, blockquotes, and hyperlink insertion
-- **Image uploads** — Insert images via drag-and-drop or the toolbar button; images are EXIF-stripped and resized server-side, then stored in a dedicated *Blog* gallery album
-- **Activity-feed integration** — Publishing a new post creates a wall entry of type `blog_post` so it appears in the news feed for followers
-- **Edit & delete** — Authors can edit or soft-delete their own posts; admins can delete any post
-- **Pagination** — Posts are listed newest-first, 10 per page
-
-### Accessing the blog
-
-| URL | Description |
-|-----|-------------|
-| `/pages/blog.php` | Your own blog (defaults to the logged-in user) |
-| `/pages/blog.php?user_id=N` | Blog of user with ID *N* |
-| `/pages/blog.php?user_id=N&page=P` | Page *P* of user *N*'s blog |
-
-A **View Blog** button also appears on every user profile page.
-
-### Database schema
-
-The blog uses the `blog_posts` table created by migration `009_add_blog.sql`:
-
-| Column | Type | Description |
-|--------|------|-------------|
-| `id` | `INT UNSIGNED` | Primary key |
-| `user_id` | `INT UNSIGNED` | Author |
-| `title` | `VARCHAR(255)` | Post title |
-| `content` | `MEDIUMTEXT` | Sanitised HTML content |
-| `created_at` | `DATETIME` | Publication timestamp |
-| `updated_at` | `DATETIME` | Last-edited timestamp (auto-updated) |
-| `is_deleted` | `TINYINT(1)` | Soft-delete flag |
-
-## Forum
-
-A threaded discussion board accessible from the main navigation.
-
-### Features
-
-- **Categories & forums** — Admins organise forums into top-level categories; each category holds one or more named forums
-- **Threads & replies** — Logged-in users can start new threads and post replies; posts support auto-linked URLs, smiley conversion, and optional image attachments from the user's gallery
-- **Thread locking** — Admins can lock threads to prevent further replies (🔒 icon shown)
-- **Unread tracking** — The forum index displays an unread counter (🔵) per forum; threads are automatically marked as read when opened
-- **Edit & delete** — Post authors and admins can edit or soft-delete threads and individual posts; edited posts show an "(edited)" indicator
-- **Pagination** — Thread lists and post lists are paginated (20 items per page)
-- **Admin panel** — Full category/forum management and a moderation dashboard (delete, restore, lock/unlock threads and posts)
-
-### Accessing the forum
-
-| URL | Description |
-|-----|-------------|
-| `/forum/` | Forum index — all categories and forums with unread counters |
-| `/forum/forum.php?id=N` | Thread list for forum *N* |
-| `/forum/thread.php?id=N` | Posts in thread *N* |
-| `/forum/new_thread.php` | Create a new thread (login required) |
-| `/forum/edit_thread.php?id=N` | Edit thread title and opening post (owner or admin) |
-
-### Admin panel routes
-
-| URL | Description |
-|-----|-------------|
-| `/admin/forum/` | Forum admin dashboard with recent-activity stats |
-| `/admin/forum/categories.php` | Create, edit, and delete categories |
-| `/admin/forum/forums.php` | Create, edit, and delete forums |
-| `/admin/forum/moderation.php` | Delete/restore threads and posts; lock/unlock threads |
-
-### Database schema
-
-The forum uses five tables created by migration `012_add_forum.sql` (with additions in `013_add_forum_post_media.sql`, `014_add_forum_reads.sql`, and `015_add_forum_post_edited_at.sql`):
-
-**`forum_categories`**
-
-| Column | Type | Description |
-|--------|------|-------------|
-| `id` | `INT UNSIGNED` | Primary key |
-| `title` | `VARCHAR(100)` | Category name |
-| `description` | `TEXT` | Optional description |
-| `sort_order` | `INT` | Display order |
-
-**`forum_forums`**
-
-| Column | Type | Description |
-|--------|------|-------------|
-| `id` | `INT UNSIGNED` | Primary key |
-| `category_id` | `INT UNSIGNED` | Parent category |
-| `title` | `VARCHAR(100)` | Forum name |
-| `description` | `TEXT` | Optional description |
-| `sort_order` | `INT` | Display order within category |
-
-**`forum_threads`**
-
-| Column | Type | Description |
-|--------|------|-------------|
-| `id` | `INT UNSIGNED` | Primary key |
-| `forum_id` | `INT UNSIGNED` | Parent forum |
-| `user_id` | `INT UNSIGNED` | Thread author |
-| `title` | `VARCHAR(200)` | Thread title |
-| `is_locked` | `TINYINT(1)` | Lock flag (1 = no new replies) |
-| `is_deleted` | `TINYINT(1)` | Soft-delete flag |
-| `created_at` | `DATETIME` | Creation timestamp |
-| `last_post_at` | `DATETIME` | Timestamp of most recent reply |
-| `reply_count` | `INT UNSIGNED` | Number of replies |
-
-**`forum_posts`**
-
-| Column | Type | Description |
-|--------|------|-------------|
-| `id` | `INT UNSIGNED` | Primary key |
-| `thread_id` | `INT UNSIGNED` | Parent thread |
-| `user_id` | `INT UNSIGNED` | Post author |
-| `content` | `TEXT` | Post body |
-| `media_id` | `INT UNSIGNED` | Optional attached image (from gallery) |
-| `is_deleted` | `TINYINT(1)` | Soft-delete flag |
-| `created_at` | `DATETIME` | Creation timestamp |
-| `edited_at` | `DATETIME` | Last-edited timestamp (NULL if never edited) |
-
-**`forum_reads`**
-
-| Column | Type | Description |
-|--------|------|-------------|
-| `user_id` | `INT UNSIGNED` | Reader (composite PK with `thread_id`) |
-| `thread_id` | `INT UNSIGNED` | Thread that was read |
-| `read_at` | `DATETIME` | When the thread was last opened |
