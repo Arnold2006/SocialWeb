@@ -38,12 +38,15 @@ $commentId = db_insert(
     [$blogPostId, (int)$user['id'], $content]
 );
 
-// Notify blog post owner (if not self-comment).
-// Use the comment ID as ref_id so the notification can link directly to the comment.
-notify_user((int)$blogPost['user_id'], 'blog_comment', (int)$user['id'], (int)$commentId);
-
-// Notify any @mentioned users
-notify_mentions($content, (int)$user['id'], (int)$blogPostId);
+// Notify blog post owner and any @mentioned users.
+// Wrapped in try/catch so a notification failure does not prevent the JSON
+// response from being returned (which would leave the comment input un-cleared).
+try {
+    notify_user((int)$blogPost['user_id'], 'blog_comment', (int)$user['id'], (int)$commentId);
+    notify_mentions($content, (int)$user['id'], (int)$blogPostId);
+} catch (\Throwable $e) {
+    error_log('blog add_comment notify failed: ' . $e->getMessage());
+}
 
 echo json_encode([
     'ok'           => true,
