@@ -100,7 +100,11 @@ $postId = db_insert(
 );
 
 // Notify any @mentioned users
-notify_mentions($content, (int)$user['id'], (int)$postId, 'mention_post');
+try {
+    notify_mentions($content, (int)$user['id'], (int)$postId, 'mention_post');
+} catch (\Throwable $e) {
+    error_log('create_post notify_mentions failed: ' . $e->getMessage());
+}
 
 // Create notification for followers/friends who should see this
 // (simplified: just invalidate cache)

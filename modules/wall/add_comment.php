@@ -41,11 +41,15 @@ $commentId = db_insert(
 // Bump the post to the top of the feed
 db_exec('UPDATE posts SET bumped_at = NOW() WHERE id = ?', [$postId]);
 
-// Notify post owner
-notify_user((int)$post['user_id'], 'comment', (int)$user['id'], (int)$postId);
-
-// Notify any @mentioned users
-notify_mentions($content, (int)$user['id'], (int)$postId);
+// Notify post owner and any @mentioned users.
+// Wrapped in try/catch so a notification failure does not prevent the JSON
+// response from being returned (which would leave the comment input un-cleared).
+try {
+    notify_user((int)$post['user_id'], 'comment', (int)$user['id'], (int)$postId);
+    notify_mentions($content, (int)$user['id'], (int)$postId);
+} catch (\Throwable $e) {
+    error_log('add_comment notify failed: ' . $e->getMessage());
+}
 
 cache_invalidate_wall();
 
