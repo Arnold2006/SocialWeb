@@ -52,14 +52,15 @@ $comments = db_query(
 $result = [];
 foreach ($comments as $comment) {
     $result[] = [
-        'id'          => (int)$comment['id'],
-        'user_id'     => (int)$comment['user_id'],
-        'username'    => $comment['username'],
-        'avatar'      => avatar_url($comment, 'small'),
-        'content'     => $comment['content'],
-        'edited'      => !empty($comment['updated_at']),
-        'time_ago'    => time_ago($comment['created_at']),
-        'profile_url' => SITE_URL . '/pages/profile.php?id=' . (int)$comment['user_id'],
+        'id'           => (int)$comment['id'],
+        'user_id'      => (int)$comment['user_id'],
+        'username'     => $comment['username'],
+        'avatar'       => avatar_url($comment, 'small'),
+        'content'      => $comment['content'],
+        'content_html' => nl2br(linkify(smilify($comment['content']))),
+        'edited'       => !empty($comment['updated_at']),
+        'time_ago'     => time_ago($comment['created_at']),
+        'profile_url'  => SITE_URL . '/pages/profile.php?id=' . (int)$comment['user_id'],
     ];
 }
 

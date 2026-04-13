@@ -237,7 +237,7 @@ include SITE_ROOT . '/includes/header.php';
                     <a href="<?= e(SITE_URL . '/pages/profile.php?id=' . (int)$c['user_id']) ?>"
                        class="video-comment-author"><?= e($c['username']) ?></a>
                     <span class="muted video-comment-time"><?= e(time_ago($c['created_at'])) ?></span>
-                    <p class="video-comment-text"><?= e($c['content']) ?></p>
+                    <p class="video-comment-text"><?= nl2br(linkify(smilify($c['content']))) ?></p>
                 </div>
             </div>
             <?php endforeach; ?>

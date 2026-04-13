@@ -240,16 +240,17 @@ function getCurrentUserId() {
  * Build the inner HTML for a comment item body.
  * Includes an Edit button if userId matches the current user.
  */
-function buildCommentBodyHtml(commentId, profileUrl, username, timeAgo, rawContent, userId, edited) {
+function buildCommentBodyHtml(commentId, profileUrl, username, timeAgo, rawContent, userId, edited, contentHtml) {
     const currentUserId = getCurrentUserId();
     const editedBadge   = edited ? '<span class="comment-edited">(edited)</span>' : '';
     const editBtn       = (userId && userId === currentUserId)
         ? `<button type="button" class="comment-edit-btn btn btn-xs btn-secondary" data-comment-id="${parseInt(commentId, 10)}">Edit</button>`
         : '';
+    const displayHtml   = contentHtml || linkifyHtml(smilifyText(rawContent));
     return `<a href="${escapeHtml(profileUrl)}" class="comment-author">${escapeHtml(username)}</a>` +
         `<span class="comment-time">${escapeHtml(timeAgo)}</span>` +
         editedBadge + editBtn +
-        `<p class="comment-text" data-raw="${escapeHtml(rawContent)}">${linkifyHtml(smilifyText(rawContent))}</p>`;
+        `<p class="comment-text" data-raw="${escapeHtml(rawContent)}">${displayHtml}</p>`;
 }
 
 // ── AJAX post creation ────────────────────────────────────────────────────────
@@ -391,10 +392,7 @@ document.addEventListener('submit', async (e) => {
                              class="avatar avatar-small" width="28" height="28" loading="lazy">
                     </a>
                     <div class="comment-body">
-                        ${buildCommentBodyHtml(result.comment_id, result.profile_url, result.username, result.time_ago, result.content, currentUserId, false)}
-                    </div>
-                </div>`;
-                const commentForm = section.querySelector('.comment-form');
+                        ${buildCommentBodyHtml(result.comment_id, result.profile_url, result.username, result.time_ago, result.content, currentUserId, false, result.content_html)}
                 if (commentForm) {
                     commentForm.insertAdjacentHTML('beforebegin', commentHtml);
                 } else {
@@ -450,7 +448,7 @@ document.addEventListener('click', async (e) => {
                              class="avatar avatar-small" width="28" height="28" loading="lazy">
                     </a>
                     <div class="comment-body">
-                        ${buildCommentBodyHtml(c.id, c.profile_url, c.username, c.time_ago, c.content, c.user_id, !!c.edited)}
+                        ${buildCommentBodyHtml(c.id, c.profile_url, c.username, c.time_ago, c.content, c.user_id, !!c.edited, c.content_html)}
                     </div>
                 </div>`).join('');
 
@@ -501,10 +499,7 @@ document.addEventListener('submit', async (e) => {
                              class="avatar avatar-small" width="28" height="28" loading="lazy">
                     </a>
                     <div class="comment-body">
-                        ${buildCommentBodyHtml(result.comment_id, result.profile_url, result.username, result.time_ago, result.content, currentUserId, false)}
-                    </div>
-                </div>`;
-                const commentForm = section.querySelector('.blog-comment-form');
+                        ${buildCommentBodyHtml(result.comment_id, result.profile_url, result.username, result.time_ago, result.content, currentUserId, false, result.content_html)}
                 if (commentForm) {
                     commentForm.insertAdjacentHTML('beforebegin', commentHtml);
                 } else {
@@ -560,7 +555,7 @@ document.addEventListener('click', async (e) => {
                              class="avatar avatar-small" width="28" height="28" loading="lazy">
                     </a>
                     <div class="comment-body">
-                        ${buildCommentBodyHtml(c.id, c.profile_url, c.username, c.time_ago, c.content, c.user_id, !!c.edited)}
+                        ${buildCommentBodyHtml(c.id, c.profile_url, c.username, c.time_ago, c.content, c.user_id, !!c.edited, c.content_html)}
                     </div>
                 </div>`).join('');
 
@@ -654,7 +649,7 @@ document.addEventListener('click', async (e) => {
                 if (result.ok) {
                     // Update the raw content and rendered text
                     textEl.dataset.raw   = result.content;
-                    textEl.innerHTML     = linkifyHtml(smilifyText(result.content));
+                    textEl.innerHTML     = result.content_html || linkifyHtml(smilifyText(result.content));
                     textEl.style.display = '';
                     editBtn.style.display = '';
 

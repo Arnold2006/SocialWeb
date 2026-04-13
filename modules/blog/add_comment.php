@@ -46,11 +46,12 @@ notify_user((int)$blogPost['user_id'], 'blog_comment', (int)$user['id'], (int)$c
 notify_mentions($content, (int)$user['id'], (int)$blogPostId);
 
 echo json_encode([
-    'ok'          => true,
-    'comment_id'  => (int)$commentId,
-    'username'    => $user['username'],
-    'avatar'      => avatar_url($user, 'small'),
-    'content'     => $content,
-    'time_ago'    => 'just now',
-    'profile_url' => SITE_URL . '/pages/profile.php?id=' . (int)$user['id'],
+    'ok'           => true,
+    'comment_id'   => (int)$commentId,
+    'username'     => $user['username'],
+    'avatar'       => avatar_url($user, 'small'),
+    'content'      => $content,
+    'content_html' => nl2br(linkify(smilify($content))),
+    'time_ago'     => 'just now',
+    'profile_url'  => SITE_URL . '/pages/profile.php?id=' . (int)$user['id'],
 ]);

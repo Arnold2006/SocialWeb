@@ -135,7 +135,7 @@
                     '<div class="video-comment-body">' +
                         '<a href="' + escapeHtml(data.profile_url) + '" class="video-comment-author">' + escapeHtml(data.username) + '</a>' +
                         '<span class="muted video-comment-time">just now</span>' +
-                        '<p class="video-comment-text">' + escapeHtml(data.content) + '</p>' +
+                        '<p class="video-comment-text">' + (data.content_html || escapeHtml(data.content)) + '</p>' +
                     '</div>';
                 commentsList.appendChild(item);
 
