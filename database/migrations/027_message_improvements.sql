@@ -4,7 +4,7 @@
 ALTER TABLE `messages`
     MODIFY COLUMN `receiver_id` INT UNSIGNED DEFAULT NULL;
 
--- thread_id points to the root message (id) of a reply chain; NULL = root / standalone
+-- thread_id points to the root message (id) of a reply chain (NULL = root / standalone)
 ALTER TABLE `messages`
     ADD COLUMN `thread_id` INT UNSIGNED DEFAULT NULL AFTER `id`,
     ADD KEY    `idx_messages_thread_id` (`thread_id`);
