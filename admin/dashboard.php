@@ -27,7 +27,7 @@ $stats = [
     'posts'    => (int) db_val('SELECT COUNT(*) FROM posts WHERE is_deleted = 0'),
     'media'    => (int) db_val('SELECT COUNT(*) FROM media WHERE is_deleted = 0'),
     'invites'  => (int) db_val('SELECT COUNT(*) FROM invites WHERE is_disabled = 0'),
-    'messages' => (int) db_val('SELECT COUNT(*) FROM messages'),
+    'messages' => (int) db_val('SELECT COUNT(*) FROM messages WHERE is_draft = 0'),
     'banned'   => (int) db_val('SELECT COUNT(*) FROM users WHERE is_banned = 1'),
 ];
 
