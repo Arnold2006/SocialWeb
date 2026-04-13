@@ -164,7 +164,9 @@ function notify_mentions(string $content, int $fromUserId, int $refId): void
     );
 
     foreach ($rows as $row) {
-        notify_user((int)$row['id'], 'mention', $fromUserId, $refId);
+        if ((int)$row['id'] !== $fromUserId) {
+            notify_user((int)$row['id'], 'mention', $fromUserId, $refId);
+        }
     }
 }
 
