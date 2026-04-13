@@ -94,10 +94,13 @@ if (!empty($_FILES['media']['name'])) {
     }
 }
 
-db_insert(
+$postId = db_insert(
     'INSERT INTO posts (user_id, content, media_id) VALUES (?, ?, ?)',
     [(int)$user['id'], $content, $mediaId]
 );
+
+// Notify any @mentioned users
+notify_mentions($content, (int)$user['id'], (int)$postId, 'mention_post');
 
 // Create notification for followers/friends who should see this
 // (simplified: just invalidate cache)
