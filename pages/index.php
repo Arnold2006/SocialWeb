@@ -25,7 +25,8 @@ $user      = current_user();
 $plugins   = plugins_load();
 
 // Fetch wall posts with caching (always load the first page of 10)
-$cacheKey   = 'wall_feed_page_1';
+// Cache key is per-user so that ownership-based controls (Move, Delete, Edit) are never shared.
+$cacheKey   = 'wall_feed_page_1_u' . (int)$user['id'];
 $cachedFeed = cache_get($cacheKey);
 
 include SITE_ROOT . '/includes/header.php';
