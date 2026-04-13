@@ -113,10 +113,15 @@
         }
 
         if (msg.image_url) {
-            bubble += '<a href="' + esc(msg.image_url) + '" target="_blank"'
-                + ' rel="noopener noreferrer" class="chat-img-link" download>'
+            bubble += '<div class="chat-img-wrap">'
+                + '<a href="#" class="chat-img-link" data-img-url="' + esc(msg.image_url) + '">'
                 + '<img src="' + esc(msg.image_url) + '" alt="Shared image"'
-                + ' class="chat-img-preview" loading="lazy"></a>';
+                + ' class="chat-img-preview" loading="lazy"></a>'
+                + (msg.is_mine
+                    ? '<button type="button" class="chat-img-delete-btn"'
+                      + ' aria-label="Delete image">&#x2715;</button>'
+                    : '')
+                + '</div>';
         }
 
         const avatarHtml = '<img src="' + esc(msg.sender_avatar_url) + '" alt=""'
@@ -128,6 +133,26 @@
             +   '<time class="chat-msg-time">' + esc(msg.time_ago) + '</time>'
             + '</div>'
             + (msg.is_mine ? avatarHtml : '');
+
+        // Wire up image lightbox click
+        const imgLink = div.querySelector('.chat-img-link');
+        if (imgLink) {
+            imgLink.addEventListener('click', e => {
+                e.preventDefault();
+                const url = imgLink.dataset.imgUrl;
+                if (url && typeof window.lightboxOpenUrl === 'function') {
+                    window.lightboxOpenUrl(url);
+                } else if (url) {
+                    window.open(url, '_blank', 'noopener,noreferrer');
+                }
+            });
+        }
+
+        // Wire up delete button (own messages only)
+        const delBtn = div.querySelector('.chat-img-delete-btn');
+        if (delBtn) {
+            delBtn.addEventListener('click', () => deleteMessage(msg.id, div));
+        }
 
         return div;
     }
@@ -482,6 +507,21 @@
             // Immediately refresh badge so the indicator clears as soon as messages are read
             pollBadge();
         } catch (_) { /* silent */ }
+    }
+
+    async function deleteMessage(msgId, el) {
+        if (!confirm('Delete this image?')) return;
+        try {
+            const data = await apiPost(siteUrl + '/chat/delete_message.php', { message_id: msgId });
+            if (data.ok) {
+                el.remove();
+            } else {
+                alert('Could not delete: ' + (data.error || 'Unknown error'));
+            }
+        } catch (err) {
+            console.error('deleteMessage failed:', err);
+            alert('Delete failed. Please try again.');
+        }
     }
 
     /* ── Contact list ────────────────────────────────────────────────────── */

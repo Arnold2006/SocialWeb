@@ -685,4 +685,26 @@
     // Public API: bind lightbox triggers in dynamically loaded content
     // (e.g. "Load More" posts).
     window.lightboxBindNew = bindNewTriggers;
+
+    /**
+     * Open the lightbox for an arbitrary image URL without a trigger element.
+     * Used by the chat widget so that clicking a shared photo opens the viewer
+     * instead of downloading the file.
+     *
+     * @param {string} url  Full URL of the image to display.
+     */
+    window.lightboxOpenUrl = function (url) {
+        if (!overlay) buildOverlay();
+        overlay.classList.remove('has-panel');
+        panel.style.display  = 'none';
+        videoEl.style.display = 'none';
+        imgEl.style.display   = '';
+        imgEl.style.opacity   = '0';
+        imgEl.src             = url;
+        imgEl.dataset.fullSrc = url;
+        imgEl.onload = function () { imgEl.style.opacity = '1'; };
+        overlay.style.display        = 'flex';
+        document.body.style.overflow = 'hidden';
+        overlay.focus();
+    };
 })();
