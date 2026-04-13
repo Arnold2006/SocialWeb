@@ -62,6 +62,8 @@
         currentUsers  = [];
         mentionStart  = -1;
         activeInput   = null;
+        lastQuery     = '';
+        clearTimeout(fetchTimer);
     }
 
     function getCaretCoords(input) {

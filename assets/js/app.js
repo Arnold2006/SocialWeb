@@ -408,7 +408,10 @@ document.addEventListener('submit', async (e) => {
                 const current = parseInt(commentBtn.textContent.replace(/\D/g, ''), 10) || 0;
                 commentBtn.textContent = '💬 ' + (current + 1);
             }
-            if (input) input.value = '';
+            if (input) {
+                input.value = '';
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+            }
         } else {
             alert('Error: ' + (result.error || 'Could not post comment'));
         }
@@ -517,7 +520,10 @@ document.addEventListener('submit', async (e) => {
             if (countEl) {
                 countEl.textContent = (parseInt(countEl.textContent, 10) || 0) + 1;
             }
-            if (input) input.value = '';
+            if (input) {
+                input.value = '';
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+            }
         } else {
             alert('Error: ' + (result.error || 'Could not post comment'));
         }
