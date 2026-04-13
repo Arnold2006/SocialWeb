@@ -155,6 +155,19 @@
         }
     }
 
+    /* ── Enforce required fields only for Send, not for Save Draft ─ */
+    if (composeForm) {
+        composeForm.querySelectorAll('button[name="action"]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const isSend = btn.value === 'send';
+                const toSel  = composeForm.querySelector('#compose-to');
+                const bodyta = composeForm.querySelector('#compose-body');
+                if (toSel)  toSel.required  = isSend;
+                if (bodyta) bodyta.required  = isSend;
+            });
+        });
+    }
+
     /* ── Quick-reply textarea auto-resize ───────────────────────── */
     document.querySelectorAll('.mail-quick-reply-input').forEach(ta => {
         ta.addEventListener('input', () => {

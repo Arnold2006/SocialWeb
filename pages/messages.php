@@ -50,10 +50,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $subject = '(no subject)';
         }
 
-        // Sending requires a valid, non-self recipient
+        // Sending requires a valid, non-self recipient and non-empty content
         if ($action === 'send') {
             if ($receiverId < 1 || $receiverId === $uid) {
                 flash_set('error', 'Please select a valid recipient.');
+                redirect(SITE_URL . '/pages/messages.php?compose=1');
+            }
+            if ($content === '') {
+                flash_set('error', 'Message body cannot be empty.');
                 redirect(SITE_URL . '/pages/messages.php?compose=1');
             }
             $receiver = db_row('SELECT id FROM users WHERE id = ? AND is_banned = 0', [$receiverId]);
@@ -211,8 +215,8 @@ if ($threadRootId > 0) {
                 s.id AS sender_id, s.username AS sender_username, s.avatar_path AS sender_avatar,
                 r.id AS receiver_id_col, r.username AS receiver_username, r.avatar_path AS receiver_avatar
          FROM messages m
-         JOIN users s ON s.id = m.sender_id
-         JOIN users r ON r.id = m.receiver_id
+         JOIN      users s ON s.id = m.sender_id
+         LEFT JOIN users r ON r.id = m.receiver_id
          WHERE COALESCE(m.thread_id, m.id) = ?
            AND m.is_draft = 0
            AND ((m.sender_id   = ? AND m.is_deleted_sender   = 0)
@@ -470,7 +474,7 @@ include SITE_ROOT . '/includes/header.php';
 
                 <div class="form-group">
                     <label for="compose-to">To</label>
-                    <select id="compose-to" name="receiver_id" required>
+                    <select id="compose-to" name="receiver_id">
                         <option value="">— Select recipient —</option>
                         <?php
                         // Determine pre-selected recipient
@@ -507,7 +511,7 @@ include SITE_ROOT . '/includes/header.php';
                 <div class="form-group">
                     <label for="compose-body">Message</label>
                     <textarea id="compose-body" name="content" rows="12" maxlength="5000"
-                              required placeholder="Write your message…"><?php
+                              placeholder="Write your message…"><?php
                         if ($editDraft) {
                             echo e($editDraft['content']);
                         } elseif ($replyToMsg) {
