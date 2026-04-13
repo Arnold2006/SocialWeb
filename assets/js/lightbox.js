@@ -514,7 +514,10 @@
                 alert('Error: ' + (data.error || 'Could not post comment'));
                 return;
             }
-            if (commentInput) commentInput.value = '';
+            if (commentInput) {
+                commentInput.value = '';
+                commentInput.dispatchEvent(new Event('input', { bubbles: true }));
+            }
             // Remove "no comments" placeholder if present
             const placeholder = commentsList ? commentsList.querySelector('.lightbox-empty-comments') : null;
             if (placeholder) placeholder.remove();

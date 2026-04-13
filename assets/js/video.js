@@ -119,7 +119,10 @@
                     alert('Error: ' + (data.error || 'Could not post comment'));
                     return;
                 }
-                if (input) input.value = '';
+                if (input) {
+                    input.value = '';
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                }
 
                 // Remove empty-state placeholder if present
                 var placeholder = commentsList.querySelector('.video-comments-empty');
