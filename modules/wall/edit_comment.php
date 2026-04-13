@@ -59,4 +59,4 @@ db_exec(
 
 cache_invalidate_wall();
 
-echo json_encode(['ok' => true, 'content' => $content]);
+echo json_encode(['ok' => true, 'content' => $content, 'content_html' => nl2br(linkify(smilify($content)))]);
