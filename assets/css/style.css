@@ -3038,6 +3038,11 @@ textarea { resize: vertical; min-height: 80px; }
     line-height: 1.4;
 }
 
+.chat-bubble-text a {
+    color: inherit;
+    text-decoration: underline;
+}
+
 .chat-msg--theirs .chat-bubble-text {
     color: var(--color-text);
 }
