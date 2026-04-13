@@ -3055,9 +3055,14 @@ textarea { resize: vertical; min-height: 80px; }
 }
 
 /* ── Inline image preview ─────────────────────────────────── */
+.chat-img-wrap {
+    position: relative;
+    display: inline-block;
+    margin-top: 0.3rem;
+}
+
 .chat-img-link {
     display: block;
-    margin-top: 0.3rem;
 }
 
 .chat-img-preview {
@@ -3073,6 +3078,34 @@ textarea { resize: vertical; min-height: 80px; }
 
 .chat-img-preview:hover {
     opacity: 0.88;
+}
+
+.chat-img-delete-btn {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border: none;
+    border-radius: var(--radius-full);
+    background: rgba(0, 0, 0, 0.65);
+    color: #fff;
+    font-size: 12px;
+    line-height: 1;
+    cursor: pointer;
+    transition: background var(--transition);
+}
+
+.chat-img-wrap:hover .chat-img-delete-btn {
+    display: flex;
+}
+
+.chat-img-delete-btn:hover {
+    background: rgba(200, 30, 30, 0.85);
 }
 
 /* ── Compose bar ─────────────────────────────────────────── */
