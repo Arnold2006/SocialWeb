@@ -381,6 +381,13 @@ document.addEventListener('submit', async (e) => {
         const result = await apiPost(baseUrl + '/modules/wall/add_comment.php', data);
 
         if (result.ok) {
+            // Clear the input immediately so it is always emptied when the server
+            // confirms the comment was saved, regardless of whether the DOM update
+            // below succeeds (e.g. when content_html contains a @mention link).
+            if (input) {
+                input.value = '';
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+            }
             // Insert new comment before the comment form so it appears above the input
             const section = document.getElementById('comments-' + postId);
             if (section) {
@@ -407,10 +414,6 @@ document.addEventListener('submit', async (e) => {
             if (commentBtn) {
                 const current = parseInt(commentBtn.textContent.replace(/\D/g, ''), 10) || 0;
                 commentBtn.textContent = '💬 ' + (current + 1);
-            }
-            if (input) {
-                input.value = '';
-                input.dispatchEvent(new Event('input', { bubbles: true }));
             }
         } else {
             alert('Error: ' + (result.error || 'Could not post comment'));
@@ -495,6 +498,12 @@ document.addEventListener('submit', async (e) => {
         const result = await apiPost(baseUrl + '/modules/blog/add_comment.php', data);
 
         if (result.ok) {
+            // Clear the input immediately on server confirmation (same defensive
+            // pattern as the wall comment handler above).
+            if (input) {
+                input.value = '';
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+            }
             const section = document.getElementById('blog-comments-' + blogPostId);
             if (section) {
                 const currentUserId = getCurrentUserId();
@@ -519,10 +528,6 @@ document.addEventListener('submit', async (e) => {
             const countEl = document.querySelector(`.btn-comment[data-blog-post-id="${blogPostId}"] .blog-comment-count`);
             if (countEl) {
                 countEl.textContent = (parseInt(countEl.textContent, 10) || 0) + 1;
-            }
-            if (input) {
-                input.value = '';
-                input.dispatchEvent(new Event('input', { bubbles: true }));
             }
         } else {
             alert('Error: ' + (result.error || 'Could not post comment'));
