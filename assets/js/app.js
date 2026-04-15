@@ -746,9 +746,13 @@ if (postImageInput && imagePreview) {
 const postComposer = document.querySelector('.post-composer');
 
 if (postComposer && postImageInput) {
+    // Use a counter to handle nested-element enter/leave events reliably
+    let dragDepth = 0;
+
     postComposer.addEventListener('dragenter', (e) => {
         if (e.dataTransfer.types.includes('Files')) {
             e.preventDefault();
+            dragDepth++;
             postComposer.classList.add('drag-over');
         }
     });
@@ -756,25 +760,33 @@ if (postComposer && postImageInput) {
     postComposer.addEventListener('dragover', (e) => {
         if (e.dataTransfer.types.includes('Files')) {
             e.preventDefault();
-            postComposer.classList.add('drag-over');
         }
     });
 
-    postComposer.addEventListener('dragleave', (e) => {
-        if (!postComposer.contains(e.relatedTarget)) {
+    postComposer.addEventListener('dragleave', () => {
+        dragDepth--;
+        if (dragDepth <= 0) {
+            dragDepth = 0;
             postComposer.classList.remove('drag-over');
         }
     });
 
     postComposer.addEventListener('drop', (e) => {
         e.preventDefault();
+        dragDepth = 0;
         postComposer.classList.remove('drag-over');
 
         const files = e.dataTransfer.files;
         if (!files || files.length === 0) return;
 
         const file = files[0];
-        if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) return;
+        if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) {
+            if (imagePreview) {
+                imagePreview.innerHTML =
+                    `<span class="drag-drop-error">⚠️ Only image and video files are supported.</span>`;
+            }
+            return;
+        }
 
         // Assign the dropped file to the existing file input via DataTransfer
         const dt = new DataTransfer();

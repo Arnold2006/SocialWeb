@@ -569,6 +569,11 @@ textarea { resize: vertical; min-height: 80px; }
     border: 1px solid var(--color-border);
 }
 
+.drag-drop-error {
+    font-size: 0.85rem;
+    color: var(--color-danger, #c0392b);
+}
+
 /* ── Post item ────────────────────────────────────────────────── */
 .post-item {
     background: var(--color-surface);
