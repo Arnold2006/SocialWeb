@@ -707,6 +707,29 @@ document.addEventListener('click', async (e) => {
 const postImageInput = document.getElementById('post-image');
 const imagePreview   = document.getElementById('image-preview');
 
+/**
+ * Show a preview for the given File in #image-preview.
+ * @param {File} file
+ */
+function showPostImagePreview(file) {
+    if (!imagePreview) return;
+    if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) {
+        imagePreview.innerHTML = '';
+        return;
+    }
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+        if (file.type.startsWith('image/')) {
+            imagePreview.innerHTML =
+                `<img src="${escapeHtml(ev.target.result)}" alt="Preview">`;
+        } else {
+            imagePreview.innerHTML =
+                `<span>🎥 ${escapeHtml(file.name)}</span>`;
+        }
+    };
+    reader.readAsDataURL(file);
+}
+
 if (postImageInput && imagePreview) {
     postImageInput.addEventListener('change', () => {
         const file = postImageInput.files[0];
@@ -714,23 +737,51 @@ if (postImageInput && imagePreview) {
             imagePreview.innerHTML = '';
             return;
         }
+        showPostImagePreview(file);
+    });
+}
 
-        if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) {
-            imagePreview.innerHTML = '';
-            return;
+// ── Drag-and-drop image onto the wall post composer ───────────────────────────
+
+const postComposer = document.querySelector('.post-composer');
+
+if (postComposer && postImageInput) {
+    postComposer.addEventListener('dragenter', (e) => {
+        if (e.dataTransfer.types.includes('Files')) {
+            e.preventDefault();
+            postComposer.classList.add('drag-over');
         }
+    });
 
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-            if (file.type.startsWith('image/')) {
-                imagePreview.innerHTML =
-                    `<img src="${escapeHtml(ev.target.result)}" alt="Preview">`;
-            } else {
-                imagePreview.innerHTML =
-                    `<span>🎥 ${escapeHtml(file.name)}</span>`;
-            }
-        };
-        reader.readAsDataURL(file);
+    postComposer.addEventListener('dragover', (e) => {
+        if (e.dataTransfer.types.includes('Files')) {
+            e.preventDefault();
+            postComposer.classList.add('drag-over');
+        }
+    });
+
+    postComposer.addEventListener('dragleave', (e) => {
+        if (!postComposer.contains(e.relatedTarget)) {
+            postComposer.classList.remove('drag-over');
+        }
+    });
+
+    postComposer.addEventListener('drop', (e) => {
+        e.preventDefault();
+        postComposer.classList.remove('drag-over');
+
+        const files = e.dataTransfer.files;
+        if (!files || files.length === 0) return;
+
+        const file = files[0];
+        if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) return;
+
+        // Assign the dropped file to the existing file input via DataTransfer
+        const dt = new DataTransfer();
+        dt.items.add(file);
+        postImageInput.files = dt.files;
+
+        showPostImagePreview(file);
     });
 }
 

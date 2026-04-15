@@ -548,6 +548,13 @@ textarea { resize: vertical; min-height: 80px; }
     margin-bottom: 0.75rem;
 }
 
+.post-composer.drag-over {
+    border-color: var(--color-accent);
+    background: color-mix(in srgb, var(--color-accent) 5%, transparent);
+    outline: 2px dashed var(--color-accent);
+    outline-offset: -2px;
+}
+
 .composer-actions {
     display: flex;
     align-items: center;
