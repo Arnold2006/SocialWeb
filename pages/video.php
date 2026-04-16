@@ -110,37 +110,11 @@ $offset  = ($page - 1) * $perPage;
 $_videoExcludeSql    = '';
 $_videoExcludeParams = [];
 
-try {
-    $_videoHiddenIds = [];
-    $_videoHiddenRows = db_query(
-        "SELECT user_id FROM user_privacy_settings
-         WHERE action_key = 'view_videos' AND value = 'only_me'"
-    );
-    foreach ($_videoHiddenRows as $_vr) {
-        if ((int) $_vr['user_id'] !== (int) $currentUser['id']) {
-            $_videoHiddenIds[] = (int) $_vr['user_id'];
-        }
-    }
-
-    $_videoFriendOnlyRows = db_query(
-        "SELECT user_id FROM user_privacy_settings
-         WHERE action_key = 'view_videos' AND value = 'friends_only'"
-    );
-    foreach ($_videoFriendOnlyRows as $_vfRow) {
-        $_vfOwner = (int) $_vfRow['user_id'];
-        if ($_vfOwner !== (int) $currentUser['id'] && !FriendshipService::areFriends((int) $currentUser['id'], $_vfOwner)) {
-            $_videoHiddenIds[] = $_vfOwner;
-        }
-    }
-    $_videoHiddenIds = array_values(array_unique($_videoHiddenIds));
-
-    if (!empty($_videoHiddenIds)) {
-        $_phs                = implode(',', array_fill(0, count($_videoHiddenIds), '?'));
-        $_videoExcludeSql    = "AND u.id NOT IN ($_phs)";
-        $_videoExcludeParams = $_videoHiddenIds;
-    }
-} catch (\Throwable $_vEx) {
-    // Privacy tables may not exist yet (pre-migration); show all videos
+$_videoHiddenIds = PrivacyService::blockedUsersByAction((int) $currentUser['id'], 'view_videos');
+if (!empty($_videoHiddenIds)) {
+    $_videoPhs           = implode(',', array_fill(0, count($_videoHiddenIds), '?'));
+    $_videoExcludeSql    = "AND u.id NOT IN ($_videoPhs)";
+    $_videoExcludeParams = $_videoHiddenIds;
 }
 
 $total  = (int) db_val(

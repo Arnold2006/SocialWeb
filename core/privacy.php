@@ -219,4 +219,44 @@ class PrivacyService
 
         return $result;
     }
+
+    /**
+     * Return an array of user IDs that should be hidden from $viewerId
+     * for a given $actionKey.  Accounts for 'only_me' and 'friends_only' settings.
+     *
+     * Safe to call before the migration has been applied (returns [] on error).
+     */
+    public static function blockedUsersByAction(int $viewerId, string $actionKey): array
+    {
+        try {
+            $hiddenIds = [];
+
+            $onlyMeRows = db_query(
+                "SELECT user_id FROM user_privacy_settings
+                 WHERE action_key = ? AND value = 'only_me'",
+                [$actionKey]
+            );
+            foreach ($onlyMeRows as $row) {
+                if ((int) $row['user_id'] !== $viewerId) {
+                    $hiddenIds[] = (int) $row['user_id'];
+                }
+            }
+
+            $friendsOnlyRows = db_query(
+                "SELECT user_id FROM user_privacy_settings
+                 WHERE action_key = ? AND value = 'friends_only'",
+                [$actionKey]
+            );
+            foreach ($friendsOnlyRows as $row) {
+                $ownerId = (int) $row['user_id'];
+                if ($ownerId !== $viewerId && !FriendshipService::areFriends($viewerId, $ownerId)) {
+                    $hiddenIds[] = $ownerId;
+                }
+            }
+
+            return array_values(array_unique($hiddenIds));
+        } catch (\Throwable $e) {
+            return [];
+        }
+    }
 }

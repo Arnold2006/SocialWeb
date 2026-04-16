@@ -112,19 +112,24 @@ if (!$isOwnProfile && !PrivacyService::canView((int) $currentUser['id'], $profil
 
 // Recent posts (fetch one extra to detect whether a "Load More" is needed)
 $profilePostsLimit = 10;
-$posts = db_query(
-    'SELECT p.*, u.username, u.avatar_path,
-            (SELECT COUNT(DISTINCT user_id) FROM likes WHERE post_id = p.id OR (p.media_id IS NOT NULL AND media_id = p.media_id)) AS like_count,
-            (SELECT COUNT(*) FROM comments WHERE post_id = p.id AND is_deleted = 0) +
-                CASE WHEN p.media_id IS NOT NULL THEN (SELECT COUNT(*) FROM comments WHERE media_id = p.media_id AND is_deleted = 0) ELSE 0 END AS comment_count,
-            (SELECT COUNT(*) FROM likes WHERE post_id = p.id AND user_id = ?) +
-                CASE WHEN p.media_id IS NOT NULL THEN (SELECT COUNT(*) FROM likes WHERE media_id = p.media_id AND user_id = ?) ELSE 0 END AS user_liked
-     FROM posts p JOIN users u ON u.id = p.user_id
-     WHERE p.user_id = ? AND p.is_deleted = 0
-     ORDER BY p.created_at DESC
-     LIMIT ' . ($profilePostsLimit + 1),
-    [(int)$currentUser['id'], (int)$currentUser['id'], $profileId]
-);
+$canViewWall       = $isOwnProfile || PrivacyService::canView((int) $currentUser['id'], $profileId, 'view_wall');
+$posts             = [];
+
+if ($canViewWall) {
+    $posts = db_query(
+        'SELECT p.*, u.username, u.avatar_path,
+                (SELECT COUNT(DISTINCT user_id) FROM likes WHERE post_id = p.id OR (p.media_id IS NOT NULL AND media_id = p.media_id)) AS like_count,
+                (SELECT COUNT(*) FROM comments WHERE post_id = p.id AND is_deleted = 0) +
+                    CASE WHEN p.media_id IS NOT NULL THEN (SELECT COUNT(*) FROM comments WHERE media_id = p.media_id AND is_deleted = 0) ELSE 0 END AS comment_count,
+                (SELECT COUNT(*) FROM likes WHERE post_id = p.id AND user_id = ?) +
+                    CASE WHEN p.media_id IS NOT NULL THEN (SELECT COUNT(*) FROM likes WHERE media_id = p.media_id AND user_id = ?) ELSE 0 END AS user_liked
+         FROM posts p JOIN users u ON u.id = p.user_id
+         WHERE p.user_id = ? AND p.is_deleted = 0
+         ORDER BY p.created_at DESC
+         LIMIT ' . ($profilePostsLimit + 1),
+        [(int)$currentUser['id'], (int)$currentUser['id'], $profileId]
+    );
+}
 $profilePostsHasMore = count($posts) > $profilePostsLimit;
 if ($profilePostsHasMore) {
     array_pop($posts);
@@ -436,7 +441,7 @@ include SITE_ROOT . '/includes/header.php';
           data-has-more="<?= $profilePostsHasMore ? '1' : '0' ?>"
           data-profile-id="<?= (int)$profileId ?>">
         <h2>Recent Posts</h2>
-        <?php if (!$isOwnProfile && !PrivacyService::canView((int) $currentUser['id'], $profileId, 'view_wall')): ?>
+        <?php if (!$canViewWall): ?>
         <p class="empty-state">This user's wall posts are private.</p>
         <?php elseif (empty($posts)): ?>
         <p class="empty-state">No posts yet.</p>

@@ -83,34 +83,14 @@ include SITE_ROOT . '/includes/header.php';
                 $offsetSql = 0;
 
                 // Build feed privacy filter (view_wall)
-                $_wallHiddenIds2 = [];
-                $_wallOnlyMeRows = db_query(
-                    "SELECT user_id FROM user_privacy_settings
-                     WHERE action_key = 'view_wall' AND value = 'only_me'"
-                );
-                foreach ($_wallOnlyMeRows as $_r) {
-                    if ((int) $_r['user_id'] !== (int) $user['id']) {
-                        $_wallHiddenIds2[] = (int) $_r['user_id'];
-                    }
-                }
-                $_wallFriendRows = db_query(
-                    "SELECT user_id FROM user_privacy_settings
-                     WHERE action_key = 'view_wall' AND value = 'friends_only'"
-                );
-                foreach ($_wallFriendRows as $_r) {
-                    $_wfId = (int) $_r['user_id'];
-                    if ($_wfId !== (int) $user['id'] && !FriendshipService::areFriends((int) $user['id'], $_wfId)) {
-                        $_wallHiddenIds2[] = $_wfId;
-                    }
-                }
-                $_wallHiddenIds2 = array_values(array_unique($_wallHiddenIds2));
+                $_feedHiddenUserIds = PrivacyService::blockedUsersByAction((int) $user['id'], 'view_wall');
 
-                $_feedExcludeSql2    = '';
-                $_feedExcludeParams2 = [];
-                if (!empty($_wallHiddenIds2)) {
-                    $_fph2               = implode(',', array_fill(0, count($_wallHiddenIds2), '?'));
-                    $_feedExcludeSql2    = "AND p.user_id NOT IN ($_fph2)";
-                    $_feedExcludeParams2 = $_wallHiddenIds2;
+                $_feedExcludeSql    = '';
+                $_feedExcludeParams = [];
+                if (!empty($_feedHiddenUserIds)) {
+                    $_feedPlaceholders  = implode(',', array_fill(0, count($_feedHiddenUserIds), '?'));
+                    $_feedExcludeSql    = "AND p.user_id NOT IN ($_feedPlaceholders)";
+                    $_feedExcludeParams = $_feedHiddenUserIds;
                 }
 
                 $posts = db_query(
@@ -122,10 +102,10 @@ include SITE_ROOT . '/includes/header.php';
                                 CASE WHEN p.media_id IS NOT NULL THEN (SELECT COUNT(*) FROM likes WHERE media_id = p.media_id AND user_id = ?) ELSE 0 END AS user_liked
                      FROM posts p
                      JOIN users u ON u.id = p.user_id
-                     WHERE p.is_deleted = 0 {$_feedExcludeSql2}
+                     WHERE p.is_deleted = 0 {$_feedExcludeSql}
                      ORDER BY COALESCE(p.bumped_at, p.created_at) DESC
                      LIMIT {$limitSql} OFFSET {$offsetSql}",
-                    array_merge([$user['id'], $user['id']], $_feedExcludeParams2)
+                    array_merge([$user['id'], $user['id']], $_feedExcludeParams)
                 );
 
                 foreach ($posts as $post) {
