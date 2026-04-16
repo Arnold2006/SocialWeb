@@ -20,10 +20,11 @@ require_once dirname(__DIR__) . '/includes/bootstrap.php';
 
 require_login();
 
-$pageTitle = 'Members';
-$search    = sanitise_string($_GET['search'] ?? '', 100);
-$page      = max(1, sanitise_int($_GET['page'] ?? 1));
-$perPage   = 24;
+$pageTitle   = 'Members';
+$currentUser = current_user();
+$search      = sanitise_string($_GET['search'] ?? '', 100);
+$page        = max(1, sanitise_int($_GET['page'] ?? 1));
+$perPage     = 24;
 
 $params = [];
 $where  = 'WHERE u.is_banned = 0';
@@ -32,6 +33,17 @@ if (!empty($search)) {
     $where    .= ' AND (u.username LIKE ? OR u.bio LIKE ?)';
     $params[]  = '%' . $search . '%';
     $params[]  = '%' . $search . '%';
+}
+
+// Apply privacy filter — exclude users with view_profile = 'only_me' (or friends_only, if not a friend)
+try {
+    $_privacyFilter = PrivacyService::visibleUsersFilter((int) $currentUser['id']);
+    if (!empty($_privacyFilter['sql'])) {
+        $where   .= ' ' . $_privacyFilter['sql'];
+        $params   = array_merge($params, $_privacyFilter['params']);
+    }
+} catch (\Throwable $e) {
+    // Privacy tables may not exist yet (pre-migration); ignore silently
 }
 
 $total  = (int) db_val("SELECT COUNT(*) FROM users u $where", $params);

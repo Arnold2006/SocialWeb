@@ -65,6 +65,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 flash_set('error', 'Recipient not found.');
                 redirect(SITE_URL . '/pages/messages.php?compose=1');
             }
+            // Privacy gate — send_message
+            if (!PrivacyService::canView($uid, $receiverId, 'send_message')) {
+                flash_set('error', 'This user does not accept messages from you.');
+                redirect(SITE_URL . '/pages/messages.php?compose=1');
+            }
         }
 
         // Validate thread ownership before attaching a reply to it

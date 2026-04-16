@@ -106,10 +106,22 @@ $page    = max(1, sanitise_int($_GET['page'] ?? 1));
 $perPage = 12;
 $offset  = ($page - 1) * $perPage;
 
+// Build privacy filter for video listings
+$_videoExcludeSql    = '';
+$_videoExcludeParams = [];
+
+$_videoHiddenIds = PrivacyService::blockedUsersByAction((int) $currentUser['id'], 'view_videos');
+if (!empty($_videoHiddenIds)) {
+    $_videoPhs           = implode(',', array_fill(0, count($_videoHiddenIds), '?'));
+    $_videoExcludeSql    = "AND u.id NOT IN ($_videoPhs)";
+    $_videoExcludeParams = $_videoHiddenIds;
+}
+
 $total  = (int) db_val(
     "SELECT COUNT(*) FROM media m
      JOIN users u ON u.id = m.user_id
-     WHERE m.type = 'video' AND m.is_deleted = 0 AND u.is_banned = 0"
+     WHERE m.type = 'video' AND m.is_deleted = 0 AND u.is_banned = 0 {$_videoExcludeSql}",
+    $_videoExcludeParams
 );
 $pages  = max(1, (int) ceil($total / $perPage));
 
@@ -122,9 +134,10 @@ $videos = db_query(
             (SELECT COUNT(*) FROM comments WHERE media_id = m.id AND is_deleted = 0) AS comment_count
      FROM media m
      JOIN users u ON u.id = m.user_id
-     WHERE m.type = 'video' AND m.is_deleted = 0 AND u.is_banned = 0
+     WHERE m.type = 'video' AND m.is_deleted = 0 AND u.is_banned = 0 {$_videoExcludeSql}
      ORDER BY m.created_at DESC
-     LIMIT {$limitSql} OFFSET {$offsetSql}"
+     LIMIT {$limitSql} OFFSET {$offsetSql}",
+    $_videoExcludeParams
 );
 
 include SITE_ROOT . '/includes/header.php';

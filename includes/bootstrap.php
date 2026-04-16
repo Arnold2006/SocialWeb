@@ -101,6 +101,7 @@ require_once APP_ROOT . '/core/media_processor.php';
 require_once APP_ROOT . '/core/RequestValidator.php';
 require_once APP_ROOT . '/core/plugin_loader.php';
 require_once APP_ROOT . '/includes/functions.php';
+require_once APP_ROOT . '/core/privacy.php';
 
 // ── Session ────────────────────────────────────────────────────────────────────
 session_start_secure();

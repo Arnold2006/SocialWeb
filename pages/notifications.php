@@ -150,6 +150,18 @@ include SITE_ROOT . '/includes/header.php';
                 <a href="<?= e(SITE_URL . '/pages/index.php#post-' . (int)$n['ref_id']) ?>">View post</a>
                 <?php endif; ?>
                 <?php break;
+
+                case 'friend_request': ?>
+                <p><strong><?= e($n['from_username'] ?? 'Someone') ?></strong> sent you a friend request.</p>
+                <a href="<?= e(SITE_URL . '/pages/friends.php') ?>">View requests</a>
+                <?php break;
+
+                case 'friend_accept': ?>
+                <p><strong><?= e($n['from_username'] ?? 'Someone') ?></strong> accepted your friend request.</p>
+                <?php if ($n['from_user_id']): ?>
+                <a href="<?= e(SITE_URL . '/pages/profile.php?id=' . (int)$n['from_user_id']) ?>">View profile</a>
+                <?php endif; ?>
+                <?php break;
             endswitch; ?>
         </div>
         <time class="notif-time"><?= e(time_ago($n['created_at'])) ?></time>

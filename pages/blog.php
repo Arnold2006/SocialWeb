@@ -41,6 +41,12 @@ if (!$blogOwner) {
     redirect(SITE_URL . '/pages/members.php');
 }
 
+// Privacy gate — view_blog
+if (!$isOwn && !PrivacyService::canView((int) $currentUser['id'], $blogOwnerId, 'view_blog')) {
+    flash_set('error', 'This user\'s blog is private.');
+    redirect(SITE_URL . '/pages/profile.php?id=' . $blogOwnerId);
+}
+
 // Load blog posts (newest first, paginated)
 $page    = max(1, sanitise_int($_GET['page'] ?? 1));
 $perPage = 10;

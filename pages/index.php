@@ -82,6 +82,17 @@ include SITE_ROOT . '/includes/header.php';
                 $limitSql  = (int) $postsPerPage;
                 $offsetSql = 0;
 
+                // Build feed privacy filter (view_wall)
+                $_feedHiddenUserIds = PrivacyService::blockedUsersByAction((int) $user['id'], 'view_wall');
+
+                $_feedExcludeSql    = '';
+                $_feedExcludeParams = [];
+                if (!empty($_feedHiddenUserIds)) {
+                    $_feedPlaceholders  = implode(',', array_fill(0, count($_feedHiddenUserIds), '?'));
+                    $_feedExcludeSql    = "AND p.user_id NOT IN ($_feedPlaceholders)";
+                    $_feedExcludeParams = $_feedHiddenUserIds;
+                }
+
                 $posts = db_query(
                     "SELECT p.*, u.username, u.avatar_path,
                             (SELECT COUNT(DISTINCT user_id) FROM likes WHERE post_id = p.id OR (p.media_id IS NOT NULL AND media_id = p.media_id)) AS like_count,
@@ -91,10 +102,10 @@ include SITE_ROOT . '/includes/header.php';
                                 CASE WHEN p.media_id IS NOT NULL THEN (SELECT COUNT(*) FROM likes WHERE media_id = p.media_id AND user_id = ?) ELSE 0 END AS user_liked
                      FROM posts p
                      JOIN users u ON u.id = p.user_id
-                     WHERE p.is_deleted = 0
+                     WHERE p.is_deleted = 0 {$_feedExcludeSql}
                      ORDER BY COALESCE(p.bumped_at, p.created_at) DESC
                      LIMIT {$limitSql} OFFSET {$offsetSql}",
-                    [$user['id'], $user['id']]
+                    array_merge([$user['id'], $user['id']], $_feedExcludeParams)
                 );
 
                 foreach ($posts as $post) {
