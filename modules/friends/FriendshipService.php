@@ -136,7 +136,7 @@ class FriendshipService
     /**
      * Return the relationship status from $viewerId's perspective.
      *
-     * @return string 'none' | 'pending_sent' | 'pending_received' | 'friends'
+     * @return string 'none' | 'pending_sent' | 'pending_received' | 'friends' | 'declined_sent' | 'declined_by_me'
      */
     public static function getStatus(int $viewerId, int $profileId): string
     {
@@ -168,6 +168,14 @@ class FriendshipService
             return ((int) $row['requester_id'] === $viewerId)
                 ? 'pending_sent'
                 : 'pending_received';
+        }
+
+        if ($row['status'] === 'declined') {
+            // Viewer was the original requester — their request was declined
+            // Viewer was the addressee who declined — they can undecline
+            return ((int) $row['requester_id'] === $viewerId)
+                ? 'declined_sent'
+                : 'declined_by_me';
         }
 
         return 'none';

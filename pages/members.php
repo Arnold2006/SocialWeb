@@ -17,6 +17,7 @@
 
 declare(strict_types=1);
 require_once dirname(__DIR__) . '/includes/bootstrap.php';
+require_once SITE_ROOT . '/modules/friends/FriendshipService.php';
 
 require_login();
 
@@ -117,6 +118,9 @@ include SITE_ROOT . '/includes/header.php';
                 <a href="<?= e(SITE_URL . '/pages/profile.php?id=' . (int)$member['id']) ?>">Profile</a>
                 <a href="<?= e(SITE_URL . '/pages/gallery.php?user_id=' . (int)$member['id']) ?>">Gallery</a>
             </div>
+            <?php if ((int)$member['id'] !== (int)$currentUser['id']): ?>
+            <?php $profileId = (int)$member['id']; include SITE_ROOT . '/modules/friends/friend_button.php'; ?>
+            <?php endif; ?>
         </div>
     </div>
     <?php endforeach; ?>
