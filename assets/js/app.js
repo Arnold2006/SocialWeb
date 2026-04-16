@@ -1421,8 +1421,8 @@ if (avatarInput && cropContainer && cropCanvas) {
             const feed         = savedFeedId ? document.getElementById(savedFeedId) : null;
             const targetOffset = savedFeedOffset ? parseInt(savedFeedOffset, 10) : 0;
 
+            const BATCH_SIZE = feed ? parseInt(feed.dataset.offset || '10', 10) : 10;
             if (feed && targetOffset > BATCH_SIZE) {
-                const BATCH_SIZE = parseInt(feed.dataset.offset || '10', 10);
                 const baseUrl    = document.querySelector('meta[name="site-url"]')?.content || '';
                 let   offset     = BATCH_SIZE; // initial batch already rendered by PHP
 
