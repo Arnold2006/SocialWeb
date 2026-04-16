@@ -181,6 +181,7 @@ $_footerUser = current_user();
 
 <!-- JavaScript modules (vanilla JS, local only) -->
 <script src="<?= ASSETS_URL ?>/js/app.js"></script>
+<script src="<?= ASSETS_URL ?>/js/friends.js"></script>
 <script src="<?= ASSETS_URL ?>/js/shoutbox.js"></script>
 <script src="<?= ASSETS_URL ?>/js/lightbox.js"></script>
 <script src="<?= ASSETS_URL ?>/js/progressive_loader.js"></script>
