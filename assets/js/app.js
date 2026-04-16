@@ -1403,6 +1403,13 @@ if (avatarInput && cropContainer && cropCanvas) {
 
     if (!modal) return;
 
+    // Restore scroll position after a move redirect
+    const savedScroll = sessionStorage.getItem('moveMediaScrollY');
+    if (savedScroll !== null) {
+        window.scrollTo(0, parseInt(savedScroll, 10));
+        sessionStorage.removeItem('moveMediaScrollY');
+    }
+
     function openModal(mediaId) {
         mediaIdEl.value = mediaId;
         modal.style.display = 'flex';
@@ -1418,6 +1425,11 @@ if (avatarInput && cropContainer && cropCanvas) {
         const btn = e.target.closest('.move-media-btn');
         if (!btn) return;
         openModal(btn.dataset.mediaId);
+    });
+
+    const form = document.getElementById('move-media-form');
+    form && form.addEventListener('submit', () => {
+        sessionStorage.setItem('moveMediaScrollY', String(window.scrollY));
     });
 
     cancelBtn && cancelBtn.addEventListener('click', closeModal);
