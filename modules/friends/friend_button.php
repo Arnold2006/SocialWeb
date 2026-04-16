@@ -70,5 +70,16 @@ $_csrfToken     = csrf_token();
             data-csrf="<?= e($_csrfToken) ?>">
         Unfriend
     </button>
+
+<?php elseif ($_friendStatus === 'declined_sent'): ?>
+    <span class="btn btn-secondary btn-sm" style="opacity:.65;cursor:default">Request Declined</span>
+
+<?php elseif ($_friendStatus === 'declined_by_me'): ?>
+    <button class="btn btn-secondary btn-sm friend-btn"
+            data-action="cancel"
+            data-profile-id="<?= (int) $profileId ?>"
+            data-csrf="<?= e($_csrfToken) ?>">
+        Undecline
+    </button>
 <?php endif; ?>
 </div>
