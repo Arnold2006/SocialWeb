@@ -220,6 +220,7 @@ CREATE TABLE IF NOT EXISTS `albums` (
   `description` TEXT DEFAULT NULL,
   `cover_id`    INT UNSIGNED DEFAULT NULL,            -- media cover image id
   `cover_path`  VARCHAR(500) DEFAULT NULL,             -- cropped cover image URL path
+  `privacy`     ENUM('everybody','members','friends_only','only_me') NOT NULL DEFAULT 'members',
   `created_at`  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `is_deleted`  TINYINT(1) NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`),
