@@ -1403,11 +1403,73 @@ if (avatarInput && cropContainer && cropCanvas) {
 
     if (!modal) return;
 
-    // Restore scroll position after a move redirect
-    const savedScroll = sessionStorage.getItem('moveMediaScrollY');
+    // Restore scroll position after a move redirect.
+    // If the user had used "Load More" before moving, the dynamically-loaded
+    // posts won't be on the page yet — re-fetch those batches first, then
+    // scroll to the exact post that contained the moved media item.
+    const savedScroll     = sessionStorage.getItem('moveMediaScrollY');
+    const savedPostId     = sessionStorage.getItem('moveMediaPostId');
+    const savedFeedId     = sessionStorage.getItem('moveMediaFeedId');
+    const savedFeedOffset = sessionStorage.getItem('moveMediaFeedOffset');
+    sessionStorage.removeItem('moveMediaScrollY');
+    sessionStorage.removeItem('moveMediaPostId');
+    sessionStorage.removeItem('moveMediaFeedId');
+    sessionStorage.removeItem('moveMediaFeedOffset');
+
     if (savedScroll !== null) {
-        window.scrollTo(0, parseInt(savedScroll, 10));
-        sessionStorage.removeItem('moveMediaScrollY');
+        (async () => {
+            const feed         = savedFeedId ? document.getElementById(savedFeedId) : null;
+            const targetOffset = savedFeedOffset ? parseInt(savedFeedOffset, 10) : 0;
+
+            if (feed && targetOffset > BATCH_SIZE) {
+                const BATCH_SIZE = parseInt(feed.dataset.offset || '10', 10);
+                const baseUrl    = document.querySelector('meta[name="site-url"]')?.content || '';
+                let   offset     = BATCH_SIZE; // initial batch already rendered by PHP
+
+                while (offset < targetOffset) {
+                    const endpoint = feed.id === 'post-feed'
+                        ? baseUrl + '/modules/wall/load_posts.php?offset=' + encodeURIComponent(offset)
+                        : baseUrl + '/modules/wall/load_profile_posts.php'
+                            + '?user_id=' + encodeURIComponent(feed.dataset.profileId || '')
+                            + '&offset='  + encodeURIComponent(offset);
+
+                    try {
+                        const resp   = await fetch(endpoint, {
+                            credentials: 'same-origin',
+                            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                        });
+                        const result = await resp.json();
+                        if (result.ok && result.html) {
+                            const countBefore = feed.querySelectorAll('.post-item').length;
+                            feed.insertAdjacentHTML('beforeend', result.html);
+                            offset += BATCH_SIZE;
+                            feed.dataset.loadedOffset = String(offset);
+
+                            const allPosts  = feed.querySelectorAll('.post-item');
+                            const newPosts  = Array.from(allPosts).slice(countBefore);
+                            const lazyObs   = typeof window.lazyObserveImages === 'function' ? window.lazyObserveImages : null;
+                            const lbBindNew = typeof window.lightboxBindNew    === 'function' ? window.lightboxBindNew    : null;
+                            newPosts.forEach(post => {
+                                if (lazyObs)   lazyObs(post);
+                                if (lbBindNew) lbBindNew(post);
+                            });
+                        } else {
+                            break;
+                        }
+                    } catch (err) {
+                        break;
+                    }
+                }
+            }
+
+            // Scroll to the post that held the moved media; fall back to raw scrollY
+            const targetEl = savedPostId ? document.getElementById(savedPostId) : null;
+            if (targetEl) {
+                targetEl.scrollIntoView({ block: 'start', behavior: 'instant' });
+            } else {
+                window.scrollTo(0, parseInt(savedScroll, 10));
+            }
+        })();
     }
 
     function openModal(mediaId) {
@@ -1430,6 +1492,20 @@ if (avatarInput && cropContainer && cropCanvas) {
     const form = document.getElementById('move-media-form');
     form && form.addEventListener('submit', () => {
         sessionStorage.setItem('moveMediaScrollY', String(window.scrollY));
+
+        // Remember which post held the media so we can scroll straight to it
+        const moveBtn  = document.querySelector('.move-media-btn[data-media-id="' + CSS.escape(mediaIdEl.value) + '"]');
+        const postItem = moveBtn ? moveBtn.closest('.post-item') : null;
+        if (postItem && postItem.id) {
+            sessionStorage.setItem('moveMediaPostId', postItem.id);
+        }
+
+        // Save the feed's loaded-offset so extra batches can be re-fetched after redirect
+        const feed = document.getElementById('post-feed') || document.getElementById('profile-post-feed');
+        if (feed && feed.dataset.loadedOffset) {
+            sessionStorage.setItem('moveMediaFeedId',     feed.id);
+            sessionStorage.setItem('moveMediaFeedOffset', feed.dataset.loadedOffset);
+        }
     });
 
     cancelBtn && cancelBtn.addEventListener('click', closeModal);
@@ -1877,7 +1953,10 @@ if (avatarInput && cropContainer && cropCanvas) {
 
     // Number of posts loaded per batch (must match PHP $limit in load_posts.php)
     const BATCH_SIZE = parseInt(feed.dataset.offset || '10', 10);
-    let offset   = BATCH_SIZE;
+    // Track the running loaded-offset on the element so initMoveMediaModal can
+    // read it on form-submit and restore the same state after a redirect.
+    // (Restore logic may overwrite this asynchronously before the first click.)
+    feed.dataset.loadedOffset = feed.dataset.loadedOffset || String(BATCH_SIZE);
     let loading  = false;
     let sentinel = null; // IntersectionObserver watching the last post
 
@@ -1929,6 +2008,7 @@ if (avatarInput && cropContainer && cropCanvas) {
         const baseUrl = document.querySelector('meta[name="site-url"]')?.content || '';
 
         try {
+            const offset = parseInt(feed.dataset.loadedOffset, 10);
             const resp   = await fetch(
                 baseUrl + '/modules/wall/load_posts.php?offset=' + encodeURIComponent(offset),
                 { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } }
@@ -1940,7 +2020,7 @@ if (avatarInput && cropContainer && cropCanvas) {
                 const countBefore = feed.querySelectorAll('.post-item').length;
 
                 feed.insertAdjacentHTML('beforeend', result.html);
-                offset += BATCH_SIZE;
+                feed.dataset.loadedOffset = String(offset + BATCH_SIZE);
 
                 // Initialise lazy images and lightbox triggers in the new posts only
                 const allPosts  = feed.querySelectorAll('.post-item');
@@ -1995,7 +2075,9 @@ if (avatarInput && cropContainer && cropCanvas) {
 
     const BATCH_SIZE = parseInt(feed.dataset.offset || '10', 10);
     const profileId  = feed.dataset.profileId || '';
-    let offset   = BATCH_SIZE;
+    // Track the running loaded-offset on the element so initMoveMediaModal can
+    // read it on form-submit and restore the same state after a redirect.
+    feed.dataset.loadedOffset = feed.dataset.loadedOffset || String(BATCH_SIZE);
     let loading  = false;
     let sentinel = null;
 
@@ -2041,6 +2123,7 @@ if (avatarInput && cropContainer && cropCanvas) {
         const baseUrl = document.querySelector('meta[name="site-url"]')?.content || '';
 
         try {
+            const offset = parseInt(feed.dataset.loadedOffset, 10);
             const resp   = await fetch(
                 baseUrl + '/modules/wall/load_profile_posts.php'
                     + '?user_id=' + encodeURIComponent(profileId)
@@ -2053,7 +2136,7 @@ if (avatarInput && cropContainer && cropCanvas) {
                 const countBefore = feed.querySelectorAll('.post-item').length;
 
                 feed.insertAdjacentHTML('beforeend', result.html);
-                offset += BATCH_SIZE;
+                feed.dataset.loadedOffset = String(offset + BATCH_SIZE);
 
                 const allPosts  = feed.querySelectorAll('.post-item');
                 const newPosts  = Array.from(allPosts).slice(countBefore);
