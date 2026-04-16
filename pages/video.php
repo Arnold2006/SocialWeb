@@ -106,10 +106,48 @@ $page    = max(1, sanitise_int($_GET['page'] ?? 1));
 $perPage = 12;
 $offset  = ($page - 1) * $perPage;
 
+// Build privacy filter for video listings
+$_videoExcludeSql    = '';
+$_videoExcludeParams = [];
+
+try {
+    $_videoHiddenIds = [];
+    $_videoHiddenRows = db_query(
+        "SELECT user_id FROM user_privacy_settings
+         WHERE action_key = 'view_videos' AND value = 'only_me'"
+    );
+    foreach ($_videoHiddenRows as $_vr) {
+        if ((int) $_vr['user_id'] !== (int) $currentUser['id']) {
+            $_videoHiddenIds[] = (int) $_vr['user_id'];
+        }
+    }
+
+    $_videoFriendOnlyRows = db_query(
+        "SELECT user_id FROM user_privacy_settings
+         WHERE action_key = 'view_videos' AND value = 'friends_only'"
+    );
+    foreach ($_videoFriendOnlyRows as $_vfRow) {
+        $_vfOwner = (int) $_vfRow['user_id'];
+        if ($_vfOwner !== (int) $currentUser['id'] && !FriendshipService::areFriends((int) $currentUser['id'], $_vfOwner)) {
+            $_videoHiddenIds[] = $_vfOwner;
+        }
+    }
+    $_videoHiddenIds = array_values(array_unique($_videoHiddenIds));
+
+    if (!empty($_videoHiddenIds)) {
+        $_phs                = implode(',', array_fill(0, count($_videoHiddenIds), '?'));
+        $_videoExcludeSql    = "AND u.id NOT IN ($_phs)";
+        $_videoExcludeParams = $_videoHiddenIds;
+    }
+} catch (\Throwable $_vEx) {
+    // Privacy tables may not exist yet (pre-migration); show all videos
+}
+
 $total  = (int) db_val(
     "SELECT COUNT(*) FROM media m
      JOIN users u ON u.id = m.user_id
-     WHERE m.type = 'video' AND m.is_deleted = 0 AND u.is_banned = 0"
+     WHERE m.type = 'video' AND m.is_deleted = 0 AND u.is_banned = 0 {$_videoExcludeSql}",
+    $_videoExcludeParams
 );
 $pages  = max(1, (int) ceil($total / $perPage));
 
@@ -122,9 +160,10 @@ $videos = db_query(
             (SELECT COUNT(*) FROM comments WHERE media_id = m.id AND is_deleted = 0) AS comment_count
      FROM media m
      JOIN users u ON u.id = m.user_id
-     WHERE m.type = 'video' AND m.is_deleted = 0 AND u.is_banned = 0
+     WHERE m.type = 'video' AND m.is_deleted = 0 AND u.is_banned = 0 {$_videoExcludeSql}
      ORDER BY m.created_at DESC
-     LIMIT {$limitSql} OFFSET {$offsetSql}"
+     LIMIT {$limitSql} OFFSET {$offsetSql}",
+    $_videoExcludeParams
 );
 
 include SITE_ROOT . '/includes/header.php';

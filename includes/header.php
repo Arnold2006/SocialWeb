@@ -26,6 +26,14 @@ $notifCount        = $user ? unread_notifications_count() : 0;
 $msgCount          = $user ? unread_messages_count() : 0;
 $forumCount        = $user ? unread_forum_count() : 0;
 $pendingMigrations = ($user && is_admin()) ? pending_migrations_count() : 0;
+$friendRequestCount = 0;
+if ($user) {
+    try {
+        $friendRequestCount = FriendshipService::countPendingRequests((int) $user['id']);
+    } catch (\Throwable $e) {
+        $friendRequestCount = 0;
+    }
+}
 $bannerImage = site_setting('banner_image');
 
 // Banner overlay settings
@@ -93,6 +101,12 @@ $siteTheme    = active_theme();
                    class="<?= (str_ends_with($_SERVER['PHP_SELF'] ?? '', 'index.php')) ? 'active' : '' ?>">Wall</a></li>
             <li><a href="<?= SITE_URL ?>/pages/members.php"
                    class="<?= (str_ends_with($_SERVER['PHP_SELF'] ?? '', 'members.php')) ? 'active' : '' ?>">Members</a></li>
+            <li>
+                <a href="<?= SITE_URL ?>/pages/friends.php"
+                   class="<?= (str_ends_with($_SERVER['PHP_SELF'] ?? '', 'friends.php')) ? 'active' : '' ?>">
+                    Friends<?= $friendRequestCount > 0 ? ' <span class="badge">' . $friendRequestCount . '</span>' : '' ?>
+                </a>
+            </li>
             <li><a href="<?= SITE_URL ?>/pages/profile.php?id=<?= (int)$user['id'] ?>"
                    class="<?= (str_ends_with($_SERVER['PHP_SELF'] ?? '', 'profile.php')) ? 'active' : '' ?>">My Profile</a></li>
             <li><a href="<?= SITE_URL ?>/pages/photos.php"

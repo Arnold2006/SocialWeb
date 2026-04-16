@@ -94,6 +94,22 @@ if ($profileUser === null) {
     redirect(SITE_URL . '/pages/members.php');
 }
 
+// Privacy gate — view_profile
+if (!$isOwnProfile && !PrivacyService::canView((int) $currentUser['id'], $profileId, 'view_profile')) {
+    $pageTitle = e($profileUser['username']) . "'s Profile";
+    include SITE_ROOT . '/includes/header.php';
+    echo '<div class="two-col-layout"><main class="col-right">';
+    echo '<div class="profile-layout">';
+    echo '<aside class="profile-sidebar">';
+    echo '<img src="' . e(avatar_url($profileUser, 'large')) . '" alt="' . e($profileUser['username']) . '" class="profile-avatar" width="200" height="200">';
+    echo '<h1 class="profile-username">' . e($profileUser['username']) . '</h1>';
+    echo '</aside>';
+    echo '<main class="profile-posts"><div class="alert alert-error">This profile is private.</div></main>';
+    echo '</div></div></main></div>';
+    include SITE_ROOT . '/includes/footer.php';
+    exit;
+}
+
 // Recent posts (fetch one extra to detect whether a "Load More" is needed)
 $profilePostsLimit = 10;
 $posts = db_query(
@@ -171,6 +187,14 @@ include SITE_ROOT . '/includes/header.php';
         <!-- Blog link -->
         <a href="<?= e(SITE_URL . '/pages/blog.php?user_id=' . $profileId) ?>"
            class="btn btn-sm btn-secondary profile-gallery-btn">View Blog</a>
+
+        <!-- Friend button (only when viewing someone else's profile) -->
+        <?php if (!$isOwnProfile): ?>
+        <?php include SITE_ROOT . '/modules/friends/friend_button.php'; ?>
+        <?php endif; ?>
+
+        <!-- Friends widget -->
+        <?php include SITE_ROOT . '/modules/friends/widget_friends.php'; ?>
 
         <!-- Plugin profile extensions -->
         <?php foreach ($plugins['profile_extensions'] as $ext): ?>
@@ -259,6 +283,39 @@ include SITE_ROOT . '/includes/header.php';
                     </div>
 
                     <button type="submit" class="btn btn-primary">Change Password</button>
+                </form>
+            </section>
+
+            <!-- Privacy settings -->
+            <section class="settings-section">
+                <h2>🔒 Privacy Settings</h2>
+                <form method="POST" action="<?= e(SITE_URL . '/modules/profile/save_privacy.php') ?>"
+                      class="settings-form">
+                    <?= csrf_field() ?>
+
+                    <?php
+                    $privacyLabels = [
+                        'view_profile' => 'Who can see my profile?',
+                        'view_wall'    => 'Who can see my wall posts?',
+                        'view_photos'  => 'Who can see my photos?',
+                        'view_videos'  => 'Who can see my videos?',
+                        'view_blog'    => 'Who can see my blog?',
+                        'send_message' => 'Who can send me messages?',
+                    ];
+                    foreach ($privacyLabels as $key => $label):
+                        $currentVal = PrivacyService::get((int) $currentUser['id'], $key);
+                    ?>
+                    <div class="form-group">
+                        <label for="privacy_<?= e($key) ?>"><?= e($label) ?></label>
+                        <select id="privacy_<?= e($key) ?>" name="<?= e($key) ?>">
+                            <?php foreach (PrivacyService::LABELS as $val => $display): ?>
+                            <option value="<?= e($val) ?>"<?= $currentVal === $val ? ' selected' : '' ?>><?= e($display) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <?php endforeach; ?>
+
+                    <button type="submit" class="btn btn-primary">Save Privacy Settings</button>
                 </form>
             </section>
 
@@ -379,7 +436,9 @@ include SITE_ROOT . '/includes/header.php';
           data-has-more="<?= $profilePostsHasMore ? '1' : '0' ?>"
           data-profile-id="<?= (int)$profileId ?>">
         <h2>Recent Posts</h2>
-        <?php if (empty($posts)): ?>
+        <?php if (!$isOwnProfile && !PrivacyService::canView((int) $currentUser['id'], $profileId, 'view_wall')): ?>
+        <p class="empty-state">This user's wall posts are private.</p>
+        <?php elseif (empty($posts)): ?>
         <p class="empty-state">No posts yet.</p>
         <?php else: ?>
             <?php foreach ($posts as $post): ?>

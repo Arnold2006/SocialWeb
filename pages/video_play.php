@@ -46,6 +46,12 @@ if (!$video) {
 
 $isOwn = ((int) $currentUser['id'] === (int) $video['owner_id']) || is_admin();
 
+// Privacy gate — view_videos
+if (!$isOwn && !PrivacyService::canView((int) $currentUser['id'], (int) $video['owner_id'], 'view_videos')) {
+    flash_set('error', 'This user\'s videos are private.');
+    redirect(SITE_URL . '/pages/profile.php?id=' . (int) $video['owner_id']);
+}
+
 // ── Like state ────────────────────────────────────────────────────────────────
 
 $likeCount = (int) db_val('SELECT COUNT(*) FROM likes WHERE media_id = ?', [$mediaId]);

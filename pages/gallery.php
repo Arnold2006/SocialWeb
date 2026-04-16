@@ -34,6 +34,12 @@ if (!$owner) {
     redirect(SITE_URL . '/pages/members.php');
 }
 
+// Privacy gate — view_photos
+if (!$isOwn && !PrivacyService::canView((int) $currentUser['id'], $galleryOwner, 'view_photos')) {
+    flash_set('error', 'This user\'s photos are private.');
+    redirect(SITE_URL . '/pages/profile.php?id=' . $galleryOwner);
+}
+
 $pageTitle = e($owner['username']) . "'s Gallery";
 
 // Helper: build gallery base URL
