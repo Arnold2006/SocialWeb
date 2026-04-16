@@ -177,6 +177,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwn) {
             redirect($cId ? $galleryBase . '&cat=' . $cId : $galleryBase);
             break;
 
+        case 'set_album_privacy':
+            $aId     = sanitise_int($_POST['album_id'] ?? 0);
+            $cId     = sanitise_int($_POST['category_id'] ?? 0);
+            $privacy = $_POST['privacy'] ?? '';
+            $allowed = ['everybody', 'members', 'friends_only', 'only_me'];
+            if ($aId && in_array($privacy, $allowed, true)) {
+                db_exec(
+                    'UPDATE albums SET privacy = ? WHERE id = ? AND user_id = ?',
+                    [$privacy, $aId, (int)$currentUser['id']]
+                );
+                flash_set('success', 'Album privacy updated.');
+            }
+            redirect($cId ? $galleryBase . '&cat=' . $cId : $galleryBase);
+            break;
+
         case 'upload_media':
             $isAjax     = !empty($_SERVER['HTTP_X_REQUESTED_WITH'])
                           && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
@@ -507,6 +522,22 @@ include SITE_ROOT . '/includes/header.php';
             if (!$currentAlbum) {
                 flash_set('error', 'Album not found.');
                 redirect($galleryBase);
+            }
+            // Per-album privacy enforcement
+            if (!$isOwn) {
+                $albumPrivacy = $currentAlbum['privacy'] ?? 'members';
+                // Note: require_login() at the top guarantees the viewer is an authenticated member,
+                // so both 'everybody' and 'members' levels grant access here.
+                $canViewAlbum = match($albumPrivacy) {
+                    'everybody', 'members' => true,
+                    'friends_only' => FriendshipService::areFriends((int)$currentUser['id'], $galleryOwner),
+                    'only_me'      => false,
+                    default        => true,
+                };
+                if (!$canViewAlbum) {
+                    flash_set('error', 'This album is private.');
+                    redirect($galleryBase);
+                }
             }
             if ($currentAlbum['category_id']) {
                 $currentCategory = db_row('SELECT * FROM album_categories WHERE id = ? AND is_deleted = 0', [(int)$currentAlbum['category_id']]);
@@ -876,6 +907,23 @@ include SITE_ROOT . '/includes/header.php';
                         <button type="submit" class="btn btn-danger btn-xs"
                                 data-confirm="Delete album?">Delete</button>
                     </form>
+                    <!-- Security / privacy -->
+                    <button type="button" class="btn btn-secondary btn-xs"
+                            data-toggle="security-album-card-form-<?= (int)$album['id'] ?>">Security</button>
+                    <div id="security-album-card-form-<?= (int)$album['id'] ?>" class="hidden inline-form-row">
+                        <form method="POST" class="inline-form">
+                            <?= csrf_field() ?>
+                            <input type="hidden" name="action" value="set_album_privacy">
+                            <input type="hidden" name="album_id" value="<?= (int)$album['id'] ?>">
+                            <input type="hidden" name="category_id" value="<?= $categoryId ?>">
+                            <select name="privacy">
+                                <?php foreach (PrivacyService::LABELS as $pVal => $pLabel): ?>
+                                <option value="<?= $pVal ?>"<?= ($album['privacy'] ?? 'members') === $pVal ? ' selected' : '' ?>><?= $pLabel ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                            <button type="submit" class="btn btn-primary btn-xs">Save</button>
+                        </form>
+                    </div>
                 </div>
                 <?php endif; ?>
             </div>
@@ -1036,6 +1084,22 @@ include SITE_ROOT . '/includes/header.php';
                     <button type="submit" class="btn btn-danger btn-xs"
                             data-confirm="Delete album?">Delete</button>
                 </form>
+                <!-- Security / privacy -->
+                <button type="button" class="btn btn-secondary btn-xs"
+                        data-toggle="security-uncat-album-form-<?= (int)$album['id'] ?>">Security</button>
+                <div id="security-uncat-album-form-<?= (int)$album['id'] ?>" class="hidden inline-form-row">
+                    <form method="POST" class="inline-form">
+                        <?= csrf_field() ?>
+                        <input type="hidden" name="action" value="set_album_privacy">
+                        <input type="hidden" name="album_id" value="<?= (int)$album['id'] ?>">
+                        <select name="privacy">
+                            <?php foreach (PrivacyService::LABELS as $pVal => $pLabel): ?>
+                            <option value="<?= $pVal ?>"<?= ($album['privacy'] ?? 'members') === $pVal ? ' selected' : '' ?>><?= $pLabel ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                        <button type="submit" class="btn btn-primary btn-xs">Save</button>
+                    </form>
+                </div>
             </div>
             <?php endif; ?>
         </div>

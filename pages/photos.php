@@ -25,6 +25,26 @@ require_login();
 $currentUser = current_user();
 $activeTab   = ($_GET['tab'] ?? 'members') === 'my_albums' ? 'my_albums' : 'members';
 
+// Handle POST actions on My Albums tab
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    csrf_verify();
+    $action = $_POST['action'] ?? '';
+
+    if ($action === 'set_album_privacy') {
+        $aId     = sanitise_int($_POST['album_id'] ?? 0);
+        $privacy = $_POST['privacy'] ?? '';
+        $allowed = ['everybody', 'members', 'friends_only', 'only_me'];
+        if ($aId && in_array($privacy, $allowed, true)) {
+            db_exec(
+                'UPDATE albums SET privacy = ? WHERE id = ? AND user_id = ?',
+                [$privacy, $aId, (int)$currentUser['id']]
+            );
+            flash_set('success', 'Album privacy updated.');
+        }
+        redirect(SITE_URL . '/pages/photos.php?tab=my_albums');
+    }
+}
+
 $pageTitle = 'Photos';
 
 /* ── Tab 1: Members ──────────────────────────────────────────── */
@@ -190,6 +210,24 @@ include SITE_ROOT . '/includes/header.php';
                 <h3 class="album-title"><?= e($album['title']) ?></h3>
                 <p class="album-count"><?= (int)$album['media_count'] ?> items</p>
             </a>
+            <div class="album-actions">
+                <!-- Security / privacy -->
+                <button type="button" class="btn btn-secondary btn-xs"
+                        data-toggle="security-myalbum-form-<?= (int)$album['id'] ?>">Security</button>
+                <div id="security-myalbum-form-<?= (int)$album['id'] ?>" class="hidden inline-form-row">
+                    <form method="POST" class="inline-form">
+                        <?= csrf_field() ?>
+                        <input type="hidden" name="action" value="set_album_privacy">
+                        <input type="hidden" name="album_id" value="<?= (int)$album['id'] ?>">
+                        <select name="privacy">
+                            <?php foreach (PrivacyService::LABELS as $pVal => $pLabel): ?>
+                            <option value="<?= $pVal ?>"<?= ($album['privacy'] ?? 'members') === $pVal ? ' selected' : '' ?>><?= $pLabel ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                        <button type="submit" class="btn btn-primary btn-xs">Save</button>
+                    </form>
+                </div>
+            </div>
         </div>
         <?php endforeach; ?>
     </div>
