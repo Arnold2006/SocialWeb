@@ -29,7 +29,6 @@ require_once SITE_ROOT . '/modules/friends/FriendshipService.php';
 
 $_friendStatus  = FriendshipService::getStatus((int) $currentUser['id'], (int) $profileId);
 $_csrfToken     = csrf_token();
-$_baseUrl       = SITE_URL . '/modules/friends/';
 ?>
 <div class="friend-actions" id="friend-actions-<?= (int) $profileId ?>">
 <?php if ($_friendStatus === 'none'): ?>
@@ -73,59 +72,3 @@ $_baseUrl       = SITE_URL . '/modules/friends/';
     </button>
 <?php endif; ?>
 </div>
-
-<script>
-(function () {
-    const container = document.getElementById('friend-actions-<?= (int) $profileId ?>');
-    if (!container) return;
-
-    const BASE = <?= json_encode($GLOBALS['SITE_URL'] ?? SITE_URL) ?> + '/modules/friends/';
-
-    container.addEventListener('click', function (e) {
-        const btn = e.target.closest('.friend-btn');
-        if (!btn) return;
-
-        const action    = btn.dataset.action;
-        const profileId = btn.dataset.profileId;
-        const csrf      = btn.dataset.csrf;
-
-        const endpoints = {
-            request: 'ajax_request.php',
-            accept:  'ajax_accept.php',
-            decline: 'ajax_decline.php',
-            cancel:  'ajax_cancel.php',
-        };
-
-        const bodies = {
-            request: 'addressee_id=' + profileId,
-            accept:  'requester_id=' + profileId,
-            decline: 'requester_id=' + profileId,
-            cancel:  'other_id='     + profileId,
-        };
-
-        if (!endpoints[action]) return;
-
-        btn.disabled = true;
-
-        fetch(BASE + endpoints[action], {
-            method:  'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body:    'csrf_token=' + encodeURIComponent(csrf) + '&' + bodies[action],
-        })
-        .then(r => r.json())
-        .then(data => {
-            if (data.success) {
-                // Reload the page section so the button state is fresh
-                window.location.reload();
-            } else {
-                alert(data.message || 'Action failed.');
-                btn.disabled = false;
-            }
-        })
-        .catch(() => {
-            alert('Network error. Please try again.');
-            btn.disabled = false;
-        });
-    });
-}());
-</script>
