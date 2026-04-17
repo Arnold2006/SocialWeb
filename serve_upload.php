@@ -99,7 +99,11 @@ $fileSize = filesize($filePath);
 header('Content-Type: ' . $mime);
 header('Cache-Control: private, max-age=86400');
 header('X-Content-Type-Options: nosniff');
-header('Content-Disposition: inline; filename="' . addslashes(basename($filePath)) . '"');
+// Sanitise the filename to ASCII-safe characters only (files are stored with
+// hash-based names so this never loses meaningful information) and embed it
+// in the Content-Disposition header without risk of header injection.
+$safeBasename = preg_replace('/[^\w.\-]/', '_', basename($filePath)) ?? 'file';
+header('Content-Disposition: inline; filename="' . $safeBasename . '"');
 
 // ── HTTP Range support (required for in-browser video seeking) ────────────────
 $rangeHeader = $_SERVER['HTTP_RANGE'] ?? '';
@@ -144,12 +148,10 @@ if ($fp === false) {
 
 fseek($fp, $start);
 
-$remaining = $length;
-while ($remaining > 0 && !feof($fp)) {
-    $chunk = min(8192, $remaining);
-    echo fread($fp, $chunk);
-    $remaining -= $chunk;
-}
-
+// stream_copy_to_stream respects the $length limit and avoids buffering the
+// entire range in memory.
+$out = fopen('php://output', 'wb');
+stream_copy_to_stream($fp, $out, $length);
+fclose($out);
 fclose($fp);
 exit;
