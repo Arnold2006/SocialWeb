@@ -1,16 +1,19 @@
 # Defence-in-depth: block direct HTTP access to this directory.
 #
-# On Apache with mod_rewrite the root .htaccess routes all requests for
-# uploads/ through serve_upload.php (which enforces authentication) before
-# they ever reach this directory, so this rule is normally never hit.
+# When mod_rewrite is active the root .htaccess routes every request for
+# uploads/ through serve_upload.php (which enforces authentication), so
+# the deny rules below are intentionally wrapped in <IfModule !mod_rewrite.c>
+# to avoid blocking those internally-rewritten requests.
 #
-# If mod_rewrite is unavailable or misconfigured this rule acts as a
-# last-resort guard and returns 403 for every direct file request.
+# The deny rules only activate when mod_rewrite is unavailable or disabled,
+# acting as a last-resort guard that returns 403 for direct file requests.
 
-<IfModule mod_authz_core.c>
-    Require all denied
-</IfModule>
-<IfModule !mod_authz_core.c>
-    Order deny,allow
-    Deny from all
+<IfModule !mod_rewrite.c>
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order deny,allow
+        Deny from all
+    </IfModule>
 </IfModule>
