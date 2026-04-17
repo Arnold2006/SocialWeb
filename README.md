@@ -118,6 +118,41 @@ sudo systemctl restart php-fpm
 
 7. **Invite users** — log in as admin, go to Admin → Invites, generate invite codes and share them.
 
+### Web server configuration
+
+#### Apache
+
+Enable `AllowOverride All` (or at least `AllowOverride FileInfo Options`) for the
+project directory so that the included `.htaccess` files are honoured:
+
+```apache
+<Directory /var/www/html/SocialWeb>
+    AllowOverride All
+</Directory>
+```
+
+The root `.htaccess` routes every request for a file inside `uploads/` through
+`serve_upload.php`, which checks that the visitor is logged in before serving
+the file.  The `uploads/.htaccess` blocks direct access as a fallback if
+`mod_rewrite` is unavailable.
+
+#### Nginx
+
+Nginx does not read `.htaccess` files.  Add the following `location` blocks to
+your server block instead:
+
+```nginx
+# Route all upload requests through the authenticated file server
+location ~ ^/uploads/(.+)$ {
+    rewrite ^/uploads/(.+)$ /serve_upload.php?file=$1 last;
+}
+
+# Deny any request that still reaches the uploads directory directly
+location ^~ /uploads/ {
+    deny all;
+}
+```
+
 ## File Structure
 
 ```
@@ -202,7 +237,7 @@ sudo systemctl restart php-fpm
 - Security headers: CSP, X-Frame-Options, X-Content-Type-Options
 - Rate limiting on login and registration
 - Media: MIME type validated with `finfo`, EXIF stripped via GD re-encoding
-- Uploads directory protected by `.htaccess`
+- Uploads directory protected by `.htaccess` — all requests to `uploads/` are routed through `serve_upload.php`, which enforces login before serving any file; direct access is also blocked by a deny-all `uploads/.htaccess` as defence-in-depth
 - HTML sanitiser (`sanitise_html()`) uses a DOM-based whitelist approach; distinguishes internal links (relative paths and same-host absolute URLs) from external links — only external links receive `target="_blank"` and `rel="noopener noreferrer nofollow"`
 - `linkify()` applies the same internal/external distinction when converting plain-text URLs to clickable links
 - Security logic is split into focused sub-modules under `core/security/`: `csrf.php`, `headers.php`, `rate_limiter.php`, `sanitizer.php`, `session.php`

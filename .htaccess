@@ -1,0 +1,19 @@
+# SocialWeb — root Apache configuration
+#
+# Requires: AllowOverride All (or at least AllowOverride FileInfo Options)
+# for the directory in which SocialWeb is installed.
+#
+# If you are using Nginx instead of Apache, add an equivalent location block
+# to your site configuration — see the Nginx section in README.md.
+
+Options -Indexes
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Route every request for a file inside uploads/ through the
+    # authenticated file-serving script so that unauthenticated visitors
+    # cannot access uploaded content by guessing the direct URL.
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^uploads/(.+)$ serve_upload.php?file=$1 [L,QSA]
+</IfModule>
