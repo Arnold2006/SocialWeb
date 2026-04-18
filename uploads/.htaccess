@@ -2,18 +2,16 @@
 #
 # When mod_rewrite is active the root .htaccess routes every request for
 # uploads/ through serve_upload.php (which enforces authentication), so
-# the deny rules below are intentionally wrapped in <IfModule !mod_rewrite.c>
-# to avoid blocking those internally-rewritten requests.
+# the deny rules below do not interfere with PHP's readfile()-based serving.
 #
-# The deny rules only activate when mod_rewrite is unavailable or disabled,
-# acting as a last-resort guard that returns 403 for direct file requests.
+# The deny is intentionally unconditional so that direct file access is
+# blocked even when mod_rewrite is loaded but RewriteEngine is disabled
+# at the server level.
 
-<IfModule !mod_rewrite.c>
-    <IfModule mod_authz_core.c>
-        Require all denied
-    </IfModule>
-    <IfModule !mod_authz_core.c>
-        Order deny,allow
-        Deny from all
-    </IfModule>
+<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+    Order deny,allow
+    Deny from all
 </IfModule>
