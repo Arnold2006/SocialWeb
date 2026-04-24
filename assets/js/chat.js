@@ -179,6 +179,7 @@
             + '<img src="' + esc(ws.avatarUrl) + '" alt="" class="chat-window-avatar"'
             + ' width="26" height="26" loading="lazy">'
             + '<span class="chat-window-name">' + esc(ws.username) + '</span>'
+            + '<button class="chat-win-delete-btn" aria-label="Delete chat" title="Delete chat">&#x1F5D1;</button>'
             + '<button class="chat-win-close-btn" aria-label="Close">&#x2715;</button>'
             + '</div>'
             + '<div class="chat-messages" role="log" aria-live="polite"'
@@ -209,6 +210,12 @@
             const uploadLabel   = div.querySelector('.chat-upload-label');
             chatCompose.insertBefore(createSmileyPicker(ws.elInput), uploadLabel);
         }
+
+        /* Delete chat button */
+        div.querySelector('.chat-win-delete-btn').addEventListener('click', e => {
+            e.stopPropagation();
+            deleteConversation(ws);
+        });
 
         /* Close button */
         div.querySelector('.chat-win-close-btn').addEventListener('click', e => {
@@ -530,6 +537,28 @@
             }
         } catch (err) {
             console.error('deleteMessage failed:', err);
+            alert('Delete failed. Please try again.');
+        }
+    }
+
+    async function deleteConversation(ws) {
+        if (!confirm('Delete this entire chat and all its images? This cannot be undone.')) return;
+        if (!ws.convId) {
+            // No conversation exists yet — just close the window
+            closeWindow(ws.userId);
+            return;
+        }
+        try {
+            const data = await apiPost(siteUrl + '/chat/delete_conversation.php', {
+                conversation_id: ws.convId,
+            });
+            if (data.ok) {
+                closeWindow(ws.userId);
+            } else {
+                alert('Could not delete chat: ' + (data.error || 'Unknown error'));
+            }
+        } catch (err) {
+            console.error('deleteConversation failed:', err);
             alert('Delete failed. Please try again.');
         }
     }
