@@ -60,18 +60,26 @@ $images = db_query(
 );
 
 foreach ($images as $row) {
-    if ($row['image_path'] === '') {
-        continue;
-    }
     $absPath = SITE_ROOT . '/' . $row['image_path'];
     if (is_file($absPath) && !unlink($absPath)) {
-        error_log('chat/delete_conversation.php: failed to unlink ' . $absPath);
+        error_log('chat/delete_conversation.php: failed to unlink ' . $row['image_path']);
     }
 }
 
-// Delete related rows, then the conversation itself
-db_exec('DELETE FROM chat_activity  WHERE conversation_id = ?', [$convId]);
-db_exec('DELETE FROM chat_messages  WHERE conversation_id = ?', [$convId]);
-db_exec('DELETE FROM conversations  WHERE id = ?',              [$convId]);
+// Delete related rows, then the conversation itself — wrapped in a transaction
+// so that a failure leaves no partial state.
+$pdo = db();
+$pdo->beginTransaction();
+try {
+    db_exec('DELETE FROM chat_activity  WHERE conversation_id = ?', [$convId]);
+    db_exec('DELETE FROM chat_messages  WHERE conversation_id = ?', [$convId]);
+    db_exec('DELETE FROM conversations  WHERE id = ?',              [$convId]);
+    $pdo->commit();
+} catch (Throwable $e) {
+    $pdo->rollBack();
+    error_log('chat/delete_conversation.php: transaction failed — ' . $e->getMessage());
+    echo json_encode(['ok' => false, 'error' => 'Failed to delete conversation']);
+    exit;
+}
 
 echo json_encode(['ok' => true]);
