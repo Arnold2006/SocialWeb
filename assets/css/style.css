@@ -3266,9 +3266,15 @@ body.chat-popup-page .chat-win-close-btn {
     display: none;
 }
 
+body.chat-popup-page .chat-bubble {
+    max-width: 55vw;
+}
+
 body.chat-popup-page .chat-img-preview {
-    width: 75%;
-    max-width: 75%;
+    width: 50vw;
+    max-width: 50vw;
+    max-height: none;
+    height: auto;
 }
 /* ── Blog ────────────────────────────────────────────────────── */
 
