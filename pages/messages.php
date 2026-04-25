@@ -167,6 +167,7 @@ $compose   = isset($_GET['compose']);
 $replyToId = sanitise_int($_GET['reply_to'] ?? 0);
 $msgId     = sanitise_int($_GET['msg'] ?? 0);
 $draftEdit = sanitise_int($_GET['draft'] ?? 0);
+$composeTo = sanitise_int($_GET['to'] ?? 0);   // pre-select recipient (e.g. from chat widget)
 $page      = max(1, sanitise_int($_GET['p'] ?? 1));
 $offset    = ($page - 1) * MAIL_PER_PAGE;
 
@@ -491,6 +492,12 @@ include SITE_ROOT . '/includes/header.php';
                             $preselect = ((int)$replyToMsg['sender_user_id'] !== $uid)
                                 ? (int)$replyToMsg['sender_user_id']
                                 : (int)$replyToMsg['receiver_id'];
+                        } elseif ($composeTo > 0) {
+                            // Validate that the target user is a valid, accessible recipient
+                            $validTo = array_filter($members, fn($m) => (int)$m['id'] === $composeTo);
+                            if ($validTo) {
+                                $preselect = $composeTo;
+                            }
                         }
                         foreach ($members as $m):
                             $sel = ($preselect === (int)$m['id']) ? ' selected' : '';

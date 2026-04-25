@@ -211,6 +211,13 @@
             chatCompose.insertBefore(createSmileyPicker(ws.elInput), uploadLabel);
         }
 
+        /* Double-click header → open conversation in a new tab */
+        div.querySelector('.chat-window-header').addEventListener('dblclick', e => {
+            /* Ignore double-clicks that land on the action buttons */
+            if (e.target.closest('.chat-win-delete-btn, .chat-win-close-btn')) return;
+            window.open(siteUrl + '/pages/messages.php?compose=1&to=' + encodeURIComponent(ws.userId), '_blank', 'noopener,noreferrer');
+        });
+
         /* Delete chat button */
         div.querySelector('.chat-win-delete-btn').addEventListener('click', e => {
             e.stopPropagation();
