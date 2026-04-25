@@ -179,6 +179,9 @@
             + '<img src="' + esc(ws.avatarUrl) + '" alt="" class="chat-window-avatar"'
             + ' width="26" height="26" loading="lazy">'
             + '<span class="chat-window-name">' + esc(ws.username) + '</span>'
+            + '<button class="chat-win-popout-btn" aria-label="Open in new window" title="Open in new window">'
+            + '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 19H5V5h7V3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3z"/></svg>'
+            + '</button>'
             + '<button class="chat-win-delete-btn" aria-label="Delete chat" title="Delete chat">&#x1F5D1;</button>'
             + '<button class="chat-win-close-btn" aria-label="Close">&#x2715;</button>'
             + '</div>'
@@ -211,11 +214,14 @@
             chatCompose.insertBefore(createSmileyPicker(ws.elInput), uploadLabel);
         }
 
-        /* Double-click header → open conversation in a new tab */
-        div.querySelector('.chat-window-header').addEventListener('dblclick', e => {
-            /* Ignore double-clicks that land on the action buttons */
-            if (e.target.closest('.chat-win-delete-btn, .chat-win-close-btn')) return;
-            window.open(siteUrl + '/pages/messages.php?compose=1&to=' + encodeURIComponent(ws.userId), '_blank', 'noopener,noreferrer');
+        /* Pop-out button → open conversation in a new tab as a standalone window */
+        div.querySelector('.chat-win-popout-btn').addEventListener('click', e => {
+            e.stopPropagation();
+            window.open(
+                siteUrl + '/chat/popup.php?to=' + encodeURIComponent(ws.userId),
+                '_blank',
+                'noopener,noreferrer,width=440,height=620,resizable=yes'
+            );
         });
 
         /* Delete chat button */
@@ -694,6 +700,16 @@
                 clearTimeout(searchTimer);
                 searchTimer = setTimeout(() => loadUsers(elSearch.value.trim()), 300);
             });
+        }
+
+        // Popup mode — auto-open specific conversation and skip sidebar/polling
+        const popupEl = document.getElementById('chat-popup-to');
+        if (popupEl) {
+            const toId     = parseInt(popupEl.dataset.userId, 10);
+            const toName   = popupEl.dataset.username  || '';
+            const toAvatar = popupEl.dataset.avatarUrl || '';
+            if (toId) openWindow(toId, toName, toAvatar);
+            return; // skip badge polling and window restoration in popup
         }
 
         // Background badge poll + immediate first run
