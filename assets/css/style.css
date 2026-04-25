@@ -621,7 +621,7 @@ textarea { resize: vertical; min-height: 80px; }
     margin: 0.75rem 0;
     border-radius: var(--radius-md);
     overflow: hidden;
-    max-width: 50%;
+    max-width: 75%;
 }
 
 .post-img {
