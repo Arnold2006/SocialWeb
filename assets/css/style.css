@@ -3265,6 +3265,11 @@ body.chat-popup-page .chat-win-popout-btn,
 body.chat-popup-page .chat-win-close-btn {
     display: none;
 }
+
+body.chat-popup-page .chat-img-preview {
+    width: 75%;
+    max-width: 75%;
+}
 /* ── Blog ────────────────────────────────────────────────────── */
 
 .card {
