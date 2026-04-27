@@ -37,17 +37,21 @@ foreach ($categories as &$cat) {
                 COUNT(DISTINCT p.id) AS post_count,
                 MAX(t.last_post_at)  AS last_post_at,
                 u.username           AS last_poster,
-                SUM(CASE WHEN ? > 0 AND t.id IS NOT NULL
-                              AND t.last_post_at > IFNULL(fr.read_at, ?)
-                         THEN 1 ELSE 0 END) AS unread_count
+                COUNT(DISTINCT CASE WHEN ? > 0 AND t.id IS NOT NULL
+                                         AND t.last_post_at > IFNULL(fr.read_at, ?)
+                                    THEN t.id END) AS unread_count
          FROM   forum_forums f
          LEFT   JOIN forum_threads t ON t.forum_id = f.id AND t.is_deleted = 0
          LEFT   JOIN forum_posts   p ON p.thread_id = t.id AND p.is_deleted = 0
          LEFT   JOIN (
-             SELECT thread_id, user_id
-             FROM   forum_posts
-             WHERE  is_deleted = 0
-             ORDER  BY created_at DESC
+             SELECT p1.thread_id, p1.user_id
+             FROM   forum_posts p1
+             INNER  JOIN (
+                 SELECT thread_id, MAX(id) AS max_id
+                 FROM   forum_posts
+                 WHERE  is_deleted = 0
+                 GROUP  BY thread_id
+             ) m ON m.thread_id = p1.thread_id AND m.max_id = p1.id
          ) lp ON lp.thread_id = t.id
          LEFT   JOIN users u ON u.id = lp.user_id
          LEFT   JOIN forum_reads fr ON fr.thread_id = t.id AND fr.user_id = ?
