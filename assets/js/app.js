@@ -352,7 +352,8 @@ document.addEventListener('click', async (e) => {
         return shown;
     }
 
-    let hoverTimer = null;
+    /** Per-button timers to avoid cross-button race conditions. */
+    const hoverTimers = new WeakMap();
 
     document.addEventListener('mouseenter', async (e) => {
         const btn = e.target.closest('.btn-like:not(.btn-like-blog), .btn-comment[data-post-id]');
@@ -365,8 +366,8 @@ document.addEventListener('click', async (e) => {
         const existing = btn.querySelector('.reaction-tooltip');
         if (existing) existing.remove();
 
-        clearTimeout(hoverTimer);
-        hoverTimer = setTimeout(async () => {
+        clearTimeout(hoverTimers.get(btn));
+        hoverTimers.set(btn, setTimeout(async () => {
             // Guard: button still hovered
             if (!btn.matches(':hover')) return;
 
@@ -398,13 +399,14 @@ document.addEventListener('click', async (e) => {
             } catch (_) {
                 // Silently ignore tooltip fetch errors
             }
-        }, 300);
+        }, 300));
     }, true);
 
     document.addEventListener('mouseleave', (e) => {
         const btn = e.target.closest('.btn-like:not(.btn-like-blog), .btn-comment[data-post-id]');
         if (!btn) return;
-        clearTimeout(hoverTimer);
+        clearTimeout(hoverTimers.get(btn));
+        hoverTimers.delete(btn);
         const tip = btn.querySelector('.reaction-tooltip');
         if (tip) tip.remove();
     }, true);

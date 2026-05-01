@@ -713,14 +713,14 @@ textarea { resize: vertical; min-height: 80px; }
     border-radius: var(--radius-md, 6px);
     padding: 0.45rem 0.7rem;
     font-size: 0.78rem;
-    white-space: nowrap;
-    max-width: 220px;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    white-space: normal;
+    max-width: 260px;
+    overflow-wrap: break-word;
     pointer-events: none;
     z-index: 200;
     box-shadow: var(--shadow-sm);
     line-height: 1.5;
+    text-align: center;
 }
 .reaction-tooltip::after {
     content: '';
