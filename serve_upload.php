@@ -85,6 +85,18 @@ $allowedMimeTypes = [
     'video/webm',
     'video/ogg',
     'video/x-matroska',
+    // Custom fonts uploaded for the site-name overlay
+    'font/woff2',
+    'font/woff',
+    'font/ttf',
+    'font/otf',
+    // Legacy MIME types reported by older libmagic / OS versions
+    'application/font-woff2',
+    'application/font-woff',
+    'application/x-font-woff',
+    'application/x-font-ttf',
+    'application/x-font-opentype',
+    'application/vnd.ms-opentype',
 ];
 
 if (!in_array($mime, $allowedMimeTypes, true)) {
