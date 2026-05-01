@@ -329,6 +329,87 @@ document.addEventListener('click', async (e) => {
     }
 });
 
+// ── Hover tooltips: who liked / who commented ────────────────────────────────
+
+(function () {
+    const baseUrl = () => document.querySelector('meta[name="site-url"]')?.content || '';
+
+    /** Build and return a tooltip element with the given text. */
+    function makeTooltip(text) {
+        const tip = document.createElement('div');
+        tip.className = 'reaction-tooltip';
+        tip.textContent = text;
+        return tip;
+    }
+
+    /** Format a list of usernames into a readable string. */
+    function formatNames(users, total) {
+        if (!users || users.length === 0) return null;
+        const shown = users.join(', ');
+        if (total > users.length) {
+            return shown + ' and ' + (total - users.length) + ' more';
+        }
+        return shown;
+    }
+
+    let hoverTimer = null;
+
+    document.addEventListener('mouseenter', async (e) => {
+        const btn = e.target.closest('.btn-like:not(.btn-like-blog), .btn-comment[data-post-id]');
+        if (!btn) return;
+
+        const postId = btn.dataset.postId;
+        if (!postId) return;
+
+        // Remove any existing tooltip on this button first
+        const existing = btn.querySelector('.reaction-tooltip');
+        if (existing) existing.remove();
+
+        clearTimeout(hoverTimer);
+        hoverTimer = setTimeout(async () => {
+            // Guard: button still hovered
+            if (!btn.matches(':hover')) return;
+
+            const isLike = btn.classList.contains('btn-like');
+            const endpoint = isLike
+                ? '/modules/wall/get_likers.php'
+                : '/modules/wall/get_commenters.php';
+
+            try {
+                const resp   = await fetch(
+                    baseUrl() + endpoint + '?post_id=' + encodeURIComponent(postId),
+                    { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } }
+                );
+                const result = await resp.json();
+
+                if (!result.ok || !result.users || result.users.length === 0) return;
+
+                // Only show if button is still hovered
+                if (!btn.matches(':hover')) return;
+
+                const text = formatNames(result.users, result.total);
+                if (!text) return;
+
+                // Remove any stale tooltip that may have been added concurrently
+                const stale = btn.querySelector('.reaction-tooltip');
+                if (stale) stale.remove();
+
+                btn.appendChild(makeTooltip(text));
+            } catch (_) {
+                // Silently ignore tooltip fetch errors
+            }
+        }, 300);
+    }, true);
+
+    document.addEventListener('mouseleave', (e) => {
+        const btn = e.target.closest('.btn-like:not(.btn-like-blog), .btn-comment[data-post-id]');
+        if (!btn) return;
+        clearTimeout(hoverTimer);
+        const tip = btn.querySelector('.reaction-tooltip');
+        if (tip) tip.remove();
+    }, true);
+}());
+
 // ── Blog post like button ─────────────────────────────────────────────────────
 
 document.addEventListener('click', async (e) => {

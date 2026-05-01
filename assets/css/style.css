@@ -695,10 +695,42 @@ textarea { resize: vertical; min-height: 80px; }
     cursor: pointer;
     font-size: 0.85rem;
     transition: all var(--transition);
+    position: relative;
 }
 .btn-like:hover  { border-color: var(--color-like); color: var(--color-like); }
 .btn-like.liked  { background: rgba(233,69,96,.12); border-color: var(--color-like); color: var(--color-like); }
 .btn-comment:hover { border-color: var(--color-info); color: var(--color-info); }
+
+/* ── Like / Comment hover tooltip ───────────────────────────── */
+.reaction-tooltip {
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--color-surface2, #2a2a2a);
+    color: var(--color-text, #e0e0e0);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md, 6px);
+    padding: 0.45rem 0.7rem;
+    font-size: 0.78rem;
+    white-space: nowrap;
+    max-width: 220px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    pointer-events: none;
+    z-index: 200;
+    box-shadow: var(--shadow-sm);
+    line-height: 1.5;
+}
+.reaction-tooltip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: var(--color-border);
+}
 
 /* ── Comments ─────────────────────────────────────────────────── */
 .comments-section {
