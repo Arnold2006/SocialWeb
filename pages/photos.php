@@ -192,9 +192,6 @@ include SITE_ROOT . '/includes/header.php';
              data-offset="<?= count($latestPhotos) ?>"
              data-has-more="<?= $latestHasMore ? '1' : '0' ?>">
             <?php foreach ($latestPhotos as $media):
-                $ownerUsername  = $media['username'];
-                $ownerAvatarUrl = avatar_url($media, 'small');
-                $galleryUrl     = SITE_URL . '/pages/gallery.php?user_id=' . (int)$media['user_id'];
                 include SITE_ROOT . '/modules/gallery/latest_photo_item.php';
             endforeach; ?>
         </div>
