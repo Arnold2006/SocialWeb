@@ -476,6 +476,31 @@
         /* intentionally empty — handled by initForumEditors() */
     }
 
+    /**
+     * Scan every .forum-post-content element for inline images wrapped in
+     * anchor tags (inserted by the rich-text editor upload button).  For each
+     * such anchor that is not already a lightbox trigger, add the
+     * 'lightbox-trigger' class and a data-src attribute so the lightbox knows
+     * which URL to display, then register the new triggers with the lightbox.
+     */
+    function initForumPostImages() {
+        document.querySelectorAll('.forum-post-content').forEach(function (content) {
+            content.querySelectorAll('a > img').forEach(function (img) {
+                var anchor = img.parentElement;
+                if (anchor.classList.contains('lightbox-trigger')) return;
+
+                anchor.classList.add('lightbox-trigger');
+                if (!anchor.dataset.src) {
+                    anchor.dataset.src = img.src;
+                }
+            });
+
+            if (typeof window.lightboxBindNew === 'function') {
+                window.lightboxBindNew(content);
+            }
+        });
+    }
+
     /* Init when DOM is ready */
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', function () {
@@ -483,12 +508,14 @@
             bindPickButtons();
             bindEditButtons();
             bindSmileyPickers();
+            initForumPostImages();
         });
     } else {
         initForumEditors();
         bindPickButtons();
         bindEditButtons();
         bindSmileyPickers();
+        initForumPostImages();
     }
 
 })();
