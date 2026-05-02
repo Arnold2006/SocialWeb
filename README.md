@@ -513,7 +513,7 @@ Users can connect with each other through a friend-request system.
 
 ### Database schema
 
-The friends system uses the `friendships` table created by migration `029_friends_privacy.sql`:
+The friends system uses the `friendships` table created by migration `029_friends_privacy.sql` (the same migration that creates the `user_privacy_settings` table for privacy controls):
 
 | Column | Type | Description |
 |--------|------|-------------|
@@ -554,7 +554,7 @@ Individual albums can have their own privacy level (set when creating or editing
 
 ### Database schema
 
-Privacy settings are stored in the `user_privacy_settings` table (migration `029_friends_privacy.sql`):
+Privacy settings are stored in the `user_privacy_settings` table, created alongside the `friendships` table by migration `029_friends_privacy.sql`:
 
 | Column | Type | Description |
 |--------|------|-------------|
@@ -562,7 +562,9 @@ Privacy settings are stored in the `user_privacy_settings` table (migration `029
 | `action_key` | `VARCHAR(64)` | One of the action keys above |
 | `value` | `ENUM(...)` | Chosen privacy level |
 
+Per-album privacy is added by migration `030_add_album_privacy.sql`, which adds a `privacy` column to the `albums` table.
 
+## Admin Panel
 
 The admin panel is accessible at `/admin/` and is restricted to users with the `admin` role.
 
