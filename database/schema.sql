@@ -87,18 +87,20 @@ CREATE TABLE IF NOT EXISTS `posts` (
 -- Table: comments
 -- --------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `comments` (
-  `id`           INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `post_id`      INT UNSIGNED DEFAULT NULL,             -- wall post (nullable; set for post comments)
-  `media_id`     INT UNSIGNED DEFAULT NULL,             -- album media item (nullable; set for media comments)
-  `blog_post_id` INT UNSIGNED DEFAULT NULL,             -- blog post (nullable; set for blog post comments)
-  `user_id`      INT UNSIGNED NOT NULL,
-  `content`      TEXT NOT NULL,
-  `created_at`   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `is_deleted`   TINYINT(1) NOT NULL DEFAULT 0,
+  `id`             INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `post_id`        INT UNSIGNED DEFAULT NULL,             -- wall post (nullable; set for post comments)
+  `media_id`       INT UNSIGNED DEFAULT NULL,             -- album media item (nullable; set for media comments)
+  `blog_post_id`   INT UNSIGNED DEFAULT NULL,             -- blog post (nullable; set for blog post comments)
+  `image_media_id` INT UNSIGNED DEFAULT NULL,             -- optional image attachment
+  `user_id`        INT UNSIGNED NOT NULL,
+  `content`        TEXT NOT NULL,
+  `created_at`     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `is_deleted`     TINYINT(1) NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`),
   KEY `idx_post_id` (`post_id`),
   KEY `idx_media_id` (`media_id`),
   KEY `idx_blog_post_id` (`blog_post_id`),
+  KEY `idx_comment_image_media` (`image_media_id`),
   KEY `idx_user_id` (`user_id`),
   CONSTRAINT `chk_comment_ref` CHECK (`post_id` IS NOT NULL OR `media_id` IS NOT NULL OR `blog_post_id` IS NOT NULL)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

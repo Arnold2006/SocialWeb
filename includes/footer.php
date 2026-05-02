@@ -179,6 +179,48 @@ $_footerUser = current_user();
     </div>
 </div>
 
+<!-- ── Comment Image Picker Modal ────────────────────────────── -->
+<div id="comment-image-picker-modal" class="crop-modal" style="display:none"
+     role="dialog" aria-modal="true" aria-label="Pick image for comment">
+    <div class="crop-modal-inner comment-picker-inner">
+        <h3>Add Image to Comment</h3>
+        <div class="comment-picker-tabs">
+            <button type="button" class="comment-picker-tab active" data-tab="upload">📁 Upload</button>
+            <button type="button" class="comment-picker-tab" data-tab="album">🎑 From Album</button>
+        </div>
+
+        <!-- Upload tab -->
+        <div class="comment-picker-panel" id="comment-picker-upload-panel">
+            <div id="comment-img-drop-zone" class="comment-img-drop-zone">
+                <p>Drag &amp; drop an image here, or</p>
+                <label class="btn btn-secondary btn-sm" for="comment-img-file-input">Choose File</label>
+                <input type="file" id="comment-img-file-input" accept="image/*" class="sr-only">
+                <p class="comment-picker-hint">JPEG, PNG, GIF, or WebP</p>
+            </div>
+            <div id="comment-img-upload-preview" class="comment-picker-upload-preview" style="display:none">
+                <img id="comment-img-upload-thumb" src="" alt="preview">
+                <button type="button" id="comment-img-upload-remove" class="btn btn-danger btn-xs">✕</button>
+            </div>
+        </div>
+
+        <!-- Album tab -->
+        <div class="comment-picker-panel" id="comment-picker-album-panel" style="display:none">
+            <div id="comment-picker-album-list" class="comment-picker-album-list">
+                <p class="comment-picker-loading">Loading albums…</p>
+            </div>
+            <div id="comment-picker-images-wrap" style="display:none">
+                <button type="button" id="comment-picker-back-btn" class="btn btn-secondary btn-xs">← Back to Albums</button>
+                <div id="comment-picker-image-grid" class="comment-picker-image-grid"></div>
+            </div>
+        </div>
+
+        <div class="crop-modal-actions">
+            <button type="button" id="comment-picker-cancel" class="btn btn-secondary">Cancel</button>
+            <button type="button" id="comment-picker-confirm" class="btn btn-primary" disabled>Attach Image</button>
+        </div>
+    </div>
+</div>
+
 <!-- JavaScript modules (vanilla JS, local only) -->
 <script src="<?= ASSETS_URL ?>/js/app.js"></script>
 <script src="<?= ASSETS_URL ?>/js/friends.js"></script>
