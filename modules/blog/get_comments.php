@@ -18,7 +18,7 @@
  *   blog_post_id  int  Blog post ID
  *
  * Returns JSON:
- *   { ok: true,  comments: [ { id, user_id, username, avatar, content, time_ago, profile_url }, … ] }
+ *   { ok: true,  comments: [ { id, user_id, username, avatar, content, time_ago, profile_url, like_count, user_liked }, … ] }
  *   { ok: false, error: string }
  */
 
@@ -40,17 +40,23 @@ if ($blogPost === null) {
     exit;
 }
 
+$viewerId = (int)$user['id'];
+
 $comments = db_query(
     'SELECT c.id, c.user_id, c.content, c.created_at, c.updated_at, c.image_media_id,
             u.username, u.avatar_path,
             m.thumb_path AS img_thumb, m.medium_path AS img_medium, m.large_path AS img_large,
-            m.storage_path AS img_original
+            m.storage_path AS img_original,
+            COUNT(lk.id) AS like_count,
+            MAX(CASE WHEN lk.user_id = ? THEN 1 ELSE 0 END) AS user_liked
      FROM comments c
      JOIN users u ON u.id = c.user_id
      LEFT JOIN media m ON m.id = c.image_media_id AND m.is_deleted = 0
+     LEFT JOIN likes lk ON lk.comment_id = c.id
      WHERE c.blog_post_id = ? AND c.is_deleted = 0
+     GROUP BY c.id
      ORDER BY c.created_at ASC',
-    [$blogPostId]
+    [$viewerId, $blogPostId]
 );
 
 $result = [];
@@ -75,6 +81,8 @@ foreach ($comments as $comment) {
         'image_thumb_url'  => $imgMedia ? get_media_url($imgMedia, 'thumb')  : null,
         'image_medium_url' => $imgMedia ? get_media_url($imgMedia, 'medium') : null,
         'image_large_url'  => $imgMedia ? get_media_url($imgMedia, 'large')  : null,
+        'like_count'       => (int)$comment['like_count'],
+        'user_liked'       => (int)$comment['user_liked'] > 0,
     ];
 }
 
