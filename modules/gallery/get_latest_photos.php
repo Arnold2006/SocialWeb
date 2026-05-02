@@ -74,9 +74,6 @@ try {
 
     ob_start();
     foreach ($mediaRows as $media) {
-        $ownerUsername  = $media['username'];
-        $ownerAvatarUrl = avatar_url($media, 'small');
-        $galleryUrl     = SITE_URL . '/pages/gallery.php?user_id=' . (int)$media['user_id'];
         include __DIR__ . '/latest_photo_item.php';
     }
     $html = ob_get_clean() ?: '';

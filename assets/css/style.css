@@ -1512,40 +1512,6 @@ textarea { resize: vertical; min-height: 80px; }
     object-fit: cover;
 }
 
-.latest-photo-item .latest-photo-owner {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    padding: 0.3rem 0.5rem;
-    background: linear-gradient(transparent, rgba(0,0,0,.55));
-    opacity: 0;
-    transition: opacity var(--transition);
-    border-radius: 0 0 var(--radius-md) var(--radius-md);
-    pointer-events: none;
-}
-
-.latest-photo-item:hover .latest-photo-owner { opacity: 1; }
-
-.latest-photo-owner-link {
-    display: flex;
-    align-items: center;
-    gap: 0.35rem;
-    text-decoration: none;
-    color: #fff;
-    font-size: 0.78rem;
-    font-weight: 600;
-    pointer-events: auto;
-}
-
-.latest-photo-owner-avatar {
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    object-fit: cover;
-    flex-shrink: 0;
-}
-
 .photos-load-more-wrap {
     text-align: center;
     margin-top: 1.25rem;
