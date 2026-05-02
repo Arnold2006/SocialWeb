@@ -5,20 +5,22 @@ An invite-only social network platform built with PHP 8.3, MySQL/MariaDB, and va
 ## Features
 
 - **Invite-only registration** — Admins generate invite codes with expiry dates and usage limits
-- **Wall / News Feed** — Posts with text and media, likes, comments, cached HTML feed
+- **Wall / News Feed** — Posts with text and media, likes, comments (with optional inline image), @mention support, cached HTML feed
 - **User Profiles** — Avatar (with crop tool), full name, bio, recent posts, media download
-- **Private Messaging** — Inbox, threaded conversations with subjects, unread indicators
+- **Private Messaging** — Inbox, threaded reply chains with subjects, draft messages, image/file attachments, unread indicators
 - **Real-time Chat** — One-on-one WebSocket-style AJAX chat with image sharing and unread counters
 - **Gallery** — Albums organised into categories, image/video uploads, lightbox viewer with likes & comments, progressive loading, masonry layout, album mosaic previews
 - **Videos** — Community video hub with upload, descriptions, per-video playback page, and feed integration
 - **Shoutbox** — Real-time AJAX polling in the sidebar
 - **Blog** — Personal blogs with a rich-text editor, drag-and-drop image uploads, comments, likes, and activity-feed integration
 - **Forum** — Threaded discussion boards with categories, forums, thread locking, unread tracking, rich-text post editor, image attachments, and edit history
+- **Friends & Connections** — Send/accept/decline friend requests; view any user's friend list; friend status shown on profiles
+- **Privacy controls** — Per-user visibility settings for profile, wall, photos, videos, blog, and messaging; per-album privacy; four levels: Everybody, Members only, Friends only, Only me
 - **Members directory** — Paginated, searchable list of all members
-- **Notifications** — Likes, comments, messages, blog comments, blog likes, photo likes, photo comments
+- **Notifications** — Likes, comments, messages, blog comments, blog likes, photo likes, photo comments, friend requests/accepts, @mention in wall comments and blog comments
 - **Admin Panel** — User management, invite management, content moderation, media management, site settings (banner, description, theme, custom fonts), orphan-file cleanup
 - **Plugin System** — Drop-in plugins can add sidebar widgets, wall widgets, menu items, and profile extensions
-- **Multiple colour themes** — Six built-in dark themes (blue-red, gray-orange, purple-red, green-teal, dark-gold, navy-cyan), selectable from the admin panel
+- **Multiple colour themes** — Six built-in dark themes (blue-red, gray-orange, purple-red, green-teal, dark-gold, navy-cyan), selectable from the admin panel; per-user light/dark mode toggle
 - **Security** — CSRF tokens, prepared statements, session hardening, rate limiting, security headers, whitelist HTML sanitiser with smart internal/external link handling
 - **Media Processing** — EXIF stripping, multi-size image generation, video thumbnail generation, SHA256 deduplication, deduplication-safe file deletion
 - **Performance** — File-based HTML cache, progressive image loading, IntersectionObserver lazy loading
@@ -182,12 +184,13 @@ location ^~ /uploads/ {
 │   ├── db.php              PDO database helpers
 │   ├── media_processor.php Media module loader
 │   ├── plugin_loader.php   Plugin discovery and registration
+│   ├── privacy.php         PrivacyService — per-user content visibility controls
 │   ├── RequestValidator.php Centralised type-safe request parameter extraction
 │   ├── router.php          Lightweight front-controller / URL dispatcher
 │   └── security.php        Security module loader
 ├── database/
 │   ├── schema.sql          Full database schema
-│   └── migrations/         Incremental SQL migration scripts (001–026)
+│   └── migrations/         Incremental SQL migration scripts (001–032)
 ├── forum/                  Forum pages (index, forum view, thread view, new thread, reply, edit)
 ├── includes/               Shared PHP includes
 │   ├── functions/          Helper sub-modules (cache, media, notifications, pagination, theme)
@@ -200,6 +203,7 @@ location ^~ /uploads/ {
 ├── modules/                Feature modules
 │   ├── blog/               Blog AJAX endpoints
 │   ├── forum/              Forum AJAX endpoint (user image picker)
+│   ├── friends/            Friends AJAX endpoints (request, accept, decline, cancel) + sidebar widget
 │   ├── gallery/            Gallery AJAX endpoints (comments, likes, media item)
 │   ├── notifications/      Notifications AJAX endpoint
 │   ├── profile/            Profile AJAX endpoints (avatar, media download, account deletion)
@@ -207,6 +211,7 @@ location ^~ /uploads/ {
 │   └── wall/               Wall AJAX endpoints (posts, comments, comment editing, likes)
 ├── pages/                  Public-facing pages
 │   ├── blog.php            Personal blog viewer
+│   ├── friends.php         Friends list, incoming requests, and sent requests
 │   ├── gallery.php         User gallery / album browser
 │   ├── members.php         Members directory with search and pagination
 │   ├── messages.php        Private messaging inbox and threads
@@ -372,6 +377,50 @@ The forum uses five tables created by migration `012_add_forum.sql` (with additi
 | `thread_id` | `INT UNSIGNED` | Thread that was read |
 | `read_at` | `DATETIME` | When the thread was last opened |
 
+## Private Messaging
+
+A traditional inbox for longer, subject-based conversations, separate from the real-time chat system.
+
+### Features
+
+- **Inbox** — All received (non-draft) messages listed with subject, sender, and unread indicator
+- **Threaded reply chains** — Each message can have a `thread_id` pointing to the root message of the reply chain
+- **Draft messages** — Messages can be saved as drafts (`is_draft = 1`) before sending; drafts are only visible to the sender
+- **Image / file attachments** — Attach images or files to messages; stored in `message_attachments` with orphan-cleanup support
+- **Unread counters** — Navigation bar badge tracks unread messages independently of chat unread counts
+
+### Accessing messages
+
+| URL | Description |
+|-----|-------------|
+| `/pages/messages.php` | Inbox |
+| `/pages/messages.php?thread_id=N` | View a message thread |
+
+### Database schema
+
+The messaging system uses the `messages` table (extended by migration `027_message_improvements.sql`) and the `message_attachments` table:
+
+**`messages`** (relevant columns added by migration 027)
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `thread_id` | `INT UNSIGNED` | Root message ID of the reply chain (`NULL` = root/standalone) |
+| `is_draft` | `TINYINT(1)` | `1` = draft (sender-only); `0` = sent |
+| `receiver_id` | `INT UNSIGNED` | Nullable — allows saving drafts before choosing a recipient |
+
+**`message_attachments`**
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | `INT UNSIGNED` | Primary key |
+| `message_id` | `INT UNSIGNED` | Associated message (`NULL` until sent) |
+| `sender_id` | `INT UNSIGNED` | Uploader (used for orphan cleanup) |
+| `file_path` | `VARCHAR(500)` | Server path to the attachment |
+| `original_name` | `VARCHAR(255)` | Original file name |
+| `mime_type` | `VARCHAR(100)` | Detected MIME type |
+| `file_size` | `INT UNSIGNED` | File size in bytes |
+| `created_at` | `DATETIME` | Upload timestamp |
+
 ## Chat
 
 A real-time one-on-one chat system separate from the private-messaging inbox.
@@ -397,7 +446,7 @@ A full-featured media gallery for photos and videos.
 ### Features
 
 - **Categories** — Each user's gallery is organised into categories (e.g. "Main", "Travel"); albums live inside categories
-- **Albums** — Users create named albums with optional descriptions and cover images; albums can be moved between categories
+- **Albums** — Users create named albums with optional descriptions and cover images; albums can be moved between categories; each album has its own privacy level (everybody / members / friends only / only me)
 - **Multi-upload** — Drag-and-drop or file-picker upload of multiple images or videos in one batch
 - **Lightbox** — Click any photo or video thumbnail to open a full-screen lightbox; supports keyboard navigation (← →, Esc) and closing by clicking the overlay
 - **Likes & comments in lightbox** — The lightbox panel shows a per-media like button and live comment thread without leaving the page
@@ -444,6 +493,77 @@ A paginated, searchable directory of all registered members.
 | `/pages/members.php?search=alice` | Search members by username or name |
 | `/pages/members.php?page=N` | Page *N* of results |
 
+## Friends & Connections
+
+Users can connect with each other through a friend-request system.
+
+### Features
+
+- **Friend requests** — Send a friend request from any profile page; the recipient is notified and can accept or decline
+- **Pending & sent requests** — View incoming friend requests and track sent ones from the Friends page
+- **Friends list** — View your own or any other user's public friend list, with links to profiles
+- **Notifications** — `friend_request` and `friend_accept` notification types; both parties are notified on acceptance
+
+### Accessing friends
+
+| URL | Description |
+|-----|-------------|
+| `/pages/friends.php` | Your own friends list, incoming requests, and sent requests |
+| `/pages/friends.php?user_id=N` | Friends list for user *N* (read-only) |
+
+### Database schema
+
+The friends system uses the `friendships` table created by migration `029_friends_privacy.sql` (the same migration that creates the `user_privacy_settings` table for privacy controls):
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | `INT UNSIGNED` | Primary key |
+| `requester_id` | `INT UNSIGNED` | User who sent the request |
+| `addressee_id` | `INT UNSIGNED` | User who received the request |
+| `status` | `ENUM('pending','accepted','declined')` | Current request state |
+| `created_at` | `DATETIME` | When the request was sent |
+| `updated_at` | `DATETIME` | Last status change (auto-updated) |
+
+## Privacy Controls
+
+Each user can independently control who sees their content via per-action privacy settings managed from their profile page.
+
+### Privacy levels
+
+| Level | Who can see |
+|-------|-------------|
+| `everybody` | All visitors (including guests if applicable) |
+| `members` | Any logged-in member (default) |
+| `friends_only` | Only confirmed friends |
+| `only_me` | Only the owner |
+
+### Controllable actions
+
+| Action key | Controls access to |
+|------------|--------------------|
+| `view_profile` | Profile page |
+| `view_wall` | Wall posts |
+| `view_photos` | Photo gallery |
+| `view_videos` | Videos |
+| `view_blog` | Blog |
+| `send_message` | Ability to send a private message |
+
+### Album privacy
+
+Individual albums can have their own privacy level (set when creating or editing an album), overriding the user-wide `view_photos` setting for that album's content.
+
+### Database schema
+
+Privacy settings are stored in the `user_privacy_settings` table, created alongside the `friendships` table by migration `029_friends_privacy.sql`:
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `user_id` | `INT UNSIGNED` | Owner (composite PK with `action_key`) |
+| `action_key` | `VARCHAR(64)` | One of the action keys above |
+| `value` | `ENUM(...)` | Chosen privacy level |
+
+Per-album privacy is added by migration `030_add_album_privacy.sql`, which adds a `privacy` column to the `albums` table.
+
 ## Admin Panel
 
 The admin panel is accessible at `/admin/` and is restricted to users with the `admin` role.
@@ -482,9 +602,11 @@ SocialWeb uses a modular flat-file architecture — no framework, no Composer de
 |------|----------|
 | `core/security/` | `csrf.php`, `headers.php`, `rate_limiter.php`, `sanitizer.php`, `session.php` |
 | `core/media/` | `image_processor.php`, `video_processor.php` |
+| `modules/friends/` | `FriendshipService.php`, AJAX endpoints (`ajax_request.php`, `ajax_accept.php`, `ajax_decline.php`, `ajax_cancel.php`), `friend_button.php`, `widget_friends.php` |
 | `includes/functions/` | `cache.php`, `media.php`, `notifications.php`, `pagination.php`, `theme.php` |
 | `core/security.php` | Loader — `require_once`s all security sub-modules |
 | `core/media_processor.php` | Loader — shared helpers + loads media sub-modules |
+| `core/privacy.php` | `PrivacyService` — per-user visibility controls used by feed and listing queries |
 | `includes/functions.php` | Loader — loads all function sub-modules |
 
 ### RequestValidator
