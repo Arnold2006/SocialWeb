@@ -83,11 +83,11 @@ include SITE_ROOT . '/includes/header.php';
                 case 'comment_like': ?>
                 <p><strong><?= e($n['from_username'] ?? 'Someone') ?></strong> liked your comment.</p>
                 <?php if ($n['ref_id']):
-                    $commentLikeRow = db_row(
+                    $commentRow = db_row(
                         'SELECT c.post_id FROM comments c WHERE c.id = ? AND c.is_deleted = 0',
                         [(int)$n['ref_id']]
                     );
-                    if ($commentLikeRow && $commentLikeRow['post_id']):
+                    if ($commentRow && $commentRow['post_id']):
                 ?>
                 <a href="<?= e(SITE_URL . '/pages/index.php#comment-' . (int)$n['ref_id']) ?>">View comment</a>
                 <?php   endif;
