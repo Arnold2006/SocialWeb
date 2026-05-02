@@ -1522,6 +1522,7 @@ textarea { resize: vertical; min-height: 80px; }
     opacity: 0;
     transition: opacity var(--transition);
     border-radius: 0 0 var(--radius-md) var(--radius-md);
+    pointer-events: none;
 }
 
 .latest-photo-item:hover .latest-photo-owner { opacity: 1; }
@@ -1534,6 +1535,7 @@ textarea { resize: vertical; min-height: 80px; }
     color: #fff;
     font-size: 0.78rem;
     font-weight: 600;
+    pointer-events: auto;
 }
 
 .latest-photo-owner-avatar {
