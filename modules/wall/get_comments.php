@@ -42,40 +42,54 @@ if ($post === null) {
 
 $postMediaId = !empty($post['media_id']) ? (int)$post['media_id'] : null;
 
+$viewerId = (int)$user['id'];
+
 if ($postMediaId !== null) {
     $comments = db_query(
         'SELECT c.id, c.user_id, c.content, c.created_at, c.updated_at, c.image_media_id,
                 u.username, u.avatar_path,
                 m.thumb_path AS img_thumb, m.medium_path AS img_medium,
-                m.large_path AS img_large, m.storage_path AS img_original
+                m.large_path AS img_large, m.storage_path AS img_original,
+                COUNT(lk.id) AS like_count,
+                MAX(CASE WHEN lk.user_id = ? THEN 1 ELSE 0 END) AS user_liked
          FROM comments c
          JOIN users u ON u.id = c.user_id
          LEFT JOIN media m ON m.id = c.image_media_id AND m.is_deleted = 0
+         LEFT JOIN likes lk ON lk.comment_id = c.id
          WHERE c.post_id = ? AND c.is_deleted = 0
+         GROUP BY c.id
          UNION
          SELECT c.id, c.user_id, c.content, c.created_at, c.updated_at, c.image_media_id,
                 u.username, u.avatar_path,
                 m.thumb_path AS img_thumb, m.medium_path AS img_medium,
-                m.large_path AS img_large, m.storage_path AS img_original
+                m.large_path AS img_large, m.storage_path AS img_original,
+                COUNT(lk.id) AS like_count,
+                MAX(CASE WHEN lk.user_id = ? THEN 1 ELSE 0 END) AS user_liked
          FROM comments c
          JOIN users u ON u.id = c.user_id
          LEFT JOIN media m ON m.id = c.image_media_id AND m.is_deleted = 0
+         LEFT JOIN likes lk ON lk.comment_id = c.id
          WHERE c.media_id = ? AND c.is_deleted = 0
+         GROUP BY c.id
          ORDER BY created_at ASC',
-        [$postId, $postMediaId]
+        [$viewerId, $postId, $viewerId, $postMediaId]
     );
 } else {
     $comments = db_query(
         'SELECT c.id, c.user_id, c.content, c.created_at, c.updated_at, c.image_media_id,
                 u.username, u.avatar_path,
                 m.thumb_path AS img_thumb, m.medium_path AS img_medium,
-                m.large_path AS img_large, m.storage_path AS img_original
+                m.large_path AS img_large, m.storage_path AS img_original,
+                COUNT(lk.id) AS like_count,
+                MAX(CASE WHEN lk.user_id = ? THEN 1 ELSE 0 END) AS user_liked
          FROM comments c
          JOIN users u ON u.id = c.user_id
          LEFT JOIN media m ON m.id = c.image_media_id AND m.is_deleted = 0
+         LEFT JOIN likes lk ON lk.comment_id = c.id
          WHERE c.post_id = ? AND c.is_deleted = 0
+         GROUP BY c.id
          ORDER BY c.created_at ASC',
-        [$postId]
+        [$viewerId, $postId]
     );
 }
 
@@ -101,6 +115,8 @@ foreach ($comments as $comment) {
         'image_thumb_url'  => $imgMedia ? get_media_url($imgMedia, 'thumb')  : null,
         'image_medium_url' => $imgMedia ? get_media_url($imgMedia, 'medium') : null,
         'image_large_url'  => $imgMedia ? get_media_url($imgMedia, 'large')  : null,
+        'like_count'       => (int)$comment['like_count'],
+        'user_liked'       => (int)$comment['user_liked'] > 0,
     ];
 }
 

@@ -249,8 +249,10 @@ function getCurrentUserId() {
  * @param {boolean}       edited
  * @param {string}        contentHtml
  * @param {object|null}   imageData  - Optional: { thumb_url, large_url }
+ * @param {number}        likeCount  - Number of likes on the comment
+ * @param {boolean}       userLiked  - Whether the current user has liked the comment
  */
-function buildCommentBodyHtml(commentId, profileUrl, username, timeAgo, rawContent, userId, edited, contentHtml, imageData) {
+function buildCommentBodyHtml(commentId, profileUrl, username, timeAgo, rawContent, userId, edited, contentHtml, imageData, likeCount, userLiked) {
     const currentUserId = getCurrentUserId();
     const editedBadge   = edited ? '<span class="comment-edited">(edited)</span>' : '';
     const editBtn       = (userId && userId === currentUserId)
@@ -265,11 +267,12 @@ function buildCommentBodyHtml(commentId, profileUrl, username, timeAgo, rawConte
             `<img src="${thumbUrl}" alt="comment image" class="comment-attached-image" loading="lazy">` +
             `</a>`;
     }
+    const likeBtn = `<div class="comment-footer"><button class="btn-like-comment${userLiked ? ' liked' : ''}" data-comment-id="${parseInt(commentId, 10)}">♥ <span class="like-count">${parseInt(likeCount, 10) || 0}</span></button></div>`;
     return `<a href="${escapeHtml(profileUrl)}" class="comment-author">${escapeHtml(username)}</a>` +
         `<span class="comment-time">${escapeHtml(timeAgo)}</span>` +
         editedBadge + editBtn +
         `<p class="comment-text" data-raw="${escapeHtml(rawContent)}">${displayHtml}</p>` +
-        imageHtml;
+        imageHtml + likeBtn;
 }
 
 // ── AJAX post creation ────────────────────────────────────────────────────────
@@ -459,6 +462,34 @@ document.addEventListener('click', async (e) => {
     }
 });
 
+// ── Comment like button ───────────────────────────────────────────────────────
+
+document.addEventListener('click', async (e) => {
+    const btn = e.target.closest('.btn-like-comment');
+    if (!btn) return;
+
+    e.preventDefault();
+    btn.disabled = true;
+
+    const commentId = btn.dataset.commentId;
+    const data      = new URLSearchParams({ csrf_token: getCsrfToken(), comment_id: commentId });
+
+    try {
+        const baseUrl = document.querySelector('meta[name="site-url"]')?.content || '';
+        const result  = await apiPost(baseUrl + '/modules/wall/like_comment.php', data);
+
+        if (result.ok) {
+            const countEl = btn.querySelector('.like-count');
+            if (countEl) countEl.textContent = result.count;
+            btn.classList.toggle('liked', result.liked);
+        }
+    } catch (err) {
+        console.error('Comment like failed:', err);
+    } finally {
+        btn.disabled = false;
+    }
+});
+
 // ── Comment form (AJAX) ───────────────────────────────────────────────────────
 
 document.addEventListener('submit', async (e) => {
@@ -508,7 +539,7 @@ document.addEventListener('submit', async (e) => {
                              class="avatar avatar-small" width="28" height="28" loading="lazy">
                     </a>
                     <div class="comment-body">
-                        ${buildCommentBodyHtml(result.comment_id, result.profile_url, result.username, result.time_ago, result.content, currentUserId, false, result.content_html, imageData)}
+                        ${buildCommentBodyHtml(result.comment_id, result.profile_url, result.username, result.time_ago, result.content, currentUserId, false, result.content_html, imageData, 0, false)}
                     </div>
                 </div>`;
                 const commentForm = section.querySelector('.comment-form');
@@ -571,7 +602,7 @@ document.addEventListener('click', async (e) => {
                              class="avatar avatar-small" width="28" height="28" loading="lazy">
                     </a>
                     <div class="comment-body">
-                        ${buildCommentBodyHtml(c.id, c.profile_url, c.username, c.time_ago, c.content, c.user_id, !!c.edited, c.content_html, imageData)}
+                        ${buildCommentBodyHtml(c.id, c.profile_url, c.username, c.time_ago, c.content, c.user_id, !!c.edited, c.content_html, imageData, c.like_count, !!c.user_liked)}
                     </div>
                 </div>`;
                 }).join('');
@@ -637,7 +668,7 @@ document.addEventListener('submit', async (e) => {
                              class="avatar avatar-small" width="28" height="28" loading="lazy">
                     </a>
                     <div class="comment-body">
-                        ${buildCommentBodyHtml(result.comment_id, result.profile_url, result.username, result.time_ago, result.content, currentUserId, false, result.content_html, imageData)}
+                        ${buildCommentBodyHtml(result.comment_id, result.profile_url, result.username, result.time_ago, result.content, currentUserId, false, result.content_html, imageData, 0, false)}
                     </div>
                 </div>`;
                 const commentForm = section.querySelector('.blog-comment-form');
@@ -700,7 +731,7 @@ document.addEventListener('click', async (e) => {
                              class="avatar avatar-small" width="28" height="28" loading="lazy">
                     </a>
                     <div class="comment-body">
-                        ${buildCommentBodyHtml(c.id, c.profile_url, c.username, c.time_ago, c.content, c.user_id, !!c.edited, c.content_html, imageData)}
+                        ${buildCommentBodyHtml(c.id, c.profile_url, c.username, c.time_ago, c.content, c.user_id, !!c.edited, c.content_html, imageData, c.like_count, !!c.user_liked)}
                     </div>
                 </div>`;
                 }).join('');

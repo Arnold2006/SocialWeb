@@ -859,6 +859,24 @@ textarea { resize: vertical; min-height: 80px; }
 
 .comment-text { margin-top: 3px; }
 
+.comment-footer {
+    margin-top: 0.35rem;
+}
+
+.btn-like-comment {
+    background: none;
+    border: none;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    font-size: 0.78rem;
+    padding: 0.1rem 0.4rem;
+    border-radius: var(--radius-full);
+    transition: color var(--transition);
+}
+.btn-like-comment:hover  { color: var(--color-like); }
+.btn-like-comment.liked  { color: var(--color-like); font-weight: 600; }
+.btn-like-comment:disabled { opacity: 0.6; cursor: default; }
+
 .comment-edit-btn {
     float: right;
     margin-left: 0.4rem;
