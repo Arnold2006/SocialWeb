@@ -367,6 +367,7 @@
                 editedBadge + editBtnHtml +
                 '<p class="lightbox-comment-text" data-raw="' + escapeHtml(c.content) + '">' + linkified + '</p>' +
                 imageHtml +
+                '<div class="comment-footer"><button class="btn-like-comment' + (c.user_liked ? ' liked' : '') + '" data-comment-id="' + parseInt(c.id, 10) + '">\u2665 <span class="like-count">' + (parseInt(c.like_count, 10) || 0) + '</span></button></div>' +
             '</div>';
 
         if (ownComment) {

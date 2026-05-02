@@ -170,14 +170,18 @@ include SITE_ROOT . '/includes/header.php';
                 $blogComments = db_query(
                     'SELECT c.*, u.username, u.avatar_path,
                             m.thumb_path AS img_thumb, m.medium_path AS img_medium,
-                            m.large_path AS img_large, m.storage_path AS img_original
+                            m.large_path AS img_large, m.storage_path AS img_original,
+                            COUNT(lk.id) AS like_count,
+                            MAX(CASE WHEN lk.user_id = ? THEN 1 ELSE 0 END) AS user_liked
                      FROM comments c
                      JOIN users u ON u.id = c.user_id
                      LEFT JOIN media m ON m.id = c.image_media_id AND m.is_deleted = 0
+                     LEFT JOIN likes lk ON lk.comment_id = c.id
                      WHERE c.blog_post_id = ? AND c.is_deleted = 0
+                     GROUP BY c.id
                      ORDER BY c.created_at ASC
                      LIMIT 3',
-                    [(int)$post['id']]
+                    [(int)$currentUser['id'], (int)$post['id']]
                 );
                 $blogCommentCount = (int)db_val(
                     'SELECT COUNT(*) FROM comments WHERE blog_post_id = ? AND is_deleted = 0',
@@ -263,6 +267,10 @@ include SITE_ROOT . '/includes/header.php';
                                      loading="lazy">
                             </a>
                             <?php endif; ?>
+                            <div class="comment-footer">
+                                <button class="btn-like-comment<?= (int)$comment['user_liked'] ? ' liked' : '' ?>"
+                                        data-comment-id="<?= (int)$comment['id'] ?>">♥ <span class="like-count"><?= (int)$comment['like_count'] ?></span></button>
+                            </div>
                         </div>
                     </div>
                     <?php endforeach; ?>
