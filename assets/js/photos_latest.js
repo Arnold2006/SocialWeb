@@ -60,10 +60,6 @@
                 offset += newItems.length;
                 grid.dataset.offset = String(offset);
 
-                if (typeof window.masonryLayout === 'function') {
-                    window.masonryLayout(grid);
-                }
-
                 // Bind lazy-loading and lightbox to new items
                 newItems.forEach(function (item) {
                     if (typeof window.lazyObserveImages === 'function') {

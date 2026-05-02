@@ -1475,7 +1475,7 @@ textarea { resize: vertical; min-height: 80px; }
 
 .upload-form { margin-bottom: 1rem; }
 
-/* ── Photos hub: Latest Photos masonry ──────────────────────── */
+/* ── Photos hub: Latest Photos grid ─────────────────────────── */
 .photos-latest-section {
     margin-top: 2rem;
     padding-top: 1.5rem;
@@ -1489,7 +1489,27 @@ textarea { resize: vertical; min-height: 80px; }
 }
 
 .photos-latest-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 0.75rem;
+}
+
+/* Override masonry absolute positioning for this uniform grid */
+.photos-latest-grid .media-item {
     position: relative;
+    width: auto;
+    aspect-ratio: 1;
+}
+
+.photos-latest-grid .media-item .lightbox-trigger {
+    display: block;
+    height: 100%;
+}
+
+.photos-latest-grid .media-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
 }
 
 .latest-photo-item .latest-photo-owner {

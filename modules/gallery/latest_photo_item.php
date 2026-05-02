@@ -28,11 +28,7 @@ declare(strict_types=1);
        data-media-id="<?= (int)$media['id'] ?>">
         <img src="<?= e(get_media_url($media, 'thumb')) ?>"
              data-src="<?= e(get_media_url($media, 'medium')) ?>"
-             alt="" class="lazy-image" loading="lazy"
-             <?php if (!empty($media['width']) && !empty($media['height'])): ?>
-             width="<?= (int)$media['width'] ?>" height="<?= (int)$media['height'] ?>"
-             style="aspect-ratio: <?= (int)$media['width'] ?>/<?= (int)$media['height'] ?>"
-             <?php endif; ?>>
+             alt="" class="lazy-image" loading="lazy">
     </a>
     <div class="latest-photo-owner">
         <a href="<?= e($galleryUrl) ?>" class="latest-photo-owner-link">
