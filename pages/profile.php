@@ -32,6 +32,10 @@ $isOwnProfile = ((int)$currentUser['id'] === $profileId);
 $error   = '';
 $success = '';
 
+if ($isOwnProfile && ($_GET['saved'] ?? '') === 'appearance') {
+    $success = 'Appearance preference saved.';
+}
+
 if ($isOwnProfile && $_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_verify();
 
@@ -79,7 +83,7 @@ if ($isOwnProfile && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $mode = ($_POST['theme_mode'] ?? '') === 'light' ? 'light' : 'dark';
         try {
             db_exec('UPDATE users SET theme_mode = ? WHERE id = ?', [$mode, (int)$currentUser['id']]);
-            $success = 'Appearance preference saved.';
+            redirect(SITE_URL . '/pages/profile.php?id=' . $profileId . '&saved=appearance');
         } catch (\Throwable $e) {
             $error = 'Could not save appearance preference. Please run the database upgrade first.';
         }
