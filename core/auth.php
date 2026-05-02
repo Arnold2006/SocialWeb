@@ -31,11 +31,20 @@ function current_user(): ?array
         return $cached;
     }
 
-    $user = db_row(
-        'SELECT id, username, full_name, email, role, avatar_path, bio, is_banned, created_at
-         FROM users WHERE id = ? AND is_banned = 0 LIMIT 1',
-        [(int) $_SESSION['user_id']]
-    );
+    try {
+        $user = db_row(
+            'SELECT id, username, full_name, email, role, avatar_path, bio, theme_mode, is_banned, created_at
+             FROM users WHERE id = ? AND is_banned = 0 LIMIT 1',
+            [(int) $_SESSION['user_id']]
+        );
+    } catch (\Throwable $e) {
+        // Column may not exist before migration 031 has been applied
+        $user = db_row(
+            'SELECT id, username, full_name, email, role, avatar_path, bio, is_banned, created_at
+             FROM users WHERE id = ? AND is_banned = 0 LIMIT 1',
+            [(int) $_SESSION['user_id']]
+        );
+    }
 
     $cached = $user ?: null;
     return $cached;

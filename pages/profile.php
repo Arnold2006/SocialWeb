@@ -74,11 +74,20 @@ if ($isOwnProfile && $_SERVER['REQUEST_METHOD'] === 'POST') {
             db_exec('UPDATE users SET password = ? WHERE id = ?', [$hash, (int)$currentUser['id']]);
             $success = 'Password changed successfully.';
         }
+
+    } elseif ($action === 'update_theme_mode') {
+        $mode = ($_POST['theme_mode'] ?? '') === 'light' ? 'light' : 'dark';
+        try {
+            db_exec('UPDATE users SET theme_mode = ? WHERE id = ?', [$mode, (int)$currentUser['id']]);
+            $success = 'Appearance preference saved.';
+        } catch (\Throwable $e) {
+            $error = 'Could not save appearance preference. Please run the database upgrade first.';
+        }
     }
 
     // Refresh current user data after any update
     $currentUser = db_row(
-        'SELECT id, username, full_name, email, bio, avatar_path, role FROM users WHERE id = ?',
+        'SELECT id, username, full_name, email, bio, theme_mode, avatar_path, role FROM users WHERE id = ?',
         [(int)$currentUser['id']]
     );
 }
@@ -288,6 +297,26 @@ include SITE_ROOT . '/includes/header.php';
                     </div>
 
                     <button type="submit" class="btn btn-primary">Change Password</button>
+                </form>
+            </section>
+
+            <!-- Appearance settings -->
+            <section class="settings-section">
+                <h2>🌗 Appearance</h2>
+                <form method="POST" class="settings-form">
+                    <?= csrf_field() ?>
+                    <input type="hidden" name="action" value="update_theme_mode">
+
+                    <div class="form-group">
+                        <label for="theme_mode">Theme Mode</label>
+                        <select id="theme_mode" name="theme_mode">
+                            <option value="dark"<?= ($currentUser['theme_mode'] ?? 'dark') === 'dark' ? ' selected' : '' ?>>🌙 Dark</option>
+                            <option value="light"<?= ($currentUser['theme_mode'] ?? 'dark') === 'light' ? ' selected' : '' ?>>☀️ Light</option>
+                        </select>
+                        <small>The site admin chooses the colour palette; you choose whether to use the dark or light variant.</small>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Save Appearance</button>
                 </form>
             </section>
 
