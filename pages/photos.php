@@ -76,6 +76,37 @@ $members = db_query(
     array_merge($params, [(int)$currentUser['id']])
 );
 
+/* ── Tab 1: Latest Photos (initial batch) ────────────────────── */
+$latestPhotoLimit  = 20;
+$latestPhotosBlockedIds = PrivacyService::blockedUsersByAction((int)$currentUser['id'], 'view_photos');
+$latestExcludeSql  = '';
+$latestExcludeParams = [];
+if (!empty($latestPhotosBlockedIds)) {
+    $ph = implode(',', array_fill(0, count($latestPhotosBlockedIds), '?'));
+    $latestExcludeSql   = " AND m.user_id NOT IN ($ph)";
+    $latestExcludeParams = $latestPhotosBlockedIds;
+}
+$latestFetchLimit = $latestPhotoLimit + 1;
+$latestPhotos = db_query(
+    "SELECT m.id, m.user_id, m.type, m.width, m.height,
+            m.thumb_path, m.medium_path, m.large_path, m.storage_path,
+            u.username, u.avatar_path
+     FROM media m
+     JOIN albums a ON a.id = m.album_id AND a.is_deleted = 0
+                  AND a.privacy IN ('everybody','members')
+     JOIN users u  ON u.id = m.user_id  AND u.is_banned  = 0
+     WHERE m.is_deleted = 0
+       AND m.type = 'image'
+       $latestExcludeSql
+     ORDER BY m.created_at DESC
+     LIMIT $latestFetchLimit",
+    $latestExcludeParams
+);
+$latestHasMore = count($latestPhotos) > $latestPhotoLimit;
+if ($latestHasMore) {
+    array_pop($latestPhotos);
+}
+
 /* ── Tab 2: My Albums ────────────────────────────────────────── */
 $myAlbums = db_query(
     'SELECT a.*, (SELECT COUNT(*) FROM media WHERE album_id = a.id AND is_deleted = 0) AS media_count
@@ -150,6 +181,28 @@ include SITE_ROOT . '/includes/header.php';
     echo pagination_links($page, $pages, $baseUrl);
     ?>
     <?php endif; ?>
+
+    <!-- ── Latest Photos masonry ─────────────────────────────────── -->
+    <div class="photos-latest-section">
+        <h2>Latest Photos</h2>
+        <?php if (empty($latestPhotos)): ?>
+        <p class="empty-state">No photos have been shared yet.</p>
+        <?php else: ?>
+        <div class="media-grid photos-latest-grid" id="photos-latest-grid"
+             data-offset="<?= count($latestPhotos) ?>"
+             data-has-more="<?= $latestHasMore ? '1' : '0' ?>">
+            <?php foreach ($latestPhotos as $media):
+                $ownerUsername  = $media['username'];
+                $ownerAvatarUrl = avatar_url($media, 'small');
+                $galleryUrl     = SITE_URL . '/pages/gallery.php?user_id=' . (int)$media['user_id'];
+                include SITE_ROOT . '/modules/gallery/latest_photo_item.php';
+            endforeach; ?>
+        </div>
+        <div id="photos-load-more-wrap" class="photos-load-more-wrap">
+            <button id="photos-load-more-btn" type="button" class="btn btn-secondary btn-load-more">Load more</button>
+        </div>
+        <?php endif; ?>
+    </div>
 </div>
 
 <?php else: ?>
@@ -238,5 +291,42 @@ include SITE_ROOT . '/includes/header.php';
     </main>
 
 </div><!-- /.two-col-layout -->
+
+<?php if ($activeTab === 'members'): ?>
+<script src="<?= ASSETS_URL ?>/js/masonry_layout.js"></script>
+<script>
+// Initialise masonry on the latest-photos grid (different ID from gallery's lightbox-gallery)
+(function () {
+    function init() {
+        var grid = document.getElementById('photos-latest-grid');
+        if (grid && typeof window.masonryLayout === 'function') {
+            window.masonryLayout(grid);
+            window.addEventListener('resize', function () {
+                clearTimeout(window._photosResizeTimer);
+                window._photosResizeTimer = setTimeout(function () {
+                    window.masonryLayout(grid);
+                }, 150);
+            });
+            Array.from(grid.querySelectorAll('img')).forEach(function (img) {
+                if (!img.complete) {
+                    img.addEventListener('load', function () {
+                        clearTimeout(window._photosLayoutTimer);
+                        window._photosLayoutTimer = setTimeout(function () {
+                            window.masonryLayout(grid);
+                        }, 50);
+                    }, { once: true });
+                }
+            });
+        }
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+}());
+</script>
+<script src="<?= ASSETS_URL ?>/js/photos_latest.js"></script>
+<?php endif; ?>
 
 <?php include SITE_ROOT . '/includes/footer.php'; ?>
