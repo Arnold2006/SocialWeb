@@ -40,7 +40,8 @@
         btn.disabled = true;
         btn.textContent = 'Loading…';
 
-        fetch(baseUrl + '/modules/gallery/get_latest_photos.php?offset=' + encodeURIComponent(offset), {
+        var safeOffset = Math.max(0, parseInt(offset, 10) || 0);
+        fetch(baseUrl + '/modules/gallery/get_latest_photos.php?offset=' + encodeURIComponent(safeOffset), {
             credentials: 'same-origin',
             headers: { 'X-Requested-With': 'XMLHttpRequest' },
         })

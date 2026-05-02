@@ -48,7 +48,7 @@ try {
         $excludeParams = $blockedIds;
     }
 
-    $params = array_merge($excludeParams, [(int)$currentUser['id']]);
+    $params = $excludeParams;
 
     $mediaRows = db_query(
         "SELECT m.id, m.user_id, m.type, m.width, m.height,
