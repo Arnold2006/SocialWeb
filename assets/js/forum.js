@@ -477,21 +477,36 @@
     }
 
     /**
-     * Scan every .forum-post-content element for inline images wrapped in
-     * anchor tags (inserted by the rich-text editor upload button).  For each
-     * such anchor that is not already a lightbox trigger, add the
-     * 'lightbox-trigger' class and a data-src attribute so the lightbox knows
-     * which URL to display, then register the new triggers with the lightbox.
+     * Scan every .forum-post-content element for inline images inserted by the
+     * rich-text editor upload button and make them lightbox-clickable.
+     *
+     * Handles two cases robustly:
+     *  1. Image is a descendant of an <a> tag (direct child or deeper nesting):
+     *     add 'lightbox-trigger' + data-src to the nearest ancestor <a>.
+     *  2. Image has no <a> ancestor (anchor was stripped during serialization or
+     *     browser normalisation): wrap the <img> in a new <a> trigger so it is
+     *     still clickable.
      */
     function initForumPostImages() {
         document.querySelectorAll('.forum-post-content').forEach(function (content) {
-            content.querySelectorAll('a > img').forEach(function (img) {
-                var anchor = img.parentElement;
-                if (anchor.classList.contains('lightbox-trigger')) return;
+            content.querySelectorAll('img').forEach(function (img) {
+                var anchor = img.closest('a');
 
-                anchor.classList.add('lightbox-trigger');
-                if (!anchor.dataset.src) {
-                    anchor.dataset.src = img.src;
+                if (anchor) {
+                    /* Image is inside an <a> — use the anchor as the trigger */
+                    if (anchor.classList.contains('lightbox-trigger')) return;
+                    anchor.classList.add('lightbox-trigger');
+                    if (!anchor.dataset.src) {
+                        anchor.dataset.src = img.src;
+                    }
+                } else {
+                    /* Standalone image with no <a> wrapper — wrap it */
+                    var wrapper = document.createElement('a');
+                    wrapper.href = img.src;
+                    wrapper.dataset.src = img.src;
+                    wrapper.classList.add('lightbox-trigger');
+                    img.parentNode.insertBefore(wrapper, img);
+                    wrapper.appendChild(img);
                 }
             });
 
