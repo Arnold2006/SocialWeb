@@ -46,7 +46,11 @@ if ($existing) {
     $liked = true;
 
     // Notify comment owner (if not self-like)
-    notify_user((int)$comment['user_id'], 'comment_like', (int)$user['id'], $commentId);
+    try {
+        notify_user((int)$comment['user_id'], 'comment_like', (int)$user['id'], $commentId);
+    } catch (\Throwable $e) {
+        error_log('like_comment notify_user failed: ' . $e->getMessage());
+    }
 }
 
 $likeCount = (int) db_val('SELECT COUNT(*) FROM likes WHERE comment_id = ?', [$commentId]);

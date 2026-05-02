@@ -172,7 +172,7 @@ CREATE TABLE IF NOT EXISTS `message_attachments` (
 CREATE TABLE IF NOT EXISTS `notifications` (
   `id`          INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `user_id`     INT UNSIGNED NOT NULL,               -- recipient
-  `type`        ENUM('like','comment','message','blog_comment','photo_like','photo_comment','blog_like') NOT NULL,
+  `type`        ENUM('like','comment','message','blog_comment','photo_like','photo_comment','blog_like','friend_request','friend_accept','mention','mention_post','comment_like') NOT NULL,
   `from_user_id` INT UNSIGNED DEFAULT NULL,          -- who triggered it
   `ref_id`      INT UNSIGNED DEFAULT NULL,           -- post/comment/message id
   `is_read`     TINYINT(1) NOT NULL DEFAULT 0,
