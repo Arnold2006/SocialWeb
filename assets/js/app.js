@@ -239,18 +239,37 @@ function getCurrentUserId() {
 /**
  * Build the inner HTML for a comment item body.
  * Includes an Edit button if userId matches the current user.
+ *
+ * @param {number|string} commentId
+ * @param {string}        profileUrl
+ * @param {string}        username
+ * @param {string}        timeAgo
+ * @param {string}        rawContent
+ * @param {number}        userId
+ * @param {boolean}       edited
+ * @param {string}        contentHtml
+ * @param {object|null}   imageData  - Optional: { thumb_url, large_url }
  */
-function buildCommentBodyHtml(commentId, profileUrl, username, timeAgo, rawContent, userId, edited, contentHtml) {
+function buildCommentBodyHtml(commentId, profileUrl, username, timeAgo, rawContent, userId, edited, contentHtml, imageData) {
     const currentUserId = getCurrentUserId();
     const editedBadge   = edited ? '<span class="comment-edited">(edited)</span>' : '';
     const editBtn       = (userId && userId === currentUserId)
         ? `<button type="button" class="comment-edit-btn btn btn-xs btn-secondary" data-comment-id="${parseInt(commentId, 10)}">Edit</button>`
         : '';
     const displayHtml   = contentHtml || linkifyHtml(smilifyText(rawContent));
+    let imageHtml = '';
+    if (imageData && imageData.thumb_url) {
+        const thumbUrl = escapeHtml(imageData.thumb_url);
+        const largeUrl = escapeHtml(imageData.large_url || imageData.thumb_url);
+        imageHtml = `<a href="${largeUrl}" class="lightbox-trigger comment-image-trigger" data-src="${largeUrl}">` +
+            `<img src="${thumbUrl}" alt="comment image" class="comment-attached-image" loading="lazy">` +
+            `</a>`;
+    }
     return `<a href="${escapeHtml(profileUrl)}" class="comment-author">${escapeHtml(username)}</a>` +
         `<span class="comment-time">${escapeHtml(timeAgo)}</span>` +
         editedBadge + editBtn +
-        `<p class="comment-text" data-raw="${escapeHtml(rawContent)}">${displayHtml}</p>`;
+        `<p class="comment-text" data-raw="${escapeHtml(rawContent)}">${displayHtml}</p>` +
+        imageHtml;
 }
 
 // ── AJAX post creation ────────────────────────────────────────────────────────
@@ -453,11 +472,14 @@ document.addEventListener('submit', async (e) => {
     const content = input ? input.value.trim() : '';
     if (!content) return;
 
+    const imageMediaId = commentImageState.get(form) || 0;
+
     const baseUrl = document.querySelector('meta[name="site-url"]')?.content || '';
     const data    = new URLSearchParams({
-        csrf_token: getCsrfToken(),
-        post_id:    postId,
+        csrf_token:     getCsrfToken(),
+        post_id:        postId,
         content,
+        image_media_id: imageMediaId,
     });
 
     try {
@@ -471,10 +493,14 @@ document.addEventListener('submit', async (e) => {
                 input.value = '';
                 input.dispatchEvent(new Event('input', { bubbles: true }));
             }
+            clearCommentImagePreview(form);
             // Insert new comment before the comment form so it appears above the input
             const section = document.getElementById('comments-' + postId);
             if (section) {
                 const currentUserId = getCurrentUserId();
+                const imageData = result.image_thumb_url
+                    ? { thumb_url: result.image_thumb_url, large_url: result.image_large_url }
+                    : null;
                 const commentHtml = `
                 <div class="comment-item" id="comment-${parseInt(result.comment_id, 10)}">
                     <a href="${escapeHtml(result.profile_url)}">
@@ -482,7 +508,7 @@ document.addEventListener('submit', async (e) => {
                              class="avatar avatar-small" width="28" height="28" loading="lazy">
                     </a>
                     <div class="comment-body">
-                        ${buildCommentBodyHtml(result.comment_id, result.profile_url, result.username, result.time_ago, result.content, currentUserId, false, result.content_html)}
+                        ${buildCommentBodyHtml(result.comment_id, result.profile_url, result.username, result.time_ago, result.content, currentUserId, false, result.content_html, imageData)}
                     </div>
                 </div>`;
                 const commentForm = section.querySelector('.comment-form');
@@ -491,6 +517,7 @@ document.addEventListener('submit', async (e) => {
                 } else {
                     section.insertAdjacentHTML('beforeend', commentHtml);
                 }
+                reinitLightboxTriggers();
             }
             // Update comment count
             const commentBtn = document.querySelector(`.btn-comment[data-post-id="${postId}"]`);
@@ -533,18 +560,24 @@ document.addEventListener('click', async (e) => {
                 section.querySelectorAll('.comment-item').forEach(el => el.remove());
 
                 // Build HTML for all comments and insert before the "load more" link
-                const html = result.comments.map(c => `
+                const html = result.comments.map(c => {
+                    const imageData = c.image_thumb_url
+                        ? { thumb_url: c.image_thumb_url, large_url: c.image_large_url }
+                        : null;
+                    return `
                 <div class="comment-item" id="comment-${parseInt(c.id, 10)}">
                     <a href="${escapeHtml(c.profile_url)}">
                         <img src="${escapeHtml(c.avatar)}" alt=""
                              class="avatar avatar-small" width="28" height="28" loading="lazy">
                     </a>
                     <div class="comment-body">
-                        ${buildCommentBodyHtml(c.id, c.profile_url, c.username, c.time_ago, c.content, c.user_id, !!c.edited, c.content_html)}
+                        ${buildCommentBodyHtml(c.id, c.profile_url, c.username, c.time_ago, c.content, c.user_id, !!c.edited, c.content_html, imageData)}
                     </div>
-                </div>`).join('');
+                </div>`;
+                }).join('');
 
                 link.insertAdjacentHTML('beforebegin', html);
+                reinitLightboxTriggers();
             }
             // Remove the "View all" link — all comments are now visible
             link.remove();
@@ -565,16 +598,19 @@ document.addEventListener('submit', async (e) => {
 
     e.preventDefault();
 
-    const blogPostId = form.dataset.blogPostId;
-    const input      = form.querySelector('input[name="content"]');
-    const content    = input ? input.value.trim() : '';
+    const blogPostId   = form.dataset.blogPostId;
+    const input        = form.querySelector('input[name="content"]');
+    const content      = input ? input.value.trim() : '';
     if (!content) return;
+
+    const imageMediaId = commentImageState.get(form) || 0;
 
     const baseUrl = document.querySelector('meta[name="site-url"]')?.content || '';
     const data    = new URLSearchParams({
-        csrf_token:   getCsrfToken(),
-        blog_post_id: blogPostId,
+        csrf_token:     getCsrfToken(),
+        blog_post_id:   blogPostId,
         content,
+        image_media_id: imageMediaId,
     });
 
     try {
@@ -587,9 +623,13 @@ document.addEventListener('submit', async (e) => {
                 input.value = '';
                 input.dispatchEvent(new Event('input', { bubbles: true }));
             }
+            clearCommentImagePreview(form);
             const section = document.getElementById('blog-comments-' + blogPostId);
             if (section) {
                 const currentUserId = getCurrentUserId();
+                const imageData = result.image_thumb_url
+                    ? { thumb_url: result.image_thumb_url, large_url: result.image_large_url }
+                    : null;
                 const commentHtml = `
                 <div class="comment-item" id="comment-${parseInt(result.comment_id, 10)}">
                     <a href="${escapeHtml(result.profile_url)}">
@@ -597,7 +637,7 @@ document.addEventListener('submit', async (e) => {
                              class="avatar avatar-small" width="28" height="28" loading="lazy">
                     </a>
                     <div class="comment-body">
-                        ${buildCommentBodyHtml(result.comment_id, result.profile_url, result.username, result.time_ago, result.content, currentUserId, false, result.content_html)}
+                        ${buildCommentBodyHtml(result.comment_id, result.profile_url, result.username, result.time_ago, result.content, currentUserId, false, result.content_html, imageData)}
                     </div>
                 </div>`;
                 const commentForm = section.querySelector('.blog-comment-form');
@@ -606,6 +646,7 @@ document.addEventListener('submit', async (e) => {
                 } else {
                     section.insertAdjacentHTML('beforeend', commentHtml);
                 }
+                reinitLightboxTriggers();
             }
             // Update comment count badge
             const countEl = document.querySelector(`.btn-comment[data-blog-post-id="${blogPostId}"] .blog-comment-count`);
@@ -648,18 +689,24 @@ document.addEventListener('click', async (e) => {
                 section.querySelectorAll('.comment-item').forEach(el => el.remove());
 
                 // Build HTML for all comments and insert before the "load more" button
-                const html = result.comments.map(c => `
+                const html = result.comments.map(c => {
+                    const imageData = c.image_thumb_url
+                        ? { thumb_url: c.image_thumb_url, large_url: c.image_large_url }
+                        : null;
+                    return `
                 <div class="comment-item" id="comment-${parseInt(c.id, 10)}">
                     <a href="${escapeHtml(c.profile_url)}">
                         <img src="${escapeHtml(c.avatar)}" alt=""
                              class="avatar avatar-small" width="28" height="28" loading="lazy">
                     </a>
                     <div class="comment-body">
-                        ${buildCommentBodyHtml(c.id, c.profile_url, c.username, c.time_ago, c.content, c.user_id, !!c.edited, c.content_html)}
+                        ${buildCommentBodyHtml(c.id, c.profile_url, c.username, c.time_ago, c.content, c.user_id, !!c.edited, c.content_html, imageData)}
                     </div>
-                </div>`).join('');
+                </div>`;
+                }).join('');
 
                 btn.insertAdjacentHTML('beforebegin', html);
+                reinitLightboxTriggers();
             }
             // Remove the "Load more" button — all comments are now visible
             btn.remove();
@@ -2336,4 +2383,403 @@ document.addEventListener('click', (e) => {
     document.querySelectorAll('.blog-comment-form input[name="content"]').forEach((input) => {
         input.insertAdjacentElement('afterend', createSmileyPicker(input));
     });
+}());
+
+// ── Comment image attachment system ──────────────────────────────────────────
+
+/**
+ * WeakMap storing the selected image_media_id for each comment form element.
+ * Key: form element, Value: media_id (int) or 0.
+ */
+const commentImageState = new WeakMap();
+
+/**
+ * Re-initialise lightbox triggers after dynamically inserting HTML into the DOM.
+ * Calls the exported reinit function from lightbox.js if available.
+ */
+function reinitLightboxTriggers() {
+    if (typeof window.reinitLightbox === 'function') {
+        window.reinitLightbox();
+    }
+}
+
+/**
+ * Show a small preview of the selected image inside the comment form.
+ *
+ * @param {HTMLFormElement} form      The comment form element
+ * @param {string}          thumbUrl  URL of the thumbnail to display
+ * @param {number}          mediaId   media_id of the selected image
+ */
+function setCommentImagePreview(form, thumbUrl, mediaId) {
+    commentImageState.set(form, mediaId);
+    const previewEl = form.querySelector('.comment-image-preview');
+    if (!previewEl) return;
+    previewEl.innerHTML =
+        `<img src="${escapeHtml(thumbUrl)}" alt="Attachment preview" class="comment-attachment-preview-img">` +
+        `<button type="button" class="comment-attachment-remove btn btn-xs btn-danger" title="Remove image">✕</button>`;
+    previewEl.style.display = 'flex';
+}
+
+/**
+ * Clear the comment image attachment for the given form.
+ *
+ * @param {HTMLFormElement} form
+ */
+function clearCommentImagePreview(form) {
+    commentImageState.set(form, 0);
+    const previewEl = form.querySelector('.comment-image-preview');
+    if (!previewEl) return;
+    previewEl.innerHTML = '';
+    previewEl.style.display = 'none';
+}
+
+// ── Album picker modal logic ──────────────────────────────────────────────────
+
+(function initCommentImagePicker() {
+    const modal          = document.getElementById('comment-image-picker-modal');
+    const cancelBtn      = document.getElementById('comment-picker-cancel');
+    const confirmBtn     = document.getElementById('comment-picker-confirm');
+    const tabBtns        = modal ? modal.querySelectorAll('.comment-picker-tab') : [];
+    const uploadPanel    = document.getElementById('comment-picker-upload-panel');
+    const albumPanel     = document.getElementById('comment-picker-album-panel');
+    const dropZone       = document.getElementById('comment-img-drop-zone');
+    const fileInput      = document.getElementById('comment-img-file-input');
+    const uploadPreview  = document.getElementById('comment-img-upload-preview');
+    const uploadThumb    = document.getElementById('comment-img-upload-thumb');
+    const uploadRemove   = document.getElementById('comment-img-upload-remove');
+    const albumList      = document.getElementById('comment-picker-album-list');
+    const imagesWrap     = document.getElementById('comment-picker-images-wrap');
+    const backBtn        = document.getElementById('comment-picker-back-btn');
+    const imageGrid      = document.getElementById('comment-picker-image-grid');
+
+    if (!modal) return;
+
+    const baseUrl = () => document.querySelector('meta[name="site-url"]')?.content || '';
+
+    // Track which form opened the picker and the current selection
+    let activeForm    = null;
+    let selectedId    = 0;
+    let selectedThumb = '';
+    let selectedLarge = '';
+    let uploadedFile  = null;  // File object pending upload
+    let albumsLoaded  = false;
+
+    function openPicker(form) {
+        activeForm = form;
+        selectedId = 0;
+        selectedThumb = '';
+        selectedLarge = '';
+        uploadedFile  = null;
+        confirmBtn.disabled = true;
+        resetUploadPanel();
+        modal.style.display = 'flex';
+    }
+
+    function closePicker() {
+        modal.style.display = 'none';
+        activeForm = null;
+    }
+
+    function resetUploadPanel() {
+        if (uploadPreview) uploadPreview.style.display = 'none';
+        if (uploadThumb)   uploadThumb.src = '';
+        if (dropZone)      dropZone.style.display = '';
+        uploadedFile = null;
+    }
+
+    // Close on cancel
+    if (cancelBtn) cancelBtn.addEventListener('click', closePicker);
+
+    // Close on overlay click
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closePicker();
+    });
+
+    // Tab switching
+    tabBtns.forEach((btn) => {
+        btn.addEventListener('click', () => {
+            tabBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            const tab = btn.dataset.tab;
+            if (uploadPanel) uploadPanel.style.display = tab === 'upload' ? '' : 'none';
+            if (albumPanel)  albumPanel.style.display  = tab === 'album'  ? '' : 'none';
+
+            if (tab === 'album' && !albumsLoaded) {
+                loadAlbums();
+            }
+        });
+    });
+
+    // ── Upload tab: file input & drag-drop ────────────────────────────────────
+
+    if (fileInput) {
+        fileInput.addEventListener('change', () => {
+            const file = fileInput.files[0];
+            if (file) handleFileSelected(file);
+            fileInput.value = '';
+        });
+    }
+
+    if (dropZone) {
+        let dDepth = 0;
+        dropZone.addEventListener('dragenter', (e) => {
+            if (!e.dataTransfer.types.includes('Files')) return;
+            e.preventDefault();
+            dDepth++;
+            dropZone.classList.add('drag-over');
+        });
+        dropZone.addEventListener('dragover', (e) => {
+            if (!e.dataTransfer.types.includes('Files')) return;
+            e.preventDefault();
+        });
+        dropZone.addEventListener('dragleave', () => {
+            dDepth--;
+            if (dDepth <= 0) { dDepth = 0; dropZone.classList.remove('drag-over'); }
+        });
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dDepth = 0;
+            dropZone.classList.remove('drag-over');
+            const file = e.dataTransfer.files[0];
+            if (file) handleFileSelected(file);
+        });
+    }
+
+    function handleFileSelected(file) {
+        if (!file.type.startsWith('image/')) {
+            alert('Please choose an image file (JPEG, PNG, GIF, or WebP).');
+            return;
+        }
+        uploadedFile = file;
+        // Show preview from local data
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            if (uploadThumb) uploadThumb.src = ev.target.result;
+            if (uploadPreview) uploadPreview.style.display = 'flex';
+            if (dropZone) dropZone.style.display = 'none';
+        };
+        reader.readAsDataURL(file);
+        // Select as pending (will upload on confirm)
+        selectedId    = -1;   // -1 = pending local file
+        selectedThumb = '';
+        selectedLarge = '';
+        confirmBtn.disabled = false;
+    }
+
+    if (uploadRemove) {
+        uploadRemove.addEventListener('click', () => {
+            resetUploadPanel();
+            selectedId = 0;
+            confirmBtn.disabled = true;
+        });
+    }
+
+    // ── Album tab ─────────────────────────────────────────────────────────────
+
+    async function loadAlbums() {
+        albumsLoaded = true;
+        if (!albumList) return;
+        albumList.innerHTML = '<p class="comment-picker-loading">Loading albums…</p>';
+        try {
+            const resp = await fetch(baseUrl() + '/modules/gallery/get_user_album_images.php', {
+                credentials: 'same-origin',
+            });
+            const data = await resp.json();
+            if (!data.ok || !data.albums || data.albums.length === 0) {
+                albumList.innerHTML = '<p class="comment-picker-empty">No albums with images found.</p>';
+                return;
+            }
+            albumList.innerHTML = '';
+            data.albums.forEach((album) => {
+                const item = document.createElement('div');
+                item.className = 'comment-picker-album-item';
+                item.innerHTML =
+                    `<div class="comment-picker-album-cover">` +
+                        (album.cover_url
+                            ? `<img src="${escapeHtml(album.cover_url)}" alt="" loading="lazy">`
+                            : `<span>📁</span>`) +
+                    `</div>` +
+                    `<div class="comment-picker-album-title">${escapeHtml(album.title)}</div>` +
+                    `<div class="comment-picker-album-count">${album.image_count} image${album.image_count !== 1 ? 's' : ''}</div>`;
+                item.addEventListener('click', () => loadAlbumImages(album.id));
+                albumList.appendChild(item);
+            });
+        } catch (err) {
+            albumList.innerHTML = '<p class="comment-picker-empty">Could not load albums.</p>';
+        }
+    }
+
+    async function loadAlbumImages(albumId) {
+        if (!albumList || !imagesWrap || !imageGrid) return;
+        albumList.style.display = 'none';
+        imagesWrap.style.display = '';
+        imageGrid.innerHTML = '<p class="comment-picker-loading">Loading images…</p>';
+
+        try {
+            const resp = await fetch(
+                baseUrl() + '/modules/gallery/get_user_album_images.php?album_id=' + encodeURIComponent(albumId),
+                { credentials: 'same-origin' }
+            );
+            const data = await resp.json();
+            if (!data.ok || !data.images || data.images.length === 0) {
+                imageGrid.innerHTML = '<p class="comment-picker-empty">No images in this album.</p>';
+                return;
+            }
+            imageGrid.innerHTML = '';
+            data.images.forEach((img) => {
+                const item = document.createElement('div');
+                item.className = 'comment-picker-img-item';
+                const imgEl = document.createElement('img');
+                imgEl.src     = img.thumb_url;
+                imgEl.alt     = '';
+                imgEl.loading = 'lazy';
+                item.appendChild(imgEl);
+                item.addEventListener('click', () => {
+                    imageGrid.querySelectorAll('.comment-picker-img-item').forEach(el => el.classList.remove('selected'));
+                    item.classList.add('selected');
+                    selectedId    = img.media_id;
+                    selectedThumb = img.thumb_url;
+                    selectedLarge = img.large_url;
+                    confirmBtn.disabled = false;
+                });
+                imageGrid.appendChild(item);
+            });
+        } catch (err) {
+            imageGrid.innerHTML = '<p class="comment-picker-empty">Could not load images.</p>';
+        }
+    }
+
+    if (backBtn) {
+        backBtn.addEventListener('click', () => {
+            if (imagesWrap) imagesWrap.style.display = 'none';
+            if (albumList)  albumList.style.display  = '';
+            selectedId = 0;
+            confirmBtn.disabled = true;
+        });
+    }
+
+    // ── Confirm selection ─────────────────────────────────────────────────────
+
+    if (confirmBtn) {
+        confirmBtn.addEventListener('click', async () => {
+            if (!activeForm) return;
+
+            if (selectedId === -1 && uploadedFile) {
+                // Upload new file to server
+                confirmBtn.disabled = true;
+                confirmBtn.textContent = 'Uploading…';
+
+                const fd = new FormData();
+                fd.append('csrf_token', getCsrfToken());
+                fd.append('image', uploadedFile);
+
+                try {
+                    const resp = await fetch(baseUrl() + '/modules/wall/upload_comment_image.php', {
+                        method: 'POST',
+                        body: fd,
+                        credentials: 'same-origin',
+                    });
+                    const data = await resp.json();
+                    if (data.ok) {
+                        setCommentImagePreview(activeForm, data.thumb_url, data.media_id);
+                    } else {
+                        alert('Upload failed: ' + (data.error || 'Unknown error'));
+                    }
+                } catch (err) {
+                    alert('Upload failed. Please try again.');
+                } finally {
+                    confirmBtn.disabled = false;
+                    confirmBtn.textContent = 'Attach Image';
+                }
+            } else if (selectedId > 0) {
+                // Use existing media from album
+                setCommentImagePreview(activeForm, selectedThumb, selectedId);
+            }
+
+            closePicker();
+        });
+    }
+
+    // ── 📷 Button click on any comment form ──────────────────────────────────
+
+    document.addEventListener('click', (e) => {
+        const btn = e.target.closest('.comment-attach-image-btn');
+        if (!btn) return;
+        e.preventDefault();
+        const form = btn.closest('.comment-form, .blog-comment-form');
+        if (form) openPicker(form);
+    });
+
+    // ── Remove attachment button ──────────────────────────────────────────────
+
+    document.addEventListener('click', (e) => {
+        const removeBtn = e.target.closest('.comment-attachment-remove');
+        if (!removeBtn) return;
+        const form = removeBtn.closest('.comment-form, .blog-comment-form');
+        if (form) clearCommentImagePreview(form);
+    });
+
+    // ── Drag-and-drop directly onto comment form ──────────────────────────────
+
+    document.addEventListener('dragenter', (e) => {
+        if (!e.dataTransfer.types.includes('Files')) return;
+        const form = e.target.closest('.comment-form, .blog-comment-form');
+        if (!form) return;
+        e.preventDefault();
+        form.classList.add('comment-form-drag-over');
+    }, true);
+
+    document.addEventListener('dragover', (e) => {
+        const form = e.target.closest('.comment-form, .blog-comment-form');
+        if (!form) return;
+        if (!e.dataTransfer.types.includes('Files')) return;
+        e.preventDefault();
+    }, true);
+
+    document.addEventListener('dragleave', (e) => {
+        const form = e.target.closest('.comment-form, .blog-comment-form');
+        if (!form) return;
+        if (!form.contains(e.relatedTarget)) {
+            form.classList.remove('comment-form-drag-over');
+        }
+    }, true);
+
+    document.addEventListener('drop', async (e) => {
+        const form = e.target.closest('.comment-form, .blog-comment-form');
+        if (!form) return;
+        e.preventDefault();
+        form.classList.remove('comment-form-drag-over');
+
+        const file = e.dataTransfer.files[0];
+        if (!file || !file.type.startsWith('image/')) return;
+
+        // Upload immediately and show preview
+        const uploadIndicator = form.querySelector('.comment-image-preview');
+        if (uploadIndicator) {
+            uploadIndicator.innerHTML = '<span class="comment-attachment-uploading">Uploading…</span>';
+            uploadIndicator.style.display = 'flex';
+        }
+
+        const fd = new FormData();
+        fd.append('csrf_token', getCsrfToken());
+        fd.append('image', file);
+
+        try {
+            const resp = await fetch(baseUrl() + '/modules/wall/upload_comment_image.php', {
+                method: 'POST',
+                body: fd,
+                credentials: 'same-origin',
+            });
+            const data = await resp.json();
+            if (data.ok) {
+                setCommentImagePreview(form, data.thumb_url, data.media_id);
+            } else {
+                if (uploadIndicator) { uploadIndicator.innerHTML = ''; uploadIndicator.style.display = 'none'; }
+                alert('Upload failed: ' + (data.error || 'Unknown error'));
+            }
+        } catch (err) {
+            if (uploadIndicator) { uploadIndicator.innerHTML = ''; uploadIndicator.style.display = 'none'; }
+            alert('Upload failed. Please try again.');
+        }
+    }, true);
 }());

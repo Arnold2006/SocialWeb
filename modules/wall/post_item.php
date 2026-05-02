@@ -46,14 +46,22 @@ $postMediaId = !empty($post['media_id']) ? (int)$post['media_id'] : null;
 
 if ($postMediaId !== null) {
     $postComments = db_query(
-        'SELECT c.id, c.user_id, c.content, c.created_at, c.updated_at, u.username, u.avatar_path
+        'SELECT c.id, c.user_id, c.content, c.created_at, c.updated_at, c.image_media_id,
+                u.username, u.avatar_path,
+                m.thumb_path AS img_thumb, m.medium_path AS img_medium,
+                m.large_path AS img_large, m.storage_path AS img_original
          FROM comments c
          JOIN users u ON u.id = c.user_id
+         LEFT JOIN media m ON m.id = c.image_media_id AND m.is_deleted = 0
          WHERE c.post_id = ? AND c.is_deleted = 0
          UNION
-         SELECT c.id, c.user_id, c.content, c.created_at, c.updated_at, u.username, u.avatar_path
+         SELECT c.id, c.user_id, c.content, c.created_at, c.updated_at, c.image_media_id,
+                u.username, u.avatar_path,
+                m.thumb_path AS img_thumb, m.medium_path AS img_medium,
+                m.large_path AS img_large, m.storage_path AS img_original
          FROM comments c
          JOIN users u ON u.id = c.user_id
+         LEFT JOIN media m ON m.id = c.image_media_id AND m.is_deleted = 0
          WHERE c.media_id = ? AND c.is_deleted = 0
          ORDER BY created_at ASC
          LIMIT 3',
@@ -61,9 +69,13 @@ if ($postMediaId !== null) {
     );
 } else {
     $postComments = db_query(
-        'SELECT c.id, c.user_id, c.content, c.created_at, c.updated_at, u.username, u.avatar_path
+        'SELECT c.id, c.user_id, c.content, c.created_at, c.updated_at, c.image_media_id,
+                u.username, u.avatar_path,
+                m.thumb_path AS img_thumb, m.medium_path AS img_medium,
+                m.large_path AS img_large, m.storage_path AS img_original
          FROM comments c
          JOIN users u ON u.id = c.user_id
+         LEFT JOIN media m ON m.id = c.image_media_id AND m.is_deleted = 0
          WHERE c.post_id = ? AND c.is_deleted = 0
          ORDER BY c.created_at ASC
          LIMIT 3',
@@ -190,7 +202,7 @@ $moreComments = (int)$post['comment_count'] > 3;
                      alt="<?= e($comment['username']) ?>"
                      class="avatar avatar-small" width="28" height="28" loading="lazy">
             </a>
-            <div class="comment-body">
+        <div class="comment-body">
                 <a href="<?= e(SITE_URL . '/pages/profile.php?id=' . (int)$comment['user_id']) ?>"
                    class="comment-author"><?= e($comment['username']) ?></a>
                 <span class="comment-time"><?= e(time_ago($comment['created_at'])) ?></span>
@@ -200,6 +212,24 @@ $moreComments = (int)$post['comment_count'] > 3;
                         data-comment-id="<?= (int)$comment['id'] ?>">Edit</button>
                 <?php endif; ?>
                 <p class="comment-text" data-raw="<?= e($comment['content']) ?>"><?= nl2br(linkify(smilify($comment['content']))) ?></p>
+                <?php if (!empty($comment['image_media_id'])): ?>
+                <?php
+                $commentImgMedia = [
+                    'thumb_path'   => $comment['img_thumb'],
+                    'medium_path'  => $comment['img_medium'],
+                    'large_path'   => $comment['img_large'],
+                    'storage_path' => $comment['img_original'],
+                ];
+                ?>
+                <a href="<?= e(get_media_url($commentImgMedia, 'original')) ?>"
+                   class="lightbox-trigger comment-image-trigger"
+                   data-src="<?= e(get_media_url($commentImgMedia, 'large')) ?>">
+                    <img src="<?= e(get_media_url($commentImgMedia, 'thumb')) ?>"
+                         alt="comment image"
+                         class="comment-attached-image"
+                         loading="lazy">
+                </a>
+                <?php endif; ?>
             </div>
         </div>
         <?php endforeach; ?>
@@ -213,7 +243,9 @@ $moreComments = (int)$post['comment_count'] > 3;
         <form class="comment-form" data-post-id="<?= (int)$post['id'] ?>">
             <?= csrf_field() ?>
             <input type="text" name="content" placeholder="Write a comment…" maxlength="1000" autocomplete="off" required class="mention-input">
+            <button type="button" class="btn btn-sm btn-secondary comment-attach-image-btn" title="Attach image">📷</button>
             <button type="submit" class="btn btn-sm">Post</button>
+            <div class="comment-image-preview" style="display:none"></div>
         </form>
     </div>
 </article>

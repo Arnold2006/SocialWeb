@@ -44,23 +44,35 @@ $postMediaId = !empty($post['media_id']) ? (int)$post['media_id'] : null;
 
 if ($postMediaId !== null) {
     $comments = db_query(
-        'SELECT c.id, c.user_id, c.content, c.created_at, c.updated_at, u.username, u.avatar_path
+        'SELECT c.id, c.user_id, c.content, c.created_at, c.updated_at, c.image_media_id,
+                u.username, u.avatar_path,
+                m.thumb_path AS img_thumb, m.medium_path AS img_medium,
+                m.large_path AS img_large, m.storage_path AS img_original
          FROM comments c
          JOIN users u ON u.id = c.user_id
+         LEFT JOIN media m ON m.id = c.image_media_id AND m.is_deleted = 0
          WHERE c.post_id = ? AND c.is_deleted = 0
          UNION
-         SELECT c.id, c.user_id, c.content, c.created_at, c.updated_at, u.username, u.avatar_path
+         SELECT c.id, c.user_id, c.content, c.created_at, c.updated_at, c.image_media_id,
+                u.username, u.avatar_path,
+                m.thumb_path AS img_thumb, m.medium_path AS img_medium,
+                m.large_path AS img_large, m.storage_path AS img_original
          FROM comments c
          JOIN users u ON u.id = c.user_id
+         LEFT JOIN media m ON m.id = c.image_media_id AND m.is_deleted = 0
          WHERE c.media_id = ? AND c.is_deleted = 0
          ORDER BY created_at ASC',
         [$postId, $postMediaId]
     );
 } else {
     $comments = db_query(
-        'SELECT c.id, c.user_id, c.content, c.created_at, c.updated_at, u.username, u.avatar_path
+        'SELECT c.id, c.user_id, c.content, c.created_at, c.updated_at, c.image_media_id,
+                u.username, u.avatar_path,
+                m.thumb_path AS img_thumb, m.medium_path AS img_medium,
+                m.large_path AS img_large, m.storage_path AS img_original
          FROM comments c
          JOIN users u ON u.id = c.user_id
+         LEFT JOIN media m ON m.id = c.image_media_id AND m.is_deleted = 0
          WHERE c.post_id = ? AND c.is_deleted = 0
          ORDER BY c.created_at ASC',
         [$postId]
@@ -69,16 +81,26 @@ if ($postMediaId !== null) {
 
 $result = [];
 foreach ($comments as $comment) {
+    $imgMedia = !empty($comment['image_media_id']) ? [
+        'thumb_path'   => $comment['img_thumb'],
+        'medium_path'  => $comment['img_medium'],
+        'large_path'   => $comment['img_large'],
+        'storage_path' => $comment['img_original'],
+    ] : null;
     $result[] = [
-        'id'           => (int)$comment['id'],
-        'user_id'      => (int)$comment['user_id'],
-        'username'     => $comment['username'],
-        'avatar'       => avatar_url($comment, 'small'),
-        'content'      => $comment['content'],
-        'content_html' => nl2br(linkify(smilify($comment['content']))),
-        'edited'       => !empty($comment['updated_at']),
-        'time_ago'     => time_ago($comment['created_at']),
-        'profile_url'  => SITE_URL . '/pages/profile.php?id=' . (int)$comment['user_id'],
+        'id'               => (int)$comment['id'],
+        'user_id'          => (int)$comment['user_id'],
+        'username'         => $comment['username'],
+        'avatar'           => avatar_url($comment, 'small'),
+        'content'          => $comment['content'],
+        'content_html'     => nl2br(linkify(smilify($comment['content']))),
+        'edited'           => !empty($comment['updated_at']),
+        'time_ago'         => time_ago($comment['created_at']),
+        'profile_url'      => SITE_URL . '/pages/profile.php?id=' . (int)$comment['user_id'],
+        'image_media_id'   => $imgMedia ? (int)$comment['image_media_id'] : null,
+        'image_thumb_url'  => $imgMedia ? get_media_url($imgMedia, 'thumb')  : null,
+        'image_medium_url' => $imgMedia ? get_media_url($imgMedia, 'medium') : null,
+        'image_large_url'  => $imgMedia ? get_media_url($imgMedia, 'large')  : null,
     ];
 }
 

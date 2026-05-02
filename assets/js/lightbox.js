@@ -135,12 +135,26 @@
         commentSubmit.className = 'btn btn-sm';
         commentSubmit.textContent = 'Post';
 
+        // Image attach button for lightbox comments
+        const commentAttachBtn = document.createElement('button');
+        commentAttachBtn.type = 'button';
+        commentAttachBtn.className = 'btn btn-sm btn-secondary comment-attach-image-btn';
+        commentAttachBtn.title = 'Attach image';
+        commentAttachBtn.textContent = '📷';
+
+        // Image preview area for lightbox comments
+        const commentImgPreview = document.createElement('div');
+        commentImgPreview.className = 'comment-image-preview';
+        commentImgPreview.style.display = 'none';
+
         commentForm.appendChild(csrfInput);
         commentForm.appendChild(commentInput);
         if (typeof createSmileyPicker === 'function') {
             commentForm.appendChild(createSmileyPicker(commentInput));
         }
+        commentForm.appendChild(commentAttachBtn);
         commentForm.appendChild(commentSubmit);
+        commentForm.appendChild(commentImgPreview);
 
         commentForm.addEventListener('submit', (e) => {
             e.preventDefault();
@@ -334,6 +348,15 @@
             editBtnHtml = '<button type="button" class="lightbox-comment-edit-btn btn btn-xs btn-secondary" data-comment-id="' + parseInt(c.id, 10) + '">Edit</button>';
         }
 
+        let imageHtml = '';
+        if (c.image_thumb_url) {
+            const thumbUrl = escapeHtml(c.image_thumb_url);
+            const largeUrl = escapeHtml(c.image_large_url || c.image_thumb_url);
+            imageHtml = '<a href="' + largeUrl + '" class="lightbox-trigger comment-image-trigger" data-src="' + largeUrl + '">' +
+                '<img src="' + thumbUrl + '" alt="comment image" class="comment-attached-image" loading="lazy">' +
+                '</a>';
+        }
+
         item.innerHTML =
             '<a href="' + escapeHtml(c.profile_url) + '" class="lightbox-comment-avatar">' +
                 '<img src="' + escapeHtml(c.avatar) + '" alt="" class="avatar avatar-small" width="28" height="28" loading="lazy">' +
@@ -343,6 +366,7 @@
                 '<span class="lightbox-comment-time">' + escapeHtml(c.time_ago) + '</span>' +
                 editedBadge + editBtnHtml +
                 '<p class="lightbox-comment-text" data-raw="' + escapeHtml(c.content) + '">' + linkified + '</p>' +
+                imageHtml +
             '</div>';
 
         if (ownComment) {
@@ -350,6 +374,11 @@
             if (editBtn) {
                 editBtn.addEventListener('click', () => startLightboxCommentEdit(item));
             }
+        }
+
+        // Bind any new lightbox triggers (comment images) so they open correctly
+        if (imageHtml && typeof bindNewTriggers === 'function') {
+            bindNewTriggers(item);
         }
 
         commentsList.appendChild(item);
@@ -497,6 +526,10 @@
         const content = commentInput ? commentInput.value.trim() : '';
         if (!content) return;
 
+        const imageMediaId = (typeof commentImageState !== 'undefined' && commentForm)
+            ? (commentImageState.get(commentForm) || 0)
+            : 0;
+
         const csrfEl    = commentForm ? commentForm.querySelector('input[name="csrf_token"]') : null;
         const csrfToken = csrfEl ? csrfEl.value : (document.querySelector('input[name="csrf_token"]')?.value || '');
         const submitBtn = commentForm ? commentForm.querySelector('button[type="submit"]') : null;
@@ -506,7 +539,7 @@
             method: 'POST',
             credentials: 'same-origin',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: new URLSearchParams({ csrf_token: csrfToken, media_id: mediaId, content }),
+            body: new URLSearchParams({ csrf_token: csrfToken, media_id: mediaId, content, image_media_id: imageMediaId }),
         })
         .then((r) => r.json())
         .then((data) => {
@@ -517,6 +550,9 @@
             if (commentInput) {
                 commentInput.value = '';
                 commentInput.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+            if (typeof clearCommentImagePreview === 'function' && commentForm) {
+                clearCommentImagePreview(commentForm);
             }
             // Remove "no comments" placeholder if present
             const placeholder = commentsList ? commentsList.querySelector('.lightbox-empty-comments') : null;
@@ -689,6 +725,24 @@
     // Public API: bind lightbox triggers in dynamically loaded content
     // (e.g. "Load More" posts).
     window.lightboxBindNew = bindNewTriggers;
+
+    /**
+     * Re-initialise all triggers on the page — used when new comment images
+     * are injected into the DOM by app.js comment handlers.
+     */
+    window.reinitLightbox = function () {
+        // Find triggers not yet registered (no data-lightbox-bound attribute)
+        const allTriggers = Array.from(document.querySelectorAll('.lightbox-trigger'));
+        allTriggers.forEach((el) => {
+            if (triggers.includes(el)) return;  // already registered
+            const idx = triggers.length;
+            triggers.push(el);
+            el.addEventListener('click', (e) => {
+                e.preventDefault();
+                openLightbox(idx);
+            });
+        });
+    };
 
     /**
      * Open the lightbox for an arbitrary image URL without a trigger element.
