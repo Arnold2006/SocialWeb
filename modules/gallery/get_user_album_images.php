@@ -88,7 +88,7 @@ foreach ($albums as $album) {
         $coverUrl = SITE_URL . $album['cover_path'];
     } elseif (!empty($album['cover_id'])) {
         $coverMedia = db_row(
-            'SELECT thumb_path, thumbnail_path FROM media WHERE id = ? AND is_deleted = 0',
+            'SELECT thumb_path FROM media WHERE id = ? AND is_deleted = 0',
             [(int)$album['cover_id']]
         );
         if ($coverMedia) {

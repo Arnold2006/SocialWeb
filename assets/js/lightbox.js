@@ -140,7 +140,7 @@
         commentAttachBtn.type = 'button';
         commentAttachBtn.className = 'btn btn-sm btn-secondary comment-attach-image-btn';
         commentAttachBtn.title = 'Attach image';
-        commentAttachBtn.textContent = '\uD83D\uDCF7'; // 📷
+        commentAttachBtn.textContent = '📷';
 
         // Image preview area for lightbox comments
         const commentImgPreview = document.createElement('div');
