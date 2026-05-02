@@ -182,13 +182,13 @@ include SITE_ROOT . '/includes/header.php';
     ?>
     <?php endif; ?>
 
-    <!-- ── Latest Photos masonry ─────────────────────────────────── -->
+    <!-- ── Latest Photos ──────────────────────────────────────────── -->
     <div class="photos-latest-section">
         <h2>Latest Photos</h2>
         <?php if (empty($latestPhotos)): ?>
         <p class="empty-state">No photos have been shared yet.</p>
         <?php else: ?>
-        <div class="media-grid photos-latest-grid" id="photos-latest-grid"
+        <div class="photos-latest-grid" id="photos-latest-grid"
              data-offset="<?= count($latestPhotos) ?>"
              data-has-more="<?= $latestHasMore ? '1' : '0' ?>">
             <?php foreach ($latestPhotos as $media):
@@ -293,39 +293,6 @@ include SITE_ROOT . '/includes/header.php';
 </div><!-- /.two-col-layout -->
 
 <?php if ($activeTab === 'members'): ?>
-<script src="<?= ASSETS_URL ?>/js/masonry_layout.js"></script>
-<script>
-// Initialise masonry on the latest-photos grid (different ID from gallery's lightbox-gallery)
-(function () {
-    function init() {
-        var grid = document.getElementById('photos-latest-grid');
-        if (grid && typeof window.masonryLayout === 'function') {
-            window.masonryLayout(grid);
-            window.addEventListener('resize', function () {
-                clearTimeout(window._photosResizeTimer);
-                window._photosResizeTimer = setTimeout(function () {
-                    window.masonryLayout(grid);
-                }, 150);
-            });
-            Array.from(grid.querySelectorAll('img')).forEach(function (img) {
-                if (!img.complete) {
-                    img.addEventListener('load', function () {
-                        clearTimeout(window._photosLayoutTimer);
-                        window._photosLayoutTimer = setTimeout(function () {
-                            window.masonryLayout(grid);
-                        }, 50);
-                    }, { once: true });
-                }
-            });
-        }
-    }
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
-    } else {
-        init();
-    }
-}());
-</script>
 <script src="<?= ASSETS_URL ?>/js/photos_latest.js"></script>
 <?php endif; ?>
 
