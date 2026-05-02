@@ -46,3 +46,17 @@ function active_theme(): string
     $theme = site_setting('site_theme', 'blue-red');
     return in_array($theme, valid_themes(), true) ? $theme : 'blue-red';
 }
+
+/**
+ * Return the current user's preferred theme mode ('dark' or 'light').
+ * Falls back to 'dark' when no user is logged in or the column is absent.
+ */
+function user_theme_mode(): string
+{
+    $user = current_user();
+    if ($user === null) {
+        return 'dark';
+    }
+    $mode = $user['theme_mode'] ?? 'dark';
+    return $mode === 'light' ? 'light' : 'dark';
+}

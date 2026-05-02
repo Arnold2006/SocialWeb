@@ -60,9 +60,10 @@ $overlayFontCSS   = $OVERLAY_FONT_MAP[$overlayFont]     ?? $OVERLAY_FONT_MAP['sy
 $overlayShadowCSS = $OVERLAY_SHADOW_MAP[$overlayShadow] ?? $OVERLAY_SHADOW_MAP['medium'];
 
 $siteTheme    = active_theme();
+$themeMode    = user_theme_mode();
 ?>
 <!DOCTYPE html>
-<html lang="en" data-theme="<?= e($siteTheme) ?>">
+<html lang="en" data-theme="<?= e($siteTheme) ?>" data-mode="<?= e($themeMode) ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
