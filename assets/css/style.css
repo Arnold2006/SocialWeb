@@ -1392,14 +1392,16 @@ textarea { resize: vertical; min-height: 80px; }
 .hidden { display: none !important; }
 
 /* ── Photos page tabs ────────────────────────────────────────── */
-.photos-tabs {
+.photos-tabs,
+.admin-tabs {
     display: flex;
     gap: 0;
     border-bottom: 2px solid var(--color-border);
     margin: 0 1rem 1.25rem;
 }
 
-.photos-tab-btn {
+.photos-tab-btn,
+.admin-tab-btn {
     padding: 0.55rem 1.25rem;
     font-size: 0.9rem;
     font-weight: 600;
@@ -1410,11 +1412,13 @@ textarea { resize: vertical; min-height: 80px; }
     transition: color var(--transition), border-color var(--transition);
 }
 
-.photos-tab-btn:hover {
+.photos-tab-btn:hover,
+.admin-tab-btn:hover {
     color: var(--color-text);
 }
 
-.photos-tab-btn.active {
+.photos-tab-btn.active,
+.admin-tab-btn.active {
     color: var(--color-accent);
     border-bottom-color: var(--color-accent);
 }

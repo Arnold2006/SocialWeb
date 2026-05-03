@@ -45,7 +45,7 @@ if ($post === null) {
     redirect(SITE_URL . '/pages/index.php');
 }
 
-if ((int)$post['user_id'] !== (int)$user['id'] && !is_admin()) {
+if ((int)$post['user_id'] !== (int)$user['id']) {
     http_response_code(403);
     flash_set('error', 'Permission denied.');
     redirect(SITE_URL . '/pages/index.php');

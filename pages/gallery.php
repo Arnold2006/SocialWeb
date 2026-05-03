@@ -26,7 +26,7 @@ $galleryOwner = sanitise_int($_GET['user_id'] ?? (int)$currentUser['id']);
 $categoryId   = sanitise_int($_GET['cat'] ?? 0);
 $albumId      = sanitise_int($_GET['album'] ?? 0);
 $openPhotoId  = sanitise_int($_GET['photo'] ?? 0);
-$isOwn        = ((int)$currentUser['id'] === $galleryOwner) || is_admin();
+$isOwn        = ((int)$currentUser['id'] === $galleryOwner);
 
 $owner = db_row('SELECT id, username, avatar_path FROM users WHERE id = ? AND is_banned = 0', [$galleryOwner]);
 if (!$owner) {
@@ -35,7 +35,7 @@ if (!$owner) {
 }
 
 // Privacy gate — view_photos
-if (!$isOwn && !PrivacyService::canView((int) $currentUser['id'], $galleryOwner, 'view_photos')) {
+if (!$isOwn && !is_admin() && !PrivacyService::canView((int) $currentUser['id'], $galleryOwner, 'view_photos')) {
     flash_set('error', 'This user\'s photos are private.');
     redirect(SITE_URL . '/pages/profile.php?id=' . $galleryOwner);
 }
