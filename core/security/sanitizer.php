@@ -98,7 +98,15 @@ function sanitise_html(string $html, int $maxBytes = 0): string
 
     $out = '';
     foreach ($body->childNodes as $child) {
-        $out .= $dom->saveHTML($child);
+        if ($child->nodeType === XML_TEXT_NODE) {
+            // Use ENT_NOQUOTES so that ' and " are never encoded to &#039; / &quot;.
+            // saveHTML() can over-encode quotes in text nodes depending on the
+            // libxml version, which causes double-encoding when the stored plain-text
+            // content is later passed through e() for display.
+            $out .= htmlspecialchars($child->nodeValue, ENT_NOQUOTES, 'UTF-8');
+        } else {
+            $out .= $dom->saveHTML($child);
+        }
     }
 
     return trim($out);
