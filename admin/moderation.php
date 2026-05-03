@@ -100,13 +100,13 @@ include SITE_ROOT . '/includes/header.php';
         <?= flash_render() ?>
 
         <!-- Tab navigation -->
-        <div class="photos-tabs" style="margin: 0 0 1.25rem">
+        <div class="admin-tabs">
             <a href="<?= SITE_URL ?>/admin/moderation.php?tab=posts"
-               class="photos-tab-btn<?= $activeTab === 'posts' ? ' active' : '' ?>">Posts</a>
+               class="admin-tab-btn<?= $activeTab === 'posts' ? ' active' : '' ?>">Posts</a>
             <a href="<?= SITE_URL ?>/admin/moderation.php?tab=comments"
-               class="photos-tab-btn<?= $activeTab === 'comments' ? ' active' : '' ?>">Comments</a>
+               class="admin-tab-btn<?= $activeTab === 'comments' ? ' active' : '' ?>">Comments</a>
             <a href="<?= SITE_URL ?>/admin/moderation.php?tab=shoutbox"
-               class="photos-tab-btn<?= $activeTab === 'shoutbox' ? ' active' : '' ?>">Shoutbox</a>
+               class="admin-tab-btn<?= $activeTab === 'shoutbox' ? ' active' : '' ?>">Shoutbox</a>
         </div>
 
         <?php if ($activeTab === 'posts'): ?>
