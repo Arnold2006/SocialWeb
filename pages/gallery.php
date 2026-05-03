@@ -40,7 +40,7 @@ if (!$isOwn && !is_admin() && !PrivacyService::canView((int) $currentUser['id'],
     redirect(SITE_URL . '/pages/profile.php?id=' . $galleryOwner);
 }
 
-$pageTitle = e($owner['username']) . "'s Gallery";
+$pageTitle = $owner['username'] . "'s Gallery";
 
 // Helper: build gallery base URL
 $galleryBase = SITE_URL . '/pages/gallery.php?user_id=' . $galleryOwner;

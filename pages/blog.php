@@ -86,7 +86,7 @@ $posts = db_query(
 
 $totalPages = (int)ceil($total / $perPage);
 
-$pageTitle = e($blogOwner['username']) . "'s Blog";
+$pageTitle = $blogOwner['username'] . "'s Blog";
 include SITE_ROOT . '/includes/header.php';
 ?>
 

@@ -109,9 +109,7 @@ if ($profileUser === null) {
 
 // Privacy gate — view_profile
 if (!$isOwnProfile && !PrivacyService::canView((int) $currentUser['id'], $profileId, 'view_profile')) {
-    $pageTitle = e($profileUser['username']) . "'s Profile";
-    include SITE_ROOT . '/includes/header.php';
-    echo '<div class="two-col-layout"><main class="col-right">';
+    $pageTitle = $profileUser['username'] . "'s Profile";
     echo '<div class="profile-layout">';
     echo '<aside class="profile-sidebar">';
     echo '<img src="' . e(avatar_url($profileUser, 'large')) . '" alt="' . e($profileUser['username']) . '" class="profile-avatar" width="200" height="200">';
@@ -151,9 +149,7 @@ if ($profilePostsHasMore) {
 // Plugin profile extensions
 $plugins = plugins_load();
 
-$pageTitle = e($profileUser['username']) . "'s Profile";
-include SITE_ROOT . '/includes/header.php';
-?>
+$pageTitle = $profileUser['username'] . "'s Profile";
 
 <div class="profile-layout">
 

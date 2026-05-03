@@ -40,7 +40,7 @@ if (!$forum) {
     exit;
 }
 
-$pageTitle = e($forum['title']) . ' — Forum';
+$pageTitle = $forum['title'] . ' — Forum';
 $user           = current_user();
 $userId         = $user ? (int)$user['id'] : 0;
 $userCreatedAt  = $user ? $user['created_at'] : '1970-01-01 00:00:00';
