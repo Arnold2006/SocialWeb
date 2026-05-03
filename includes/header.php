@@ -73,6 +73,16 @@ $themeMode    = user_theme_mode();
     <meta name="current-user-id" content="<?= (int)$user['id'] ?>">
     <?php endif; ?>
     <link rel="stylesheet" href="<?= ASSETS_URL ?>/css/style.css">
+    <?php if ($user): ?>
+    <script>
+        /* Apply saved nav-pin preference before first paint to prevent layout flash */
+        (function () {
+            if (localStorage.getItem('nav_pinned') === '0') {
+                document.documentElement.classList.add('nav-unpinned');
+            }
+        }());
+    </script>
+    <?php endif; ?>
     <?php if (!empty($customFonts)): ?>
     <style>
         <?php foreach ($customFonts as $cf):
@@ -92,9 +102,9 @@ $themeMode    = user_theme_mode();
 <body>
 
 <!-- ── Site Header ───────────────────────────────────────────── -->
-<header class="site-header">
+<header class="site-header<?= $user ? ' has-nav' : '' ?>">
 
-    <!-- Navigation is the very first element (sticky top) -->
+    <!-- Navigation is the very first element (fixed at top) -->
     <?php if ($user): ?>
     <nav class="main-nav">
         <ul>
@@ -136,6 +146,13 @@ $themeMode    = user_theme_mode();
             <li><a href="https://print.tera-sat.com" target="_blank" rel="noopener noreferrer">PrintService</a></li>
             <li><a href="<?= SITE_URL ?>/pages/logout.php">Logout</a></li>
         </ul>
+        <button type="button" class="nav-pin-btn" id="nav-pin-btn"
+                aria-pressed="true" title="Unpin navigation bar"
+                aria-label="Toggle pinned navigation bar">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">
+                <path d="M16 9V4h1c.55 0 1-.45 1-1s-.45-1-1-1H7c-.55 0-1 .45-1 1s.45 1 1 1h1v5c0 1.66-1.34 3-3 3v2h5.97v7l1 1 1-1v-7H19v-2c-1.66 0-3-1.34-3-3z"/>
+            </svg>
+        </button>
     </nav>
     <?php endif; ?>
 
