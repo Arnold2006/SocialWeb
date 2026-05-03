@@ -44,26 +44,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             flash_set('success', 'Shout deleted.');
             break;
     }
-    redirect(SITE_URL . '/admin/moderation.php');
+    $tab = $_POST['tab'] ?? 'posts';
+    redirect(SITE_URL . '/admin/moderation.php?tab=' . urlencode($tab));
 }
 
-$posts = db_query(
-    'SELECT p.id, p.content, p.created_at, u.username
-     FROM posts p JOIN users u ON u.id = p.user_id
-     WHERE p.is_deleted = 0 ORDER BY p.created_at DESC LIMIT 30'
-);
+$activeTab = $_GET['tab'] ?? 'posts';
+if (!in_array($activeTab, ['posts', 'comments', 'shoutbox'], true)) {
+    $activeTab = 'posts';
+}
 
-$comments = db_query(
-    'SELECT c.id, c.content, c.created_at, u.username, c.post_id
-     FROM comments c JOIN users u ON u.id = c.user_id
-     WHERE c.is_deleted = 0 ORDER BY c.created_at DESC LIMIT 30'
-);
+$posts = $comments = $shouts = [];
 
-$shouts = db_query(
-    'SELECT s.id, s.message, s.created_at, u.username
-     FROM shoutbox s JOIN users u ON u.id = s.user_id
-     WHERE s.is_deleted = 0 ORDER BY s.created_at DESC LIMIT 30'
-);
+if ($activeTab === 'posts') {
+    $posts = db_query(
+        'SELECT p.id, p.content, p.created_at, u.username
+         FROM posts p JOIN users u ON u.id = p.user_id
+         WHERE p.is_deleted = 0 ORDER BY p.created_at DESC LIMIT 30'
+    );
+} elseif ($activeTab === 'comments') {
+    $comments = db_query(
+        'SELECT c.id, c.content, c.created_at, u.username, c.post_id
+         FROM comments c JOIN users u ON u.id = c.user_id
+         WHERE c.is_deleted = 0 ORDER BY c.created_at DESC LIMIT 30'
+    );
+} elseif ($activeTab === 'shoutbox') {
+    $shouts = db_query(
+        'SELECT s.id, s.message, s.created_at, u.username
+         FROM shoutbox s JOIN users u ON u.id = s.user_id
+         WHERE s.is_deleted = 0 ORDER BY s.created_at DESC LIMIT 30'
+    );
+}
 
 include SITE_ROOT . '/includes/header.php';
 ?>
@@ -87,8 +97,20 @@ include SITE_ROOT . '/includes/header.php';
     <main class="admin-main">
         <h1>Content Moderation</h1>
 
+        <?= flash_render() ?>
+
+        <!-- Tab navigation -->
+        <div class="photos-tabs" style="margin: 0 0 1.25rem">
+            <a href="<?= SITE_URL ?>/admin/moderation.php?tab=posts"
+               class="photos-tab-btn<?= $activeTab === 'posts' ? ' active' : '' ?>">Posts</a>
+            <a href="<?= SITE_URL ?>/admin/moderation.php?tab=comments"
+               class="photos-tab-btn<?= $activeTab === 'comments' ? ' active' : '' ?>">Comments</a>
+            <a href="<?= SITE_URL ?>/admin/moderation.php?tab=shoutbox"
+               class="photos-tab-btn<?= $activeTab === 'shoutbox' ? ' active' : '' ?>">Shoutbox</a>
+        </div>
+
+        <?php if ($activeTab === 'posts'): ?>
         <section class="admin-section">
-            <h2>Recent Posts</h2>
             <table class="admin-table">
                 <thead><tr><th>#</th><th>User</th><th>Content</th><th>Date</th><th>Action</th></tr></thead>
                 <tbody>
@@ -103,17 +125,21 @@ include SITE_ROOT . '/includes/header.php';
                                 <?= csrf_field() ?>
                                 <input type="hidden" name="action" value="delete_post">
                                 <input type="hidden" name="id" value="<?= (int)$p['id'] ?>">
+                                <input type="hidden" name="tab" value="posts">
                                 <button class="btn btn-xs btn-danger" data-confirm="Delete post?">Delete</button>
                             </form>
                         </td>
                     </tr>
                     <?php endforeach; ?>
+                    <?php if (empty($posts)): ?>
+                    <tr><td colspan="5" class="text-muted" style="text-align:center">No posts found.</td></tr>
+                    <?php endif; ?>
                 </tbody>
             </table>
         </section>
 
+        <?php elseif ($activeTab === 'comments'): ?>
         <section class="admin-section">
-            <h2>Recent Comments</h2>
             <table class="admin-table">
                 <thead><tr><th>#</th><th>User</th><th>Content</th><th>Post</th><th>Date</th><th>Action</th></tr></thead>
                 <tbody>
@@ -129,17 +155,21 @@ include SITE_ROOT . '/includes/header.php';
                                 <?= csrf_field() ?>
                                 <input type="hidden" name="action" value="delete_comment">
                                 <input type="hidden" name="id" value="<?= (int)$c['id'] ?>">
+                                <input type="hidden" name="tab" value="comments">
                                 <button class="btn btn-xs btn-danger" data-confirm="Delete comment?">Delete</button>
                             </form>
                         </td>
                     </tr>
                     <?php endforeach; ?>
+                    <?php if (empty($comments)): ?>
+                    <tr><td colspan="6" class="text-muted" style="text-align:center">No comments found.</td></tr>
+                    <?php endif; ?>
                 </tbody>
             </table>
         </section>
 
+        <?php elseif ($activeTab === 'shoutbox'): ?>
         <section class="admin-section">
-            <h2>Shoutbox</h2>
             <table class="admin-table">
                 <thead><tr><th>#</th><th>User</th><th>Message</th><th>Date</th><th>Action</th></tr></thead>
                 <tbody>
@@ -154,14 +184,19 @@ include SITE_ROOT . '/includes/header.php';
                                 <?= csrf_field() ?>
                                 <input type="hidden" name="action" value="delete_shout">
                                 <input type="hidden" name="id" value="<?= (int)$s['id'] ?>">
+                                <input type="hidden" name="tab" value="shoutbox">
                                 <button class="btn btn-xs btn-danger" data-confirm="Delete shout?">Delete</button>
                             </form>
                         </td>
                     </tr>
                     <?php endforeach; ?>
+                    <?php if (empty($shouts)): ?>
+                    <tr><td colspan="5" class="text-muted" style="text-align:center">No shouts found.</td></tr>
+                    <?php endif; ?>
                 </tbody>
             </table>
         </section>
+        <?php endif; ?>
     </main>
 </div>
 

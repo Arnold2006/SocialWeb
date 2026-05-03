@@ -44,10 +44,10 @@ if (!$video) {
     redirect(SITE_URL . '/pages/video.php');
 }
 
-$isOwn = ((int) $currentUser['id'] === (int) $video['owner_id']) || is_admin();
+$isOwn = ((int) $currentUser['id'] === (int) $video['owner_id']);
 
 // Privacy gate — view_videos
-if (!$isOwn && !PrivacyService::canView((int) $currentUser['id'], (int) $video['owner_id'], 'view_videos')) {
+if (!$isOwn && !is_admin() && !PrivacyService::canView((int) $currentUser['id'], (int) $video['owner_id'], 'view_videos')) {
     flash_set('error', 'This user\'s videos are private.');
     redirect(SITE_URL . '/pages/profile.php?id=' . (int) $video['owner_id']);
 }

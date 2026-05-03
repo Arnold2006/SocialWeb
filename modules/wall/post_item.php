@@ -112,7 +112,7 @@ $moreComments = (int)$post['comment_count'] > 3;
                 <?= e(time_ago($post['created_at'])) ?>
             </time>
         </div>
-        <?php if ((int)$user['id'] === (int)$post['user_id'] || is_admin()): ?>
+        <?php if ((int)$user['id'] === (int)$post['user_id']): ?>
         <div class="post-actions-menu">
             <form method="POST" action="<?= e(SITE_URL . '/modules/wall/delete_post.php') ?>"
                   class="inline-form"
