@@ -43,7 +43,7 @@ if (!$thread) {
     exit;
 }
 
-$pageTitle = e($thread['title']) . ' — Forum';
+$pageTitle = $thread['title'] . ' — Forum';
 $user      = current_user();
 
 // Mark this thread as read for the current user
@@ -233,7 +233,7 @@ include SITE_ROOT . '/includes/header.php';
                         echo sanitise_html($post['content']);
                     } else {
                         // Legacy plain-text content
-                        echo nl2br(linkify(smilify(e($post['content']))));
+                        echo nl2br(linkify(smilify($post['content'])));
                     }
                 ?></div>
                 <?php if ($user && ((int)$post['user_id'] === (int)$user['id'] || is_admin())):

@@ -48,7 +48,7 @@ if (!empty($friendIds)) {
 $pendingRequests = $isOwnList ? FriendshipService::getPendingRequests($uid) : [];
 $sentRequests    = $isOwnList ? FriendshipService::getSentRequests($uid)    : [];
 
-$pageTitle = $isOwnList ? 'My Friends' : e($viewUser['username']) . "'s Friends";
+$pageTitle = $isOwnList ? 'My Friends' : $viewUser['username'] . "'s Friends";
 $csrfToken = csrf_token();
 
 include SITE_ROOT . '/includes/header.php';
