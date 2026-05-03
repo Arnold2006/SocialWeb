@@ -2814,3 +2814,30 @@ function clearCommentImagePreview(form) {
         }
     }, true);
 }());
+
+// ── Nav pin toggle ────────────────────────────────────────────────────────────
+
+(function () {
+    const PREF_KEY = 'nav_pinned';
+    const btn = document.getElementById('nav-pin-btn');
+    if (!btn) return;
+
+    function applyPinState(pinned) {
+        document.documentElement.classList.toggle('nav-unpinned', !pinned);
+        btn.setAttribute('aria-pressed', pinned ? 'true' : 'false');
+        btn.title = pinned ? 'Unpin navigation bar' : 'Pin navigation bar';
+    }
+
+    /* Sync button aria-pressed with the class already set by the inline script */
+    const currentlyPinned = !document.documentElement.classList.contains('nav-unpinned');
+    btn.setAttribute('aria-pressed', currentlyPinned ? 'true' : 'false');
+    btn.title = currentlyPinned ? 'Unpin navigation bar' : 'Pin navigation bar';
+
+    btn.addEventListener('click', function () {
+        /* classList.contains('nav-unpinned') is true when currently unpinned,
+           so `next = true` means "switch to pinned" — no double negation needed. */
+        const next = document.documentElement.classList.contains('nav-unpinned');
+        localStorage.setItem(PREF_KEY, next ? '1' : '0');
+        applyPinState(next);
+    });
+}());

@@ -267,15 +267,65 @@ ul { list-style: none; }
     background: var(--color-surface);
 }
 
-/* ── Navigation (sticky at very top) ────────────────────────── */
+/* Push banner below the fixed nav when a nav is present */
+.has-nav.site-header {
+    padding-top: var(--nav-height);
+}
+
+/* ── Navigation (fixed at very top, always visible) ─────────── */
 .main-nav {
     background: var(--color-surface);
     border-bottom: 2px solid var(--color-accent);
     padding: 0 1rem;
-    position: sticky;
+    position: fixed;
     top: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
     z-index: 100;
     box-shadow: var(--shadow-md);
+}
+
+/* ── Nav pin toggle ──────────────────────────────────────────── */
+.nav-pin-btn {
+    position: absolute;
+    right: 0.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--color-text-muted);
+    padding: 0.3rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-sm);
+    transition: color var(--transition), opacity var(--transition);
+    opacity: 0.45;
+    line-height: 1;
+}
+
+.nav-pin-btn:hover {
+    color: var(--color-accent);
+    opacity: 1;
+}
+
+.nav-pin-btn[aria-pressed="true"] {
+    color: var(--color-accent);
+    opacity: 1;
+}
+
+/* ── Unpinned state: nav scrolls naturally with the page ─────── */
+/* position: relative (not sticky) is intentional — "unpinned" means  *
+ * the nav behaves as a normal page element and scrolls away,          *
+ * giving a clear visual distinction from the pinned (fixed) state.    */
+html.nav-unpinned .main-nav {
+    position: relative;
+}
+
+html.nav-unpinned .has-nav.site-header {
+    padding-top: 0;
 }
 
 .main-nav ul {
