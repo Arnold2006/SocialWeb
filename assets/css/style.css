@@ -1769,6 +1769,28 @@ textarea { resize: vertical; min-height: 80px; }
     text-align: center;
 }
 
+.upload-rejection-summary {
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--color-border);
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+.upload-rejection-list strong {
+    display: block;
+    font-size: 0.85rem;
+    color: var(--color-error);
+    margin-bottom: 0.25rem;
+}
+.upload-rejection-list ul {
+    margin: 0;
+    padding-left: 1.2em;
+    font-size: 0.82rem;
+    color: var(--color-text-muted);
+}
+.upload-rejection-list li { margin-bottom: 0.1rem; }
+
 /* ── Media item actions (set cover + delete) ──────────────────── */
 .media-item-actions {
     position: absolute;
