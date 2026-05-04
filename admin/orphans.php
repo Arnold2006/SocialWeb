@@ -16,7 +16,7 @@
  *
  * Scans the uploads directory for files that are no longer referenced
  * by any database record (media, users avatars, album covers, chat images,
- * or the site banner) and lets the admin delete them.
+ * the site banner, the banner image library, or custom fonts) and lets the admin delete them.
  */
 
 declare(strict_types=1);
@@ -36,7 +36,7 @@ $pageTitle = 'Admin – Orphan Cleanup';
  * memory exhaustion.
  *
  * Sources: media, users (avatars), albums (covers), chat_messages, site_settings (banner),
- *          site_fonts (custom fonts).
+ *          banner_images (banner library), site_fonts (custom fonts).
  */
 function collect_referenced_paths(): array
 {
@@ -93,6 +93,15 @@ function collect_referenced_paths(): array
     if (!empty($banner)) {
         $abs = SITE_ROOT . $banner;
         $refs[realpath($abs) ?: $abs] = true;
+    }
+
+    // ── banner_images library  (all uploaded banners saved for later reuse)
+    $stmt = $pdo->query('SELECT path FROM banner_images');
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        if (!empty($row['path'])) {
+            $abs = SITE_ROOT . $row['path'];
+            $refs[realpath($abs) ?: $abs] = true;
+        }
     }
 
     // ── site_fonts  filename  (stored in uploads/fonts/)
@@ -253,7 +262,7 @@ include SITE_ROOT . '/includes/header.php';
         <p class="muted">
             Orphan files are upload files that exist on disk but are no longer referenced
             by any database record (media, avatars, album covers, chat images, the site banner,
-            or custom fonts). They may accumulate when users or admins delete content without
+            the banner image library, or custom fonts). They may accumulate when users or admins delete content without
             the corresponding filesystem cleanup completing.
         </p>
 
