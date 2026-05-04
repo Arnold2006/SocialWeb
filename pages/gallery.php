@@ -206,7 +206,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwn) {
                 $count = count($files['name']);
 
                 for ($i = 0; $i < $count; $i++) {
+                    $fileName = $files['name'][$i] ?: ('File #' . ($i + 1));
                     if ($files['error'][$i] !== UPLOAD_ERR_OK) {
+                        $errors[] = $fileName . ': ' . upload_error_message($files['error'][$i]);
                         continue;
                     }
                     $file = [
@@ -218,12 +220,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwn) {
                     ];
                     $finfo    = new finfo(FILEINFO_MIME_TYPE);
                     $mimeType = $finfo->file($file['tmp_name']);
-                    if (in_array($mimeType, ALLOWED_IMAGE_TYPES, true)) {
-                        $res = process_image_upload($file, (int)$currentUser['id'], $aId);
-                    } elseif (in_array($mimeType, ALLOWED_VIDEO_TYPES, true)) {
-                        $res = process_video_upload($file, (int)$currentUser['id'], $aId);
-                    } else {
-                        $res = ['ok' => false, 'error' => 'Unsupported file type.'];
+                    try {
+                        if (in_array($mimeType, ALLOWED_IMAGE_TYPES, true)) {
+                            $res = process_image_upload($file, (int)$currentUser['id'], $aId);
+                        } elseif (in_array($mimeType, ALLOWED_VIDEO_TYPES, true)) {
+                            $res = process_video_upload($file, (int)$currentUser['id'], $aId);
+                        } else {
+                            $res = ['ok' => false, 'error' => 'Unsupported file type.'];
+                        }
+                    } catch (Throwable $ex) {
+                        error_log('Gallery upload error for file "' . $fileName . '": ' . $ex->getMessage());
+                        $res = ['ok' => false, 'error' => 'An unexpected error occurred during processing.'];
                     }
                     if ($res['ok']) {
                         $uploaded++;
@@ -231,7 +238,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwn) {
                             $uploadedMediaIds[] = $res['media_id'];
                         }
                     } else {
-                        $errors[] = $res['error'];
+                        $errors[] = $fileName . ': ' . $res['error'];
                     }
                 }
             }
@@ -267,8 +274,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwn) {
             if ($uploaded > 0) {
                 flash_set('success', $uploaded . ' file(s) uploaded successfully.');
             }
-            if (!empty($errors)) {
-                flash_set('error', implode(' ', $errors));
+            foreach ($errors as $err) {
+                flash_set('error', $err);
             }
             redirect($redirectUrl);
             break;

@@ -1279,11 +1279,45 @@ if (avatarInput && cropContainer && cropCanvas) {
 
         function uploadBatch() {
             if (batchIndex >= totalBatches) {
-                const msgs = [];
-                if (totalUploaded > 0) msgs.push(fileWord(totalUploaded) + ' uploaded successfully.');
-                if (allErrors.length > 0) msgs.push(...allErrors);
-                setProgress(100, msgs.length > 0 ? msgs.join(' ') : 'Done.', 'done');
-                setTimeout(() => { window.location.href = finalRedirectUrl; }, 800);
+                const successMsg = totalUploaded > 0
+                    ? fileWord(totalUploaded) + ' uploaded successfully.'
+                    : '';
+                setProgress(100, successMsg || 'Done.', 'done');
+
+                if (allErrors.length > 0) {
+                    // Show a persistent rejection summary and let the user navigate manually.
+                    const progressEl = getProgress();
+
+                    const summary = document.createElement('div');
+                    summary.className = 'upload-rejection-summary';
+
+                    const list = document.createElement('div');
+                    list.className = 'upload-rejection-list';
+
+                    const heading = document.createElement('strong');
+                    heading.textContent = allErrors.length + ' file' + (allErrors.length !== 1 ? 's' : '') + ' skipped:';
+                    list.appendChild(heading);
+
+                    const ul = document.createElement('ul');
+                    allErrors.forEach((err) => {
+                        const li = document.createElement('li');
+                        li.textContent = err;
+                        ul.appendChild(li);
+                    });
+                    list.appendChild(ul);
+                    summary.appendChild(list);
+
+                    const viewBtn = document.createElement('a');
+                    viewBtn.className = 'btn btn-primary btn-sm';
+                    viewBtn.textContent = 'View Album';
+                    viewBtn.setAttribute('href', finalRedirectUrl);
+                    summary.appendChild(viewBtn);
+
+                    progressEl.appendChild(summary);
+                    if (uploadBtn) uploadBtn.disabled = false;
+                } else {
+                    setTimeout(() => { window.location.href = finalRedirectUrl; }, 800);
+                }
                 return;
             }
 
