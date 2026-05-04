@@ -120,13 +120,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         if (imagewebp($dst, $savePath, 90)) {
                             imagedestroy($dst);
 
-                            // Delete old banner file if it exists
-                            $oldPath = site_setting('banner_image');
-                            if ($oldPath !== '') {
-                                $oldFile = SITE_ROOT . $oldPath;
-                                if (file_exists($oldFile)) {
-                                    @unlink($oldFile);
-                                }
+                            // Add to banner library (keep all uploaded banners)
+                            try {
+                                db_exec(
+                                    "INSERT IGNORE INTO banner_images (path) VALUES (?)",
+                                    [$relPath]
+                                );
+                            } catch (\Throwable $e) {
+                                // table may not exist yet on older installs — ignore
                             }
 
                             // Upsert into site_settings
@@ -147,17 +148,61 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
     } elseif ($action === 'remove_banner') {
-        // ── Remove banner ───────────────────────────────────────────────────
-        $oldPath = site_setting('banner_image');
-        if ($oldPath !== '') {
-            $oldFile = SITE_ROOT . $oldPath;
-            if (file_exists($oldFile)) {
-                @unlink($oldFile);
-            }
-        }
+        // ── Remove active banner (keep file in library) ─────────────────────
         db_exec("UPDATE site_settings SET value = NULL WHERE `key` = 'banner_image'");
 
         flash_set('success', 'Banner image removed.');
+        redirect(SITE_URL . '/admin/settings.php');
+    } elseif ($action === 'select_banner') {
+        // ── Select a banner from the library ────────────────────────────────
+        $bannerId = (int)($_POST['banner_id'] ?? 0);
+        $row = null;
+        try {
+            $rows = db_query("SELECT path FROM banner_images WHERE id = ?", [$bannerId]);
+            $row  = $rows[0] ?? null;
+        } catch (\Throwable $e) {
+            $row = null;
+        }
+        if ($row === null) {
+            flash_set('error', 'Banner not found in library.');
+        } else {
+            db_exec(
+                "INSERT INTO site_settings (`key`, value) VALUES ('banner_image', ?)
+                 ON DUPLICATE KEY UPDATE value = ?",
+                [$row['path'], $row['path']]
+            );
+            flash_set('success', 'Banner image updated.');
+        }
+        redirect(SITE_URL . '/admin/settings.php');
+    } elseif ($action === 'delete_banner') {
+        // ── Delete a banner from the library ────────────────────────────────
+        $bannerId = (int)($_POST['banner_id'] ?? 0);
+        $row = null;
+        try {
+            $rows = db_query("SELECT path FROM banner_images WHERE id = ?", [$bannerId]);
+            $row  = $rows[0] ?? null;
+        } catch (\Throwable $e) {
+            $row = null;
+        }
+        if ($row !== null) {
+            // If this banner is currently active, clear the setting first
+            $activePath = site_setting('banner_image');
+            if ($activePath === $row['path']) {
+                db_exec("UPDATE site_settings SET value = NULL WHERE `key` = 'banner_image'");
+            }
+            // Remove from library table
+            try {
+                db_exec("DELETE FROM banner_images WHERE id = ?", [$bannerId]);
+            } catch (\Throwable $e) { /* ignore */ }
+            // Delete file from disk
+            $filePath = SITE_ROOT . $row['path'];
+            if (file_exists($filePath)) {
+                @unlink($filePath);
+            }
+            flash_set('success', 'Banner deleted from library.');
+        } else {
+            flash_set('error', 'Banner not found.');
+        }
         redirect(SITE_URL . '/admin/settings.php');
     } elseif ($action === 'save_theme') {
         // ── Save site colour theme ───────────────────────────────────────────
@@ -348,6 +393,24 @@ $overlayColor   = site_setting('banner_overlay_color',  '#ffffff');
 $overlayFont    = site_setting('banner_overlay_font',   'system');
 $overlayShadow  = site_setting('banner_overlay_shadow', 'medium');
 
+// Load banner library (table may not exist on older installs)
+try {
+    $bannerLibrary = db_query("SELECT id, path, uploaded_at FROM banner_images ORDER BY uploaded_at DESC");
+    // Migrate an existing active banner that is not yet in the library
+    if ($currentBanner !== '' && $bannerLibrary !== null) {
+        $inLibrary = false;
+        foreach ($bannerLibrary as $lib) {
+            if ($lib['path'] === $currentBanner) { $inLibrary = true; break; }
+        }
+        if (!$inLibrary) {
+            db_exec("INSERT IGNORE INTO banner_images (path) VALUES (?)", [$currentBanner]);
+            $bannerLibrary = db_query("SELECT id, path, uploaded_at FROM banner_images ORDER BY uploaded_at DESC");
+        }
+    }
+} catch (\Throwable $e) {
+    $bannerLibrary = [];
+}
+
 $currentTheme = active_theme();
 
 // CSS maps (shared via includes/overlay_maps.php; also mirrored in assets/js/app.js)
@@ -411,17 +474,31 @@ include SITE_ROOT . '/includes/header.php';
                 <img src="<?= e(SITE_URL . $currentBanner) ?>"
                      alt="Current banner image"
                      class="banner-preview-img">
-                <form method="POST" style="margin-top:.75rem">
-                    <?= csrf_field() ?>
-                    <input type="hidden" name="action" value="remove_banner">
-                    <button type="submit" class="btn btn-danger btn-sm"
-                            data-confirm="Remove the banner image?">
-                        Remove Banner
+                <div style="display:flex;gap:.5rem;margin-top:.75rem;flex-wrap:wrap;align-items:center">
+                    <?php if (!empty($bannerLibrary) && count($bannerLibrary) > 1): ?>
+                    <button type="button" class="btn btn-secondary btn-sm" id="open-banner-library">
+                        Choose from Library (<?= count($bannerLibrary) ?>)
                     </button>
-                </form>
+                    <?php endif; ?>
+                    <form method="POST" style="display:inline">
+                        <?= csrf_field() ?>
+                        <input type="hidden" name="action" value="remove_banner">
+                        <button type="submit" class="btn btn-danger btn-sm"
+                                data-confirm="Remove the active banner image? It will remain in the library.">
+                            Remove Banner
+                        </button>
+                    </form>
+                </div>
             </div>
             <?php else: ?>
             <p class="muted" style="margin-bottom:1rem">No banner image is currently set.</p>
+            <?php if (!empty($bannerLibrary)): ?>
+            <div style="margin-bottom:1rem">
+                <button type="button" class="btn btn-secondary btn-sm" id="open-banner-library">
+                    Choose from Library (<?= count($bannerLibrary) ?>)
+                </button>
+            </div>
+            <?php endif; ?>
             <?php endif; ?>
 
             <form method="POST" enctype="multipart/form-data" class="settings-form" id="banner-upload-form">
@@ -689,5 +766,45 @@ include SITE_ROOT . '/includes/header.php';
         </section>
     </main>
 </div>
+
+<?php if (!empty($bannerLibrary)): ?>
+<!-- ── Banner Library Modal ──────────────────────────────────────────────── -->
+<div id="banner-library-modal" class="crop-modal" style="display:none" role="dialog" aria-modal="true" aria-labelledby="banner-library-title">
+    <div class="crop-modal-inner" style="max-width:860px;width:100%">
+        <h3 id="banner-library-title">Banner Library</h3>
+        <p class="muted">Choose a previously uploaded banner to make it active, or delete banners you no longer need.</p>
+        <div class="banner-library-grid">
+            <?php foreach ($bannerLibrary as $lib): ?>
+            <div class="banner-library-item<?= $lib['path'] === $currentBanner ? ' banner-library-item--active' : '' ?>">
+                <img src="<?= e(SITE_URL . $lib['path']) ?>" alt="Banner" class="banner-library-thumb" loading="lazy">
+                <?php if ($lib['path'] === $currentBanner): ?>
+                <span class="banner-library-badge">Active</span>
+                <?php endif; ?>
+                <div class="banner-library-actions">
+                    <?php if ($lib['path'] !== $currentBanner): ?>
+                    <form method="POST">
+                        <?= csrf_field() ?>
+                        <input type="hidden" name="action"    value="select_banner">
+                        <input type="hidden" name="banner_id" value="<?= (int)$lib['id'] ?>">
+                        <button type="submit" class="btn btn-primary btn-sm">Use</button>
+                    </form>
+                    <?php endif; ?>
+                    <form method="POST">
+                        <?= csrf_field() ?>
+                        <input type="hidden" name="action"    value="delete_banner">
+                        <input type="hidden" name="banner_id" value="<?= (int)$lib['id'] ?>">
+                        <button type="submit" class="btn btn-danger btn-sm"
+                                data-confirm="Delete this banner image permanently?">Delete</button>
+                    </form>
+                </div>
+            </div>
+            <?php endforeach; ?>
+        </div>
+        <div class="crop-modal-actions">
+            <button type="button" class="btn btn-secondary" id="close-banner-library">Close</button>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
 
 <?php include SITE_ROOT . '/includes/footer.php'; ?>

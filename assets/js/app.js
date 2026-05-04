@@ -1868,6 +1868,31 @@ if (avatarInput && cropContainer && cropCanvas) {
     }
 })();
 
+// ── Banner library modal (admin/settings.php) ─────────────────────────────────
+
+(function initBannerLibrary() {
+    const modal    = document.getElementById('banner-library-modal');
+    const openBtn  = document.getElementById('open-banner-library');
+    const closeBtn = document.getElementById('close-banner-library');
+
+    if (!modal) return;
+
+    function openModal() {
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal() {
+        modal.style.display = 'none';
+        document.body.style.overflow = '';
+    }
+
+    openBtn  && openBtn.addEventListener('click', openModal);
+    closeBtn && closeBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
+})();
+
 // ── Banner overlay position/size editor (admin/settings.php) ─────────────────
 
 (function initOverlayEditor() {
