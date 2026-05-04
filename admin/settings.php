@@ -157,11 +157,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // ── Select a banner from the library ────────────────────────────────
         $bannerId = (int)($_POST['banner_id'] ?? 0);
         $row = null;
-        try {
-            $rows = db_query("SELECT path FROM banner_images WHERE id = ?", [$bannerId]);
-            $row  = $rows[0] ?? null;
-        } catch (\Throwable $e) {
-            $row = null;
+        if ($bannerId > 0) {
+            try {
+                $rows = db_query("SELECT path FROM banner_images WHERE id = ?", [$bannerId]);
+                $row  = $rows[0] ?? null;
+            } catch (\Throwable $e) {
+                $row = null;
+            }
         }
         if ($row === null) {
             flash_set('error', 'Banner not found in library.');
@@ -178,11 +180,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // ── Delete a banner from the library ────────────────────────────────
         $bannerId = (int)($_POST['banner_id'] ?? 0);
         $row = null;
-        try {
-            $rows = db_query("SELECT path FROM banner_images WHERE id = ?", [$bannerId]);
-            $row  = $rows[0] ?? null;
-        } catch (\Throwable $e) {
-            $row = null;
+        if ($bannerId > 0) {
+            try {
+                $rows = db_query("SELECT path FROM banner_images WHERE id = ?", [$bannerId]);
+                $row  = $rows[0] ?? null;
+            } catch (\Throwable $e) {
+                $row = null;
+            }
         }
         if ($row !== null) {
             // If this banner is currently active, clear the setting first

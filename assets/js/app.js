@@ -1890,7 +1890,9 @@ if (avatarInput && cropContainer && cropCanvas) {
     openBtn  && openBtn.addEventListener('click', openModal);
     closeBtn && closeBtn.addEventListener('click', closeModal);
     modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
-    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modal.style.display === 'flex') closeModal();
+    });
 })();
 
 // ── Banner overlay position/size editor (admin/settings.php) ─────────────────
