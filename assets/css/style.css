@@ -2062,6 +2062,58 @@ textarea { resize: vertical; min-height: 80px; }
     margin-top: 1rem;
 }
 
+/* ── Banner library modal ─────────────────────────────────── */
+.banner-library-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1rem;
+    margin: 1rem 0;
+    max-height: 60vh;
+    overflow-y: auto;
+    padding-right: 0.25rem;
+}
+
+.banner-library-item {
+    position: relative;
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    background: var(--color-surface2);
+    transition: border-color 0.2s;
+}
+
+.banner-library-item--active {
+    border-color: var(--color-accent);
+}
+
+.banner-library-thumb {
+    display: block;
+    width: 100%;
+    height: 80px;
+    object-fit: cover;
+}
+
+.banner-library-badge {
+    position: absolute;
+    top: 0.35rem;
+    left: 0.35rem;
+    background: var(--color-accent);
+    color: #fff;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 0.15rem 0.45rem;
+    border-radius: var(--radius-sm);
+    pointer-events: none;
+}
+
+.banner-library-actions {
+    display: flex;
+    gap: 0.4rem;
+    padding: 0.5rem;
+    background: var(--color-surface);
+    justify-content: flex-end;
+}
+
 .media-grid {
     position: relative;  /* Container for absolute-positioned items in JS-driven masonry layout */
 }
