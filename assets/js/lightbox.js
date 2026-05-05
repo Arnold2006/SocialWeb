@@ -301,6 +301,7 @@
         commentsList.innerHTML = '<p class="lightbox-empty-comments">Loading\u2026</p>';
         likeCountEl.textContent = '0';
         likeBtn.classList.remove('liked');
+        likeBtn.dataset.mediaId = mediaId;
 
         fetch(baseUrl() + '/modules/gallery/get_media_comments.php?media_id=' + encodeURIComponent(mediaId), {
             credentials: 'same-origin',
