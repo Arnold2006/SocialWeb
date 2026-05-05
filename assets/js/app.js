@@ -378,11 +378,12 @@ document.addEventListener('click', async (e) => {
     const hoverTimers = new WeakMap();
 
     document.addEventListener('mouseenter', async (e) => {
-        const btn = e.target.closest('.btn-like:not(.btn-like-blog), .btn-comment[data-post-id]');
+        const btn = e.target.closest('.btn-like:not(.btn-like-blog), .btn-like-media, .btn-comment[data-post-id]');
         if (!btn) return;
 
-        const postId = btn.dataset.postId;
-        if (!postId) return;
+        const isMediaLike = btn.classList.contains('btn-like-media');
+        const id = isMediaLike ? btn.dataset.mediaId : btn.dataset.postId;
+        if (!id) return;
 
         // Remove any existing tooltip on this button first
         const existing = btn.querySelector('.reaction-tooltip');
@@ -393,14 +394,21 @@ document.addEventListener('click', async (e) => {
             // Guard: button still hovered
             if (!btn.matches(':hover')) return;
 
-            const isLike = btn.classList.contains('btn-like');
-            const endpoint = isLike
-                ? '/modules/wall/get_likers.php'
-                : '/modules/wall/get_commenters.php';
+            let endpoint, param;
+            if (isMediaLike) {
+                endpoint = '/modules/gallery/get_media_likers.php';
+                param    = 'media_id';
+            } else if (btn.classList.contains('btn-like')) {
+                endpoint = '/modules/wall/get_likers.php';
+                param    = 'post_id';
+            } else {
+                endpoint = '/modules/wall/get_commenters.php';
+                param    = 'post_id';
+            }
 
             try {
                 const resp   = await fetch(
-                    baseUrl() + endpoint + '?post_id=' + encodeURIComponent(postId),
+                    baseUrl() + endpoint + '?' + param + '=' + encodeURIComponent(id),
                     { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } }
                 );
                 const result = await resp.json();
@@ -425,7 +433,7 @@ document.addEventListener('click', async (e) => {
     }, true);
 
     document.addEventListener('mouseleave', (e) => {
-        const btn = e.target.closest('.btn-like:not(.btn-like-blog), .btn-comment[data-post-id]');
+        const btn = e.target.closest('.btn-like:not(.btn-like-blog), .btn-like-media, .btn-comment[data-post-id]');
         if (!btn) return;
         clearTimeout(hoverTimers.get(btn));
         hoverTimers.delete(btn);
