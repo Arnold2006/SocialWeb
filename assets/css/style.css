@@ -3025,8 +3025,13 @@ textarea { resize: vertical; min-height: 80px; }
     display: flex;
     flex-direction: column;
     max-height: 82vh;
-    overflow: hidden;
+    overflow: visible;
     cursor: default;
+}
+
+.lightbox-comments-list,
+.lightbox-comment-form {
+    overflow-x: hidden;
 }
 
 .lightbox-panel-header {
@@ -3051,6 +3056,7 @@ textarea { resize: vertical; min-height: 80px; }
     align-items: center;
     gap: 0.2rem;
     white-space: nowrap;
+    position: relative;
 }
 .btn-like-media.liked {
     color: var(--color-like);
