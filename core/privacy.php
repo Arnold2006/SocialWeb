@@ -160,7 +160,7 @@ class PrivacyService
             // Always allow the viewer to see themselves
             $hiddenIds = array_values(array_filter(
                 $hiddenIds,
-                static fn(int $id): bool => $id !== $viewerId
+                static fn($id): bool => $id !== $viewerId
             ));
 
             if (empty($hiddenIds)) {

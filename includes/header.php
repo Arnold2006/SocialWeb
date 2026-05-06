@@ -62,8 +62,9 @@ $overlayShadowCSS = $OVERLAY_SHADOW_MAP[$overlayShadow] ?? $OVERLAY_SHADOW_MAP['
 $siteTheme    = active_theme();
 $themeMode    = user_theme_mode();
 
-// Helper: return 'active' when the current script matches a nav path.
-// A path containing '/' is matched with str_contains; otherwise str_ends_with is used.
+// Helper closure: returns 'active' (for CSS class) when the current script matches
+// any of the given nav paths, or an empty string otherwise.
+// Paths containing '/' use str_contains; plain filenames use str_ends_with.
 $navIs = static function (string ...$paths): string {
     $self = $_SERVER['PHP_SELF'] ?? '';
     foreach ($paths as $path) {
