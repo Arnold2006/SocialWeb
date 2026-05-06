@@ -61,6 +61,19 @@ $overlayShadowCSS = $OVERLAY_SHADOW_MAP[$overlayShadow] ?? $OVERLAY_SHADOW_MAP['
 
 $siteTheme    = active_theme();
 $themeMode    = user_theme_mode();
+
+// Helper: return 'active' when the current script matches a nav path.
+// A path containing '/' is matched with str_contains; otherwise str_ends_with is used.
+$navIs = static function (string ...$paths): string {
+    $self = $_SERVER['PHP_SELF'] ?? '';
+    foreach ($paths as $path) {
+        $active = str_contains($path, '/') ? str_contains($self, $path) : str_ends_with($self, $path);
+        if ($active) {
+            return 'active';
+        }
+    }
+    return '';
+};
 ?>
 <!DOCTYPE html>
 <html lang="en" data-theme="<?= e($siteTheme) ?>" data-mode="<?= e($themeMode) ?>">
@@ -109,38 +122,38 @@ $themeMode    = user_theme_mode();
     <nav class="main-nav">
         <ul>
             <li><a href="<?= SITE_URL ?>/pages/index.php"
-                   class="<?= (str_ends_with($_SERVER['PHP_SELF'] ?? '', 'index.php')) ? 'active' : '' ?>">Wall</a></li>
+                   class="<?= $navIs('index.php') ?>">Wall</a></li>
             <li><a href="<?= SITE_URL ?>/pages/members.php"
-                   class="<?= (str_ends_with($_SERVER['PHP_SELF'] ?? '', 'members.php')) ? 'active' : '' ?>">Members</a></li>
+                   class="<?= $navIs('members.php') ?>">Members</a></li>
             <li>
                 <a href="<?= SITE_URL ?>/pages/friends.php"
-                   class="<?= (str_ends_with($_SERVER['PHP_SELF'] ?? '', 'friends.php')) ? 'active' : '' ?>">
+                   class="<?= $navIs('friends.php') ?>">
                     Friends<?= $friendRequestCount > 0 ? ' <span class="badge">' . $friendRequestCount . '</span>' : '' ?>
                 </a>
             </li>
             <li><a href="<?= SITE_URL ?>/pages/profile.php?id=<?= (int)$user['id'] ?>"
-                   class="<?= (str_ends_with($_SERVER['PHP_SELF'] ?? '', 'profile.php')) ? 'active' : '' ?>">My Profile</a></li>
+                   class="<?= $navIs('profile.php') ?>">My Profile</a></li>
             <li><a href="<?= SITE_URL ?>/pages/photos.php"
-                   class="<?= (str_ends_with($_SERVER['PHP_SELF'] ?? '', 'photos.php')) ? 'active' : '' ?>">Photos</a></li>
+                   class="<?= $navIs('photos.php') ?>">Photos</a></li>
             <li><a href="<?= SITE_URL ?>/pages/video.php"
-                   class="<?= (str_ends_with($_SERVER['PHP_SELF'] ?? '', 'video.php') || str_ends_with($_SERVER['PHP_SELF'] ?? '', 'video_play.php')) ? 'active' : '' ?>">Videos</a></li>
+                   class="<?= $navIs('video.php', 'video_play.php') ?>">Videos</a></li>
             <li><a href="<?= SITE_URL ?>/forum/index.php"
-                   class="<?= str_contains($_SERVER['PHP_SELF'] ?? '', '/forum/') ? 'active' : '' ?>">Forum<?= $forumCount > 0 ? ' <span class="badge">' . $forumCount . '</span>' : '' ?></a></li>
+                   class="<?= $navIs('/forum/') ?>">Forum<?= $forumCount > 0 ? ' <span class="badge">' . $forumCount . '</span>' : '' ?></a></li>
             <li>
                 <a href="<?= SITE_URL ?>/pages/messages.php"
-                   class="<?= (str_ends_with($_SERVER['PHP_SELF'] ?? '', 'messages.php')) ? 'active' : '' ?>">
+                   class="<?= $navIs('messages.php') ?>">
                     Messages<?= $msgCount > 0 ? ' <span class="badge">' . $msgCount . '</span>' : '' ?>
                 </a>
             </li>
             <li>
                 <a href="<?= SITE_URL ?>/pages/notifications.php"
-                   class="<?= (str_ends_with($_SERVER['PHP_SELF'] ?? '', 'notifications.php')) ? 'active' : '' ?>">
+                   class="<?= $navIs('notifications.php') ?>">
                     Notifications<?= $notifCount > 0 ? ' <span class="badge">' . $notifCount . '</span>' : '' ?>
                 </a>
             </li>
             <?php if (is_admin()): ?>
             <li><a href="<?= SITE_URL ?>/admin/dashboard.php"
-                   class="<?= str_contains($_SERVER['PHP_SELF'] ?? '', '/admin/') ? 'active' : '' ?>">Admin<?= $pendingMigrations > 0 ? ' <span class="badge">' . $pendingMigrations . '</span>' : '' ?></a></li>
+                   class="<?= $navIs('/admin/') ?>">Admin<?= $pendingMigrations > 0 ? ' <span class="badge">' . $pendingMigrations . '</span>' : '' ?></a></li>
             <?php endif; ?>
             <li><a href="https://sf.tera-sat.com" target="_blank" rel="noopener noreferrer">SendFile</a></li>
             <li><a href="https://print.tera-sat.com" target="_blank" rel="noopener noreferrer">PrintService</a></li>

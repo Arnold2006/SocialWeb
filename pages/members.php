@@ -102,15 +102,7 @@ include SITE_ROOT . '/includes/header.php';
         <div class="member-info">
             <a href="<?= e(SITE_URL . '/pages/profile.php?id=' . (int)$member['id']) ?>"
                class="member-username"><?= e($member['username']) ?></a>
-            <p class="member-last-online">Last online: <?php
-                if (!$member['last_seen']) {
-                    echo 'Never';
-                } elseif (time() - strtotime($member['last_seen']) > 86400) {
-                    echo e(date('M j, Y', strtotime($member['last_seen'])));
-                } else {
-                    echo e(time_ago($member['last_seen']));
-                }
-            ?></p>
+            <p class="member-last-online">Last online: <?= e(format_last_seen($member['last_seen'])) ?></p>
             <?php if (!empty($member['bio'])): ?>
             <p class="member-bio"><?= e(mb_substr($member['bio'], 0, 100)) ?><?= mb_strlen($member['bio'] ?? '') > 100 ? '…' : '' ?></p>
             <?php endif; ?>

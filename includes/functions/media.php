@@ -77,3 +77,31 @@ function get_media_url(array $media, string $size = 'medium'): string
     $relative = str_replace(SITE_ROOT, '', $path);
     return SITE_URL . str_replace('\\', '/', $relative);
 }
+
+/**
+ * Format a user's last_seen timestamp for display.
+ *
+ * Returns 'Never' when no timestamp is available, the relative time string
+ * (e.g. "5 min ago") when the timestamp is within the last 24 hours, or
+ * an absolute date (e.g. "Jan 3, 2026") for older timestamps.
+ *
+ * @param string|null $lastSeen  Value from users.last_seen (MySQL DATETIME or null)
+ * @return string
+ */
+function format_last_seen(?string $lastSeen): string
+{
+    if (empty($lastSeen)) {
+        return 'Never';
+    }
+
+    $ts = strtotime($lastSeen);
+    if ($ts === false) {
+        return 'Never';
+    }
+
+    if ((time() - $ts) > 86400) {
+        return date('M j, Y', $ts);
+    }
+
+    return time_ago($lastSeen);
+}
