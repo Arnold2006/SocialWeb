@@ -18,7 +18,10 @@
  * GET /chat/get_users.php?search=query
  *
  * Response:
- *   { ok: true, users: [ { id, username, avatar_url, unread_count } ] }
+ *   { ok: true, total_unread_count: N, users: [ { id, username, avatar_url, unread_count } ] }
+ *
+ * total_unread_count is the global unread total across ALL conversations, regardless
+ * of any search filter, so callers can update the badge accurately.
  */
 
 declare(strict_types=1);
@@ -42,14 +45,19 @@ $users = db_query(
     "SELECT u.id, u.username, u.avatar_path
      FROM   users u
      WHERE  {$where}
-     ORDER  BY u.username ASC",
+     ORDER  BY u.username ASC
+     LIMIT  200",
+    // 200 is enough for any practical contact sidebar. Clients should use the
+    // search parameter to narrow results when the site has more users.
     $params
 );
 
 // Unread counts: messages sent to the current user that have not been read yet,
 // grouped by sender so we can show a badge per contact.
-$unreadMap  = [];
-$unreadRows = db_query(
+// Summing these gives the accurate global total regardless of any search filter.
+$unreadMap   = [];
+$totalUnread = 0;
+$unreadRows  = db_query(
     'SELECT cm.sender_id, COUNT(*) AS cnt
      FROM   chat_messages cm
      JOIN   conversations c ON c.id = cm.conversation_id
@@ -61,7 +69,9 @@ $unreadRows = db_query(
 );
 
 foreach ($unreadRows as $row) {
-    $unreadMap[(int) $row['sender_id']] = (int) $row['cnt'];
+    $cnt                              = (int) $row['cnt'];
+    $unreadMap[(int) $row['sender_id']] = $cnt;
+    $totalUnread                     += $cnt;
 }
 
 $result = [];
@@ -74,4 +84,4 @@ foreach ($users as $u) {
     ];
 }
 
-echo json_encode(['ok' => true, 'users' => $result]);
+echo json_encode(['ok' => true, 'total_unread_count' => $totalUnread, 'users' => $result]);

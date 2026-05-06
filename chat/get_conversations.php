@@ -42,14 +42,12 @@ $conversations = db_query(
      FROM  conversations c
      JOIN  users ou ON ou.id = IF(c.user1_id = ?, c.user2_id, c.user1_id)
                    AND ou.is_banned = 0
-     LEFT JOIN chat_messages lm
-           ON lm.id = (
-               SELECT cm2.id
-               FROM   chat_messages cm2
-               WHERE  cm2.conversation_id = c.id
-               ORDER  BY cm2.id DESC
-               LIMIT  1
-           )
+     LEFT JOIN (
+         SELECT conversation_id, MAX(id) AS max_id
+         FROM   chat_messages
+         GROUP  BY conversation_id
+     ) latest ON latest.conversation_id = c.id
+     LEFT JOIN chat_messages lm ON lm.id = latest.max_id
      LEFT JOIN (
          SELECT cm3.conversation_id, COUNT(*) AS unread_count
          FROM   chat_messages cm3

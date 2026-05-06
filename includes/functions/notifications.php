@@ -100,10 +100,13 @@ function mark_thread_read(int $threadId): void
  */
 function mark_user_chat_active(int $userId, int $convId): void
 {
+    // Only write if there is no recent record (within the last 5 seconds) to
+    // avoid a DB write on every 3-second poll tick.
     db_exec(
         'INSERT INTO chat_activity (user_id, conversation_id, last_active_at)
          VALUES (?, ?, NOW())
-         ON DUPLICATE KEY UPDATE last_active_at = NOW()',
+         ON DUPLICATE KEY UPDATE
+           last_active_at = IF(last_active_at < NOW() - INTERVAL 5 SECOND, NOW(), last_active_at)',
         [$userId, $convId]
     );
 }
