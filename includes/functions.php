@@ -16,11 +16,12 @@
  *
  * This file acts as a loader for the individual function modules.
  * Utility functions are split by responsibility:
- *   functions/pagination.php   – paginate(), pagination_links()
+ *   functions/pagination.php    – paginate(), pagination_links()
  *   functions/notifications.php – unread counts, mark_thread_read(), notify_user()
- *   functions/media.php        – avatar_url(), get_media_url(), time_ago()
- *   functions/theme.php        – site_setting(), valid_themes(), active_theme()
- *   functions/cache.php        – flash_set(), flash_get(), flash_render()
+ *   functions/media.php         – avatar_url(), get_media_url(), time_ago(), format_last_seen()
+ *   functions/theme.php         – site_setting(), valid_themes(), active_theme()
+ *   functions/cache.php         – flash_set(), flash_get(), flash_render()
+ *   functions/wall.php          – fetch_wall_posts()
  */
 
 declare(strict_types=1);
@@ -30,6 +31,7 @@ require_once __DIR__ . '/functions/notifications.php';
 require_once __DIR__ . '/functions/media.php';
 require_once __DIR__ . '/functions/theme.php';
 require_once __DIR__ . '/functions/cache.php';
+require_once __DIR__ . '/functions/wall.php';
 
 // ── Core utilities ────────────────────────────────────────────────────────────
 

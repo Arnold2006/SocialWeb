@@ -149,39 +149,19 @@ class PrivacyService
     public static function visibleUsersFilter(int $viewerId): array
     {
         try {
-            // Fetch all user IDs that have view_profile = 'only_me'
-            // They should be hidden from everyone except themselves (and admins).
-            $hiddenRows = db_query(
-                "SELECT user_id FROM user_privacy_settings
-                 WHERE action_key = 'view_profile' AND value = 'only_me'",
-                []
-            );
+            $hiddenIds = self::fetchIdsByPrivacyLevel('view_profile', 'only_me');
 
-            $hiddenIds = array_column($hiddenRows, 'user_id');
-
-            // Also fetch 'friends_only' profiles and check friendship
-            $friendsOnlyRows = db_query(
-                "SELECT user_id FROM user_privacy_settings
-                 WHERE action_key = 'view_profile' AND value = 'friends_only'",
-                []
-            );
-
-            foreach ($friendsOnlyRows as $row) {
-                $ownerId = (int) $row['user_id'];
-                if ($ownerId === $viewerId) {
-                    continue;
-                }
-                if (!FriendshipService::areFriends($viewerId, $ownerId)) {
+            foreach (self::fetchIdsByPrivacyLevel('view_profile', 'friends_only') as $ownerId) {
+                if ($ownerId !== $viewerId && !FriendshipService::areFriends($viewerId, $ownerId)) {
                     $hiddenIds[] = $ownerId;
                 }
             }
 
-            if (empty($hiddenIds)) {
-                return ['sql' => '', 'params' => []];
-            }
-
             // Always allow the viewer to see themselves
-            $hiddenIds = array_filter($hiddenIds, fn($id) => (int) $id !== $viewerId);
+            $hiddenIds = array_values(array_filter(
+                $hiddenIds,
+                static fn($id): bool => $id !== $viewerId
+            ));
 
             if (empty($hiddenIds)) {
                 return ['sql' => '', 'params' => []];
@@ -190,7 +170,7 @@ class PrivacyService
             $phs = implode(',', array_fill(0, count($hiddenIds), '?'));
             return [
                 'sql'    => "AND u.id NOT IN ($phs)",
-                'params' => array_values($hiddenIds),
+                'params' => $hiddenIds,
             ];
         } catch (\Throwable $e) {
             return ['sql' => '', 'params' => []];
@@ -203,20 +183,12 @@ class PrivacyService
      */
     public static function friendsOnlyUserIds(int $viewerId): array
     {
-        $rows = db_query(
-            "SELECT user_id FROM user_privacy_settings
-             WHERE action_key = 'view_wall' AND value = 'friends_only'",
-            []
-        );
-
         $result = [];
-        foreach ($rows as $row) {
-            $ownerId = (int) $row['user_id'];
+        foreach (self::fetchIdsByPrivacyLevel('view_wall', 'friends_only') as $ownerId) {
             if ($ownerId !== $viewerId && FriendshipService::areFriends($viewerId, $ownerId)) {
                 $result[] = $ownerId;
             }
         }
-
         return $result;
     }
 
@@ -231,24 +203,15 @@ class PrivacyService
         try {
             $hiddenIds = [];
 
-            $onlyMeRows = db_query(
-                "SELECT user_id FROM user_privacy_settings
-                 WHERE action_key = ? AND value = 'only_me'",
-                [$actionKey]
-            );
-            foreach ($onlyMeRows as $row) {
-                if ((int) $row['user_id'] !== $viewerId) {
-                    $hiddenIds[] = (int) $row['user_id'];
+            // Users set to 'only_me' are always hidden from everyone else.
+            foreach (self::fetchIdsByPrivacyLevel($actionKey, 'only_me') as $ownerId) {
+                if ($ownerId !== $viewerId) {
+                    $hiddenIds[] = $ownerId;
                 }
             }
 
-            $friendsOnlyRows = db_query(
-                "SELECT user_id FROM user_privacy_settings
-                 WHERE action_key = ? AND value = 'friends_only'",
-                [$actionKey]
-            );
-            foreach ($friendsOnlyRows as $row) {
-                $ownerId = (int) $row['user_id'];
+            // Users set to 'friends_only' are hidden from non-friends.
+            foreach (self::fetchIdsByPrivacyLevel($actionKey, 'friends_only') as $ownerId) {
                 if ($ownerId !== $viewerId && !FriendshipService::areFriends($viewerId, $ownerId)) {
                     $hiddenIds[] = $ownerId;
                 }
@@ -258,5 +221,19 @@ class PrivacyService
         } catch (\Throwable $e) {
             return [];
         }
+    }
+
+    /**
+     * Return all user IDs with a given privacy level for the specified action key.
+     *
+     * @internal Used by blockedUsersByAction() and visibleUsersFilter().
+     */
+    private static function fetchIdsByPrivacyLevel(string $actionKey, string $level): array
+    {
+        $rows = db_query(
+            'SELECT user_id FROM user_privacy_settings WHERE action_key = ? AND value = ?',
+            [$actionKey, $level]
+        );
+        return array_map(static fn(array $r): int => (int) $r['user_id'], $rows);
     }
 }

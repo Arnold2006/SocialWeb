@@ -129,18 +129,11 @@ $canViewWall       = $isOwnProfile || PrivacyService::canView((int) $currentUser
 $posts             = [];
 
 if ($canViewWall) {
-    $posts = db_query(
-        'SELECT p.*, u.username, u.avatar_path,
-                (SELECT COUNT(DISTINCT user_id) FROM likes WHERE post_id = p.id OR (p.media_id IS NOT NULL AND media_id = p.media_id)) AS like_count,
-                (SELECT COUNT(*) FROM comments WHERE post_id = p.id AND is_deleted = 0) +
-                    CASE WHEN p.media_id IS NOT NULL THEN (SELECT COUNT(*) FROM comments WHERE media_id = p.media_id AND is_deleted = 0) ELSE 0 END AS comment_count,
-                (SELECT COUNT(*) FROM likes WHERE post_id = p.id AND user_id = ?) +
-                    CASE WHEN p.media_id IS NOT NULL THEN (SELECT COUNT(*) FROM likes WHERE media_id = p.media_id AND user_id = ?) ELSE 0 END AS user_liked
-         FROM posts p JOIN users u ON u.id = p.user_id
-         WHERE p.user_id = ? AND p.is_deleted = 0
-         ORDER BY p.created_at DESC
-         LIMIT ' . ($profilePostsLimit + 1),
-        [(int)$currentUser['id'], (int)$currentUser['id'], $profileId]
+    $posts = fetch_wall_posts(
+        (int) $currentUser['id'],
+        $profilePostsLimit + 1,
+        0,
+        $profileId
     );
 }
 $profilePostsHasMore = count($posts) > $profilePostsLimit;
