@@ -208,6 +208,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             flash_set('error', 'Banner not found.');
         }
         redirect(SITE_URL . '/admin/settings.php');
+    } elseif ($action === 'save_banner_rotation') {
+        // ── Save banner rotation settings ───────────────────────────────────
+        $rotEnabled = isset($_POST['banner_rotation_enabled']) ? '1' : '0';
+        $rotDays    = max(1, min(365, (int)($_POST['banner_rotation_days'] ?? 7)));
+
+        foreach ([
+            'banner_rotation_enabled' => $rotEnabled,
+            'banner_rotation_days'    => (string)$rotDays,
+        ] as $k => $v) {
+            db_exec(
+                "INSERT INTO site_settings (`key`, value) VALUES (?, ?)
+                 ON DUPLICATE KEY UPDATE value = ?",
+                [$k, $v, $v]
+            );
+        }
+
+        flash_set('success', 'Banner rotation settings saved.');
+        redirect(SITE_URL . '/admin/settings.php');
     } elseif ($action === 'save_theme') {
         // ── Save site colour theme ───────────────────────────────────────────
         $theme = in_array($_POST['site_theme'] ?? '', valid_themes(), true)
@@ -390,6 +408,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $currentBanner  = site_setting('banner_image');
 $siteDescription = site_setting('site_description', 'An invite-only social network');
+$rotationEnabled = site_setting('banner_rotation_enabled', '0') === '1';
+$rotationDays    = max(1, (int)site_setting('banner_rotation_days', '7'));
 $overlayX       = site_setting('banner_overlay_x',      '50');
 $overlayY       = site_setting('banner_overlay_y',      '50');
 $overlaySize    = site_setting('banner_overlay_size',   '2.4');
@@ -536,6 +556,49 @@ include SITE_ROOT . '/includes/header.php';
                 </div>
 
                 <button type="submit" class="btn btn-primary" style="margin-top:1rem">Upload Banner</button>
+            </form>
+        </section>
+
+        <!-- ── Banner Rotation ──────────────────────────────────────────── -->
+        <section class="admin-section" style="margin-top:2rem">
+            <h2>Banner Rotation</h2>
+            <p class="muted" style="margin-bottom:1rem">
+                When enabled, the site will automatically cycle through all banners in the library,
+                switching to the next one every <strong>X days</strong>.
+                The rotation is time-based and requires no cron job.
+                While rotation is active the manually selected banner is ignored.
+            </p>
+            <form method="POST" class="settings-form">
+                <?= csrf_field() ?>
+                <input type="hidden" name="action" value="save_banner_rotation">
+
+                <div class="form-group" style="display:flex;align-items:center;gap:.75rem;margin-bottom:1rem">
+                    <input type="checkbox" id="banner-rotation-enabled"
+                           name="banner_rotation_enabled" value="1"
+                           <?= $rotationEnabled ? 'checked' : '' ?>
+                           style="width:1.1rem;height:1.1rem;cursor:pointer;accent-color:var(--color-accent)">
+                    <label for="banner-rotation-enabled" class="form-label" style="margin:0;cursor:pointer">
+                        Enable banner rotation
+                    </label>
+                </div>
+
+                <div class="form-group" style="max-width:280px">
+                    <label class="form-label" for="banner-rotation-days">Rotate every (days)</label>
+                    <input type="number" id="banner-rotation-days" name="banner_rotation_days"
+                           class="form-control" min="1" max="365"
+                           value="<?= $rotationDays ?>"
+                           style="max-width:120px">
+                    <p class="muted" style="font-size:.85rem;margin-top:.35rem">
+                        Minimum 1 day, maximum 365 days.
+                        <?php if (!empty($bannerLibrary)): ?>
+                        You currently have <?= count($bannerLibrary) ?> banner<?= count($bannerLibrary) !== 1 ? 's' : '' ?> in the library.
+                        <?php else: ?>
+                        Upload banners to the library above to use rotation.
+                        <?php endif; ?>
+                    </p>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Save Rotation Settings</button>
             </form>
         </section>
 
