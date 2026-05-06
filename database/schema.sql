@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   `role`         ENUM('user','admin') NOT NULL DEFAULT 'user',
   `avatar_path`  VARCHAR(500) DEFAULT NULL,
   `bio`          TEXT DEFAULT NULL,
+  `theme_mode`   ENUM('dark','light') NOT NULL DEFAULT 'dark',
   `is_banned`    TINYINT(1) NOT NULL DEFAULT 0,
   `invite_id`    INT UNSIGNED DEFAULT NULL,           -- invite used to register
   `created_at`   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -120,6 +121,7 @@ CREATE TABLE IF NOT EXISTS `likes` (
   UNIQUE KEY `unique_post_like` (`user_id`, `post_id`),
   UNIQUE KEY `unique_media_like` (`user_id`, `media_id`),
   UNIQUE KEY `unique_blog_post_like` (`user_id`, `blog_post_id`),
+  UNIQUE KEY `unique_comment_like` (`user_id`, `comment_id`),
   KEY `idx_post_id` (`post_id`),
   KEY `idx_media_id_likes` (`media_id`),
   KEY `idx_blog_post_id_likes` (`blog_post_id`),
@@ -301,6 +303,8 @@ INSERT IGNORE INTO `site_settings` (`key`, `value`) VALUES
   ('banner_overlay_x',    '50'),
   ('banner_overlay_y',    '50'),
   ('banner_overlay_size', '2.4'),
+  ('banner_rotation_enabled', '0'),
+  ('banner_rotation_days',    '7'),
   ('site_theme',          'blue-red');
 
 -- --------------------------------------------------------
@@ -368,6 +372,44 @@ CREATE TABLE IF NOT EXISTS `blog_posts` (
   KEY `idx_user_id` (`user_id`),
   KEY `idx_created_at` (`created_at`),
   KEY `idx_is_deleted` (`is_deleted`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+-- Table: friendships (friend requests and relationships)
+-- --------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `friendships` (
+  `id`           INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `requester_id` INT UNSIGNED NOT NULL,
+  `addressee_id` INT UNSIGNED NOT NULL,
+  `status`       ENUM('pending','accepted','declined') NOT NULL DEFAULT 'pending',
+  `created_at`   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`   DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_pair` (`requester_id`, `addressee_id`),
+  KEY `idx_addressee` (`addressee_id`),
+  KEY `idx_status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+-- Table: user_privacy_settings (per-user privacy controls)
+-- --------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `user_privacy_settings` (
+  `user_id`    INT UNSIGNED NOT NULL,
+  `action_key` VARCHAR(64) NOT NULL,
+  `value`      ENUM('everybody','members','friends_only','only_me') NOT NULL DEFAULT 'members',
+  PRIMARY KEY (`user_id`, `action_key`),
+  KEY `idx_action_key` (`action_key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+-- Table: banner_images (uploaded banner image library)
+-- --------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `banner_images` (
+  `id`          INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `path`        VARCHAR(500) NOT NULL,
+  `uploaded_at` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `idx_path` (`path`(255))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 SET FOREIGN_KEY_CHECKS = 1;
