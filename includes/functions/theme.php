@@ -48,6 +48,41 @@ function active_theme(): string
 }
 
 /**
+ * Return the banner image path that should be displayed right now.
+ *
+ * When banner rotation is enabled the banner is chosen deterministically
+ * from the library based on the current time so that it changes every
+ * `banner_rotation_days` days without requiring a cron job.
+ * When rotation is disabled (or the library is empty) the manually
+ * selected `banner_image` setting is returned instead.
+ */
+function get_active_banner_image(): string
+{
+    $rotationEnabled = site_setting('banner_rotation_enabled', '0') === '1';
+
+    if (!$rotationEnabled) {
+        return site_setting('banner_image');
+    }
+
+    // Fetch all banners ordered by id (stable, consistent order)
+    try {
+        $banners = db_query("SELECT path FROM banner_images ORDER BY id ASC");
+    } catch (\Throwable $e) {
+        $banners = [];
+    }
+
+    if (empty($banners)) {
+        return site_setting('banner_image');
+    }
+
+    $days = max(1, (int)site_setting('banner_rotation_days', '7'));
+    $periodSeconds = $days * 86400;
+    $idx = (int)floor(time() / $periodSeconds) % count($banners);
+
+    return $banners[$idx]['path'];
+}
+
+/**
  * Return the current user's preferred theme mode ('dark' or 'light').
  * Falls back to 'dark' when no user is logged in or the column is absent.
  */

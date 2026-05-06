@@ -34,7 +34,7 @@ if ($user) {
         $friendRequestCount = 0;
     }
 }
-$bannerImage = site_setting('banner_image');
+$bannerImage = get_active_banner_image();
 
 // Banner overlay settings
 $overlayX      = site_setting('banner_overlay_x',      '50');
