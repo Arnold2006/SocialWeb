@@ -534,8 +534,8 @@
     async function markRead(convId) {
         try {
             await apiPost(siteUrl + '/chat/mark_read.php', { conversation_id: convId });
-            // Immediately refresh badge so the indicator clears as soon as messages are read
-            pollBadge();
+            // Refresh badge using the lightweight endpoint — no need to re-fetch the full user list
+            refreshBadge();
         } catch (_) { /* silent */ }
     }
 
@@ -590,7 +590,9 @@
             if (!data.ok) return;
 
             renderUsers(data.users);
-            updateBadge(data.users.reduce((s, u) => s + u.unread_count, 0));
+            // total_unread_count covers all conversations regardless of search filter,
+            // so the badge stays accurate even when the user list is narrowed by a search.
+            updateBadge(data.total_unread_count ?? data.users.reduce((s, u) => s + u.unread_count, 0));
         } catch (_) { /* silent */ }
     }
 
@@ -634,6 +636,19 @@
         });
     }
 
+    /**
+     * Lightweight badge refresh — calls the minimal get_unread_count endpoint.
+     * Used after marking messages read so the badge clears quickly without
+     * fetching the full user list.
+     */
+    async function refreshBadge() {
+        try {
+            const resp = await fetch(siteUrl + '/chat/get_unread_count.php', { credentials: 'same-origin' });
+            const data = await resp.json();
+            if (data.ok) updateBadge(data.unread_count);
+        } catch (_) { /* silent */ }
+    }
+
     /* ── Sidebar open / close ────────────────────────────────────────────── */
 
     function openSidebar() {
@@ -657,17 +672,14 @@
 
     async function pollBadge() {
         try {
-            // Always fetch the full (unfiltered) list to get accurate unread totals
-            const resp = await fetch(siteUrl + '/chat/get_users.php', { credentials: 'same-origin' });
-            const data = await resp.json();
-            if (!data.ok) return;
-            const total = data.users.reduce((s, u) => s + u.unread_count, 0);
-            updateBadge(total);
-            // If the sidebar is open, let loadUsers() refresh the list (it respects the
-            // current search query and fetches the filtered result from the server)
             if (sidebarOpen) {
+                // Sidebar is open: refresh the user list (includes per-user unread counts)
+                // and derive the badge total from the response — a single request covers both.
                 const search = document.getElementById('chat-user-search')?.value.trim() ?? '';
-                loadUsers(search);
+                await loadUsers(search);
+            } else {
+                // Sidebar is closed: use the lightweight endpoint to update only the badge.
+                await refreshBadge();
             }
         } catch (_) { /* silent */ }
     }
