@@ -389,25 +389,94 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         flash_set('success', 'Font deleted.');
         redirect(SITE_URL . '/admin/settings.php');
     } elseif ($action === 'save_site_info') {
-        // ── Save site description ────────────────────────────────────────────
+        // ── Save site description and About widget link ───────────────────────
         $desc = trim($_POST['site_description'] ?? '');
         if (mb_strlen($desc) > 255) {
             $desc = mb_substr($desc, 0, 255);
         }
 
-        db_exec(
-            "INSERT INTO site_settings (`key`, value) VALUES ('site_description', ?)
-             ON DUPLICATE KEY UPDATE value = ?",
-            [$desc, $desc]
-        );
+        $aboutLinkLabel = trim($_POST['about_link_label'] ?? '');
+        $aboutLinkUrl   = trim($_POST['about_link_url']   ?? '');
+        if (mb_strlen($aboutLinkLabel) > 100) {
+            $aboutLinkLabel = mb_substr($aboutLinkLabel, 0, 100);
+        }
+        if (mb_strlen($aboutLinkUrl) > 500) {
+            $aboutLinkUrl = mb_substr($aboutLinkUrl, 0, 500);
+        }
+        // Validate URL: must be http/https or empty
+        if ($aboutLinkUrl !== '' && !preg_match('#^https?://#i', $aboutLinkUrl)) {
+            $error = 'The About widget link must start with http:// or https://.';
+        } else {
+            foreach ([
+                'site_description'       => $desc,
+                'about_widget_link_label' => $aboutLinkLabel,
+                'about_widget_link_url'   => $aboutLinkUrl,
+            ] as $k => $v) {
+                db_exec(
+                    "INSERT INTO site_settings (`key`, value) VALUES (?, ?)
+                     ON DUPLICATE KEY UPDATE value = ?",
+                    [$k, $v, $v]
+                );
+            }
 
-        flash_set('success', 'Site information updated.');
-        redirect(SITE_URL . '/admin/settings.php');
+            flash_set('success', 'Site information updated.');
+            redirect(SITE_URL . '/admin/settings.php');
+        }
+    } elseif ($action === 'save_nav_menu') {
+        // ── Save custom navigation menu items ────────────────────────────────
+        $rawItems = $_POST['nav_items'] ?? '[]';
+        $decoded  = json_decode($rawItems, true);
+
+        if (!is_array($decoded)) {
+            $error = 'Invalid menu data submitted.';
+        } else {
+            $clean = [];
+            foreach ($decoded as $item) {
+                $label  = trim((string)($item['label'] ?? ''));
+                $url    = trim((string)($item['url']   ?? ''));
+                $newTab = !empty($item['new_tab']) ? 1 : 0;
+
+                if ($label === '' || $url === '') {
+                    continue;
+                }
+                if (mb_strlen($label) > 100) { $label = mb_substr($label, 0, 100); }
+                if (mb_strlen($url)   > 500) { $url   = mb_substr($url,   0, 500); }
+                if (!preg_match('#^https?://#i', $url)) {
+                    $error = 'All menu item URLs must start with http:// or https://.';
+                    break;
+                }
+                $clean[] = ['label' => $label, 'url' => $url, 'new_tab' => $newTab];
+            }
+
+            if ($error === '') {
+                $json = json_encode($clean, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                db_exec(
+                    "INSERT INTO site_settings (`key`, value) VALUES ('nav_custom_items', ?)
+                     ON DUPLICATE KEY UPDATE value = ?",
+                    [$json, $json]
+                );
+
+                flash_set('success', 'Navigation menu updated.');
+                redirect(SITE_URL . '/admin/settings.php');
+            }
+        }
     }
 }
 
 $currentBanner  = site_setting('banner_image');
 $siteDescription = site_setting('site_description', 'An invite-only social network');
+$aboutLinkLabel  = site_setting('about_widget_link_label', '');
+$aboutLinkUrl    = site_setting('about_widget_link_url', '');
+
+// Load custom nav menu items
+$navCustomItemsJson = site_setting('nav_custom_items', '[]');
+try {
+    $navCustomItems = json_decode($navCustomItemsJson, true, 5 /* max depth: array of objects */, JSON_THROW_ON_ERROR);
+    if (!is_array($navCustomItems)) { $navCustomItems = []; }
+} catch (\Throwable $e) {
+    $navCustomItems = [];
+}
+
 $rotationEnabled = site_setting('banner_rotation_enabled', '0') === '1';
 $rotationDays    = max(1, (int)site_setting('banner_rotation_days', '7'));
 $overlayX       = site_setting('banner_overlay_x',      '50');
@@ -751,7 +820,8 @@ include SITE_ROOT . '/includes/header.php';
         <section class="admin-section" style="margin-top:2rem">
             <h2>Site Information</h2>
             <p class="muted" style="margin-bottom:1rem">
-                This short description appears in the <strong>About</strong> widget in the sidebar.
+                The description appears in the <strong>About</strong> widget in the sidebar.
+                You can also add an optional link shown at the bottom of that widget.
             </p>
 
             <form method="POST" class="settings-form">
@@ -766,7 +836,83 @@ include SITE_ROOT . '/includes/header.php';
                            placeholder="e.g. An invite-only social network">
                 </div>
 
-                <button type="submit" class="btn btn-primary">Save Description</button>
+                <div class="form-group" style="max-width:480px">
+                    <label class="form-label" for="about-link-label-input">About Widget Link Label</label>
+                    <input type="text" id="about-link-label-input" name="about_link_label"
+                           class="form-control" maxlength="100"
+                           value="<?= e($aboutLinkLabel) ?>"
+                           placeholder="e.g. Why Artnet">
+                    <p class="muted" style="font-size:.85rem;margin-top:.3rem">
+                        Leave blank to hide the link.
+                    </p>
+                </div>
+
+                <div class="form-group" style="max-width:480px">
+                    <label class="form-label" for="about-link-url-input">About Widget Link URL</label>
+                    <input type="url" id="about-link-url-input" name="about_link_url"
+                           class="form-control" maxlength="500"
+                           value="<?= e($aboutLinkUrl) ?>"
+                           placeholder="https://example.com/about">
+                </div>
+
+                <button type="submit" class="btn btn-primary">Save Site Information</button>
+            </form>
+        </section>
+
+        <!-- ── Navigation Menu Editor ────────────────────────────── -->
+        <section class="admin-section" style="margin-top:2rem">
+            <h2>Navigation Menu Items</h2>
+            <p class="muted" style="margin-bottom:1rem">
+                Add extra links to the top navigation bar. These appear after the built-in links
+                (Wall, Members, etc.) and before Logout. Links open in a new tab when the
+                <strong>New tab</strong> option is checked.
+            </p>
+
+            <form method="POST" class="settings-form" id="nav-menu-form">
+                <?= csrf_field() ?>
+                <input type="hidden" name="action" value="save_nav_menu">
+                <input type="hidden" name="nav_items" id="nav-items-input" value="">
+
+                <table id="nav-menu-table" style="width:100%;max-width:700px;border-collapse:collapse;margin-bottom:1rem">
+                    <thead>
+                        <tr>
+                            <th style="text-align:left;padding:.4rem .6rem;border-bottom:1px solid var(--color-border)">Label</th>
+                            <th style="text-align:left;padding:.4rem .6rem;border-bottom:1px solid var(--color-border)">URL</th>
+                            <th style="text-align:center;padding:.4rem .6rem;border-bottom:1px solid var(--color-border)">New tab</th>
+                            <th style="padding:.4rem .6rem;border-bottom:1px solid var(--color-border)"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="nav-menu-rows">
+                        <?php foreach ($navCustomItems as $idx => $item): ?>
+                        <tr class="nav-menu-row" data-idx="<?= $idx ?>">
+                            <td style="padding:.4rem .6rem;border-bottom:1px solid var(--color-border)">
+                                <input type="text" class="form-control nav-item-label"
+                                       value="<?= e($item['label']) ?>"
+                                       placeholder="Link label" maxlength="100" required style="width:100%">
+                            </td>
+                            <td style="padding:.4rem .6rem;border-bottom:1px solid var(--color-border)">
+                                <input type="url" class="form-control nav-item-url"
+                                       value="<?= e($item['url']) ?>"
+                                       placeholder="https://example.com" maxlength="500" required style="width:100%">
+                            </td>
+                            <td style="padding:.4rem .6rem;border-bottom:1px solid var(--color-border);text-align:center">
+                                <input type="checkbox" class="nav-item-newtab"
+                                       <?= !empty($item['new_tab']) ? 'checked' : '' ?>
+                                       style="width:1.1rem;height:1.1rem;cursor:pointer;accent-color:var(--color-accent)">
+                            </td>
+                            <td style="padding:.4rem .6rem;border-bottom:1px solid var(--color-border);text-align:right">
+                                <button type="button" class="btn btn-danger btn-sm nav-item-remove">Remove</button>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+
+                <div style="display:flex;gap:.75rem;flex-wrap:wrap;align-items:center;margin-bottom:1.5rem">
+                    <button type="button" class="btn btn-secondary btn-sm" id="nav-add-row">+ Add menu item</button>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Save Menu</button>
             </form>
         </section>
 
@@ -873,5 +1019,64 @@ include SITE_ROOT . '/includes/header.php';
     </div>
 </div>
 <?php endif; ?>
+
+<script>
+(function () {
+    'use strict';
+
+    // ── Navigation Menu Editor ────────────────────────────────────────────
+    var tbody   = document.getElementById('nav-menu-rows');
+    var form    = document.getElementById('nav-menu-form');
+    var addBtn  = document.getElementById('nav-add-row');
+    var hidden  = document.getElementById('nav-items-input');
+
+    if (!tbody || !form || !addBtn || !hidden) { return; }
+
+    function makeRow(label, url, newTab) {
+        var tr = document.createElement('tr');
+        tr.className = 'nav-menu-row';
+        tr.innerHTML =
+            '<td style="padding:.4rem .6rem;border-bottom:1px solid var(--color-border)">' +
+                '<input type="text" class="form-control nav-item-label" value="" placeholder="Link label" maxlength="100" required style="width:100%">' +
+            '</td>' +
+            '<td style="padding:.4rem .6rem;border-bottom:1px solid var(--color-border)">' +
+                '<input type="url" class="form-control nav-item-url" value="" placeholder="https://example.com" maxlength="500" required style="width:100%">' +
+            '</td>' +
+            '<td style="padding:.4rem .6rem;border-bottom:1px solid var(--color-border);text-align:center">' +
+                '<input type="checkbox" class="nav-item-newtab" style="width:1.1rem;height:1.1rem;cursor:pointer;accent-color:var(--color-accent)">' +
+            '</td>' +
+            '<td style="padding:.4rem .6rem;border-bottom:1px solid var(--color-border);text-align:right">' +
+                '<button type="button" class="btn btn-danger btn-sm nav-item-remove">Remove</button>' +
+            '</td>';
+        tr.querySelector('.nav-item-label').value  = label  || '';
+        tr.querySelector('.nav-item-url').value    = url    || '';
+        tr.querySelector('.nav-item-newtab').checked = !!newTab;
+        return tr;
+    }
+
+    addBtn.addEventListener('click', function () {
+        tbody.appendChild(makeRow('', '', true));
+    });
+
+    tbody.addEventListener('click', function (e) {
+        if (e.target.classList.contains('nav-item-remove')) {
+            e.target.closest('tr').remove();
+        }
+    });
+
+    form.addEventListener('submit', function () {
+        var items = [];
+        tbody.querySelectorAll('.nav-menu-row').forEach(function (row) {
+            var label  = row.querySelector('.nav-item-label').value.trim();
+            var url    = row.querySelector('.nav-item-url').value.trim();
+            var newTab = row.querySelector('.nav-item-newtab').checked ? 1 : 0;
+            if (label && url) {
+                items.push({ label: label, url: url, new_tab: newTab });
+            }
+        });
+        hidden.value = JSON.stringify(items);
+    });
+}());
+</script>
 
 <?php include SITE_ROOT . '/includes/footer.php'; ?>
