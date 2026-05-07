@@ -1037,10 +1037,10 @@ include SITE_ROOT . '/includes/header.php';
         tr.className = 'nav-menu-row';
         tr.innerHTML =
             '<td style="padding:.4rem .6rem;border-bottom:1px solid var(--color-border)">' +
-                '<input type="text" class="form-control nav-item-label" value="" placeholder="Link label" maxlength="100" required style="width:100%">' +
+                '<input type="text" class="form-control nav-item-label" value="" placeholder="Link label" maxlength="100" style="width:100%">' +
             '</td>' +
             '<td style="padding:.4rem .6rem;border-bottom:1px solid var(--color-border)">' +
-                '<input type="url" class="form-control nav-item-url" value="" placeholder="https://example.com" maxlength="500" required style="width:100%">' +
+                '<input type="url" class="form-control nav-item-url" value="" placeholder="https://example.com" maxlength="500" style="width:100%">' +
             '</td>' +
             '<td style="padding:.4rem .6rem;border-bottom:1px solid var(--color-border);text-align:center">' +
                 '<input type="checkbox" class="nav-item-newtab" style="width:1.1rem;height:1.1rem;cursor:pointer;accent-color:var(--color-accent)">' +
