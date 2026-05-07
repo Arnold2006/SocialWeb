@@ -180,7 +180,13 @@ try {
     <ul class="site-stats">
         <li><strong><?= $sidebarMemberCount ?></strong> members</li>
     </ul>
-    <p><a href="https://artnet.accnet.eu/pages/blog.php?user_id=1&amp;post_id=4" target="_blank" rel="noopener">Why Artnet</a></p>
+    <?php
+    $aboutLinkUrl   = site_setting('about_widget_link_url', '');
+    $aboutLinkLabel = site_setting('about_widget_link_label', '');
+    if ($aboutLinkUrl !== '' && $aboutLinkLabel !== ''):
+    ?>
+    <p><a href="<?= e($aboutLinkUrl) ?>" target="_blank" rel="noopener"><?= e($aboutLinkLabel) ?></a></p>
+    <?php endif; ?>
 </div>
 
 <!-- Plugin sidebar widgets -->

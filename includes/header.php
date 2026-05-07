@@ -156,8 +156,21 @@ $navIs = static function (string ...$paths): string {
             <li><a href="<?= SITE_URL ?>/admin/dashboard.php"
                    class="<?= $navIs('/admin/') ?>">Admin<?= $pendingMigrations > 0 ? ' <span class="badge">' . $pendingMigrations . '</span>' : '' ?></a></li>
             <?php endif; ?>
-            <li><a href="https://sf.tera-sat.com" target="_blank" rel="noopener noreferrer">SendFile</a></li>
-            <li><a href="https://print.tera-sat.com" target="_blank" rel="noopener noreferrer">PrintService</a></li>
+            <?php
+            // Custom nav items managed via Admin → Site Settings
+            $navCustomItemsJson = site_setting('nav_custom_items', '[]');
+            try {
+                $navCustomItems = json_decode($navCustomItemsJson, true, 5 /* max depth: array of objects */, JSON_THROW_ON_ERROR);
+                if (!is_array($navCustomItems)) { $navCustomItems = []; }
+            } catch (\Throwable $e) {
+                $navCustomItems = [];
+            }
+            foreach ($navCustomItems as $navItem):
+                if (empty($navItem['label']) || empty($navItem['url'])) { continue; }
+                $navTarget = !empty($navItem['new_tab']) ? ' target="_blank" rel="noopener noreferrer"' : '';
+            ?>
+            <li><a href="<?= e($navItem['url']) ?>"<?= $navTarget ?>><?= e($navItem['label']) ?></a></li>
+            <?php endforeach; ?>
             <li><a href="<?= SITE_URL ?>/pages/logout.php">Logout</a></li>
         </ul>
         <button type="button" class="nav-pin-btn" id="nav-pin-btn"
