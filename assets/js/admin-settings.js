@@ -25,8 +25,8 @@
             '<td style="padding:.4rem .6rem;border-bottom:1px solid var(--color-border);text-align:right">' +
                 '<button type="button" class="btn btn-danger btn-sm nav-item-remove">Remove</button>' +
             '</td>';
-        tr.querySelector('.nav-item-label').value    = label  || '';
-        tr.querySelector('.nav-item-url').value      = url    || '';
+        tr.querySelector('.nav-item-label').value = label || '';
+        tr.querySelector('.nav-item-url').value = url || '';
         tr.querySelector('.nav-item-newtab').checked = !!newTab;
         return tr;
     }
