@@ -114,12 +114,18 @@ function collect_referenced_paths(): array
     }
 
     // ── message_attachments.file_path  (relative, no leading slash: uploads/msg_attachments/…)
-    $stmt = $pdo->query('SELECT file_path FROM message_attachments');
-    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-        if (!empty($row['file_path'])) {
-            $abs = SITE_ROOT . '/' . $row['file_path'];
-            $refs[realpath($abs) ?: $abs] = true;
+    // Wrapped in try/catch: the table was added in migration 027 and may not
+    // exist on older deployments that have not yet run all migrations.
+    try {
+        $stmt = $pdo->query('SELECT file_path FROM message_attachments');
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            if (!empty($row['file_path'])) {
+                $abs = SITE_ROOT . '/' . $row['file_path'];
+                $refs[realpath($abs) ?: $abs] = true;
+            }
         }
+    } catch (PDOException $e) {
+        // Table does not exist yet — skip silently
     }
 
     return $refs;
