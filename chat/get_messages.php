@@ -22,7 +22,7 @@
  *   after_id         (optional) — only return messages with id > after_id  (for polling)
  *   before_id        (optional) — only return messages with id < before_id (load older)
  *
- * Loads the latest 50 messages by default. Older messages are fetched via before_id.
+ * Loads the latest 10 messages by default. Older messages are fetched via before_id (20 at a time).
  *
  * Response:
  *   { ok: true, conversation_id: N|null, messages: [ { id, sender_id, is_mine,
@@ -89,7 +89,7 @@ if ($afterId > 0) {
         [$convId, $afterId]
     );
 } elseif ($beforeId > 0) {
-    // Scroll-up — load older messages (returns up to 50 before the given ID)
+    // Scroll-up — load older messages (returns up to 20 before the given ID)
     $messages = db_query(
         'SELECT cm.id, cm.sender_id, cm.message_text, cm.image_path, cm.created_at,
                 u.username AS sender_username, u.avatar_path AS sender_avatar
@@ -97,13 +97,13 @@ if ($afterId > 0) {
          JOIN   users u ON u.id = cm.sender_id
          WHERE  cm.conversation_id = ? AND cm.id < ?
          ORDER  BY cm.id DESC
-         LIMIT  50',
+         LIMIT  20',
         [$convId, $beforeId]
     );
     // Return in ascending (chronological) order
     $messages = array_reverse($messages);
 } else {
-    // Initial open — latest 50 messages in chronological order
+    // Initial open — latest 10 messages in chronological order
     $messages = db_query(
         'SELECT cm.id, cm.sender_id, cm.message_text, cm.image_path, cm.created_at,
                 u.username AS sender_username, u.avatar_path AS sender_avatar
@@ -111,7 +111,7 @@ if ($afterId > 0) {
          JOIN   users u ON u.id = cm.sender_id
          WHERE  cm.conversation_id = ?
          ORDER  BY cm.id DESC
-         LIMIT  50',
+         LIMIT  10',
         [$convId]
     );
     $messages = array_reverse($messages);
