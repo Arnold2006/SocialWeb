@@ -29,7 +29,7 @@
 
     /* ── Constants ───────────────────────────────────────────────────────── */
 
-    const POLL_MSG_MS   = 3000;   // per-window message poll interval
+    const POLL_MSG_MS   = 1000;   // per-window message poll interval
     const POLL_BADGE_MS = 15000;  // background badge-refresh interval
 
     /* ── Module state ────────────────────────────────────────────────────── */
@@ -727,6 +727,14 @@
         // Background badge poll + immediate first run
         badgePollTimer = setInterval(pollBadge, POLL_BADGE_MS);
         pollBadge();
+
+        // When the tab regains focus, immediately poll all open windows so new
+        // messages appear at once rather than waiting up to POLL_MSG_MS.
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+                openWindows.forEach(ws => pollMessages(ws));
+            }
+        });
 
         // Re-open any chat windows that were open before the last page navigation
         restoreOpenWindows();
