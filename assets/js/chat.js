@@ -19,7 +19,7 @@
  *  - Multiple simultaneous floating chat windows stacked to the left
  *  - Per-window message polling (3 s) and global unread-badge poll (15 s)
  *  - Text messaging and drag-and-drop / click-to-upload image sharing
- *  - Load older messages on scroll-up (50 at a time)
+ *  - Load older messages on scroll-up (20 at a time)
  *  - Auto-scroll to newest message
  */
 

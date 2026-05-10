@@ -91,6 +91,7 @@ $toAvatar  = avatar_url($toUser, 'small');
 
 </div>
 
+<script src="<?= ASSETS_URL ?>/js/app.js"></script>
 <script src="<?= ASSETS_URL ?>/js/chat.js"></script>
 </body>
 </html>
