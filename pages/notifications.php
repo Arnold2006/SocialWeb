@@ -89,7 +89,7 @@ include SITE_ROOT . '/includes/header.php';
                     );
                     if ($commentRow && $commentRow['post_id']):
                 ?>
-                <a href="<?= e(SITE_URL . '/pages/index.php#comment-' . (int)$n['ref_id']) ?>">View comment</a>
+                <a href="<?= e(SITE_URL . '/pages/index.php?goto_post=' . (int)$commentRow['post_id'] . '&goto_comment=' . (int)$n['ref_id']) ?>">View comment</a>
                 <?php   endif;
                 endif; ?>
                 <?php break;
@@ -110,9 +110,16 @@ include SITE_ROOT . '/includes/header.php';
 
                 case 'comment': ?>
                 <p><strong><?= e($n['from_username'] ?? 'Someone') ?></strong> commented on your post.</p>
-                <?php if ($n['ref_id']): ?>
-                <a href="<?= e(SITE_URL . '/pages/index.php#post-' . (int)$n['ref_id']) ?>">View post</a>
-                <?php endif; ?>
+                <?php if ($n['ref_id']):
+                    $commentPostRow = db_row(
+                        'SELECT c.post_id FROM comments c WHERE c.id = ? AND c.is_deleted = 0',
+                        [(int)$n['ref_id']]
+                    );
+                    if ($commentPostRow && $commentPostRow['post_id']):
+                ?>
+                <a href="<?= e(SITE_URL . '/pages/index.php?goto_post=' . (int)$commentPostRow['post_id'] . '&goto_comment=' . (int)$n['ref_id']) ?>">View comment</a>
+                <?php   endif;
+                endif; ?>
                 <?php break;
 
                 case 'message': ?>
@@ -152,6 +159,20 @@ include SITE_ROOT . '/includes/header.php';
                     if ($blogCommentRow):
                 ?>
                 <a href="<?= e(SITE_URL . '/pages/blog.php?user_id=' . (int)$blogCommentRow['blog_owner_id'] . '#comment-' . (int)$n['ref_id']) ?>">View comment</a>
+                <?php   endif;
+                endif; ?>
+                <?php break;
+
+                case 'mention_comment': ?>
+                <p><strong><?= e($n['from_username'] ?? 'Someone') ?></strong> mentioned you in a comment.</p>
+                <?php if ($n['ref_id']):
+                    $mentionCommentRow = db_row(
+                        'SELECT c.post_id FROM comments c WHERE c.id = ? AND c.is_deleted = 0',
+                        [(int)$n['ref_id']]
+                    );
+                    if ($mentionCommentRow && $mentionCommentRow['post_id']):
+                ?>
+                <a href="<?= e(SITE_URL . '/pages/index.php?goto_post=' . (int)$mentionCommentRow['post_id'] . '&goto_comment=' . (int)$n['ref_id']) ?>">View comment</a>
                 <?php   endif;
                 endif; ?>
                 <?php break;
