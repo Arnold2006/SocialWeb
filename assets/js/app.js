@@ -2911,78 +2911,136 @@ function clearCommentImagePreview(form) {
     });
 }());
 
-// ── Notification deep-link: scroll to a specific comment ─────────────────────
-// When a notification link includes ?goto_post=X&goto_comment=Y the page
-// auto-expands the comment section for post X and scrolls to comment Y.
+// ── Notification deep-link: navigate to a specific post / comment ─────────────
+// When a notification link includes ?goto_post=X (and optionally &goto_comment=Y)
+// the page ensures the target post is in the DOM (fetching it if necessary),
+// expands its comments when a comment ID is given, and scrolls to the target.
 
 (function () {
     const params      = new URLSearchParams(window.location.search);
     const gotoPost    = params.get('goto_post');
     const gotoComment = params.get('goto_comment');
 
-    if (!gotoPost || !gotoComment) return;
+    if (!gotoPost) return;
 
     const baseUrl = document.querySelector('meta[name="site-url"]')?.content || '';
 
-    function scrollToComment() {
-        const commentEl = document.getElementById('comment-' + gotoComment);
-        if (!commentEl) return;
-        commentEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        commentEl.classList.add('comment-item--highlight');
+    /** Scroll to the comment (if requested) or to the post itself. */
+    function scrollToTarget() {
+        if (gotoComment) {
+            const commentEl = document.getElementById('comment-' + gotoComment);
+            if (commentEl) {
+                commentEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                commentEl.classList.add('comment-item--highlight');
+                return;
+            }
+        }
+        const postEl = document.getElementById('post-' + gotoPost);
+        if (postEl) {
+            postEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            postEl.classList.add('post-item--highlight');
+        }
     }
 
-    const loadMoreLink = document.querySelector(
-        '.load-more-comments[data-post-id="' + gotoPost + '"]'
-    );
+    /**
+     * Expand all comments for the post then scroll to target.
+     * Called once the post element is guaranteed to be in the DOM.
+     */
+    function expandCommentsAndScroll() {
+        if (!gotoComment) {
+            scrollToTarget();
+            return;
+        }
 
-    if (!loadMoreLink) {
-        // Comment is already rendered (within the initial preview set).
-        scrollToComment();
+        const loadMoreLink = document.querySelector(
+            '.load-more-comments[data-post-id="' + gotoPost + '"]'
+        );
+
+        if (!loadMoreLink) {
+            // All comments are already rendered (within the initial preview set).
+            scrollToTarget();
+            return;
+        }
+
+        // Load all comments for this post, then scroll to the target.
+        loadMoreLink.textContent = 'Loading\u2026';
+
+        fetch(
+            baseUrl + '/modules/wall/get_comments.php?post_id=' + encodeURIComponent(gotoPost),
+            { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } }
+        )
+        .then(function (r) { return r.json(); })
+        .then(function (result) {
+            if (!result.ok) {
+                scrollToTarget();
+                return;
+            }
+
+            const section = document.getElementById('comments-' + gotoPost);
+            if (section) {
+                section.querySelectorAll('.comment-item').forEach(function (el) { el.remove(); });
+
+                const html = result.comments.map(function (c) {
+                    const imageData = c.image_thumb_url
+                        ? { thumb_url: c.image_thumb_url, large_url: c.image_large_url }
+                        : null;
+                    return '<div class="comment-item" id="comment-' + parseInt(c.id, 10) + '">' +
+                        '<a href="' + escapeHtml(c.profile_url) + '">' +
+                        '<img src="' + escapeHtml(c.avatar) + '" alt="" ' +
+                        'class="avatar avatar-small" width="28" height="28" loading="lazy">' +
+                        '</a>' +
+                        '<div class="comment-body">' +
+                        buildCommentBodyHtml(c.id, c.profile_url, c.username, c.time_ago,
+                            c.content, c.user_id, !!c.edited, c.content_html,
+                            imageData, c.like_count, !!c.user_liked) +
+                        '</div></div>';
+                }).join('');
+
+                loadMoreLink.insertAdjacentHTML('beforebegin', html);
+                reinitLightboxTriggers();
+                loadMoreLink.remove();
+            }
+
+            scrollToTarget();
+        })
+        .catch(function () {
+            scrollToTarget();
+        });
+    }
+
+    // If the post is already rendered in the feed, go straight to comment expansion.
+    if (document.getElementById('post-' + gotoPost)) {
+        expandCommentsAndScroll();
         return;
     }
 
-    // Load all comments for this post, then scroll to the target.
-    loadMoreLink.textContent = 'Loading\u2026';
-
+    // Post is not in the DOM (pushed off the first page by newer posts).
+    // Fetch the single post via AJAX, prepend it to the feed, then scroll.
     fetch(
-        baseUrl + '/modules/wall/get_comments.php?post_id=' + encodeURIComponent(gotoPost),
+        baseUrl + '/modules/wall/get_post.php?post_id=' + encodeURIComponent(gotoPost),
         { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } }
     )
     .then(function (r) { return r.json(); })
     .then(function (result) {
-        if (!result.ok) {
-            scrollToComment();
+        if (!result.ok || !result.html) {
             return;
         }
 
-        const section = document.getElementById('comments-' + gotoPost);
-        if (section) {
-            section.querySelectorAll('.comment-item').forEach(function (el) { el.remove(); });
+        const feed = document.getElementById('post-feed');
+        if (!feed) return;
 
-            const html = result.comments.map(function (c) {
-                const imageData = c.image_thumb_url
-                    ? { thumb_url: c.image_thumb_url, large_url: c.image_large_url }
-                    : null;
-                return '<div class="comment-item" id="comment-' + parseInt(c.id, 10) + '">' +
-                    '<a href="' + escapeHtml(c.profile_url) + '">' +
-                    '<img src="' + escapeHtml(c.avatar) + '" alt="" ' +
-                    'class="avatar avatar-small" width="28" height="28" loading="lazy">' +
-                    '</a>' +
-                    '<div class="comment-body">' +
-                    buildCommentBodyHtml(c.id, c.profile_url, c.username, c.time_ago,
-                        c.content, c.user_id, !!c.edited, c.content_html,
-                        imageData, c.like_count, !!c.user_liked) +
-                    '</div></div>';
-            }).join('');
-
-            loadMoreLink.insertAdjacentHTML('beforebegin', html);
+        // Prepend the fetched post to the top of the feed.
+        const tmp = document.createElement('div');
+        tmp.innerHTML = result.html;
+        const insertedPost = tmp.firstElementChild;
+        if (insertedPost) {
+            feed.prepend(insertedPost);
             reinitLightboxTriggers();
-            loadMoreLink.remove();
         }
 
-        scrollToComment();
+        expandCommentsAndScroll();
     })
     .catch(function () {
-        scrollToComment();
+        // If the fetch fails, nothing to scroll to — fail silently.
     });
 }());

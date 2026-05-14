@@ -918,6 +918,15 @@ textarea { resize: vertical; min-height: 80px; }
     100% { background-color: transparent; }
 }
 
+.post-item--highlight {
+    animation: post-highlight-fade 2.5s ease-out forwards;
+}
+
+@keyframes post-highlight-fade {
+    0%   { box-shadow: 0 0 0 3px var(--color-accent, #f0ad4e); background-color: var(--color-accent-light, #fff3cd); }
+    100% { box-shadow: none; background-color: transparent; }
+}
+
 .comment-footer {
     margin-top: 0.35rem;
 }

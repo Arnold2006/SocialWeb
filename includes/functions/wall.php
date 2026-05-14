@@ -40,12 +40,18 @@ function fetch_wall_posts(
     int $limit,
     int $offset,
     ?int $profileUserId = null,
-    array $excludeUserIds = []
+    array $excludeUserIds = [],
+    ?int $specificPostId = null
 ): array {
     // The two leading params feed the user_liked correlated subqueries.
     $params = [$viewerId, $viewerId];
 
     $where = 'p.is_deleted = 0';
+
+    if ($specificPostId !== null) {
+        $where   .= ' AND p.id = ?';
+        $params[] = $specificPostId;
+    }
 
     if ($profileUserId !== null) {
         $where   .= ' AND p.user_id = ?';
