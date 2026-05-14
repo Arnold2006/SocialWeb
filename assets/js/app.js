@@ -2910,3 +2910,79 @@ function clearCommentImagePreview(form) {
         applyPinState(next);
     });
 }());
+
+// ── Notification deep-link: scroll to a specific comment ─────────────────────
+// When a notification link includes ?goto_post=X&goto_comment=Y the page
+// auto-expands the comment section for post X and scrolls to comment Y.
+
+(function () {
+    const params      = new URLSearchParams(window.location.search);
+    const gotoPost    = params.get('goto_post');
+    const gotoComment = params.get('goto_comment');
+
+    if (!gotoPost || !gotoComment) return;
+
+    const baseUrl = document.querySelector('meta[name="site-url"]')?.content || '';
+
+    function scrollToComment() {
+        const commentEl = document.getElementById('comment-' + gotoComment);
+        if (!commentEl) return;
+        commentEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        commentEl.classList.add('comment-item--highlight');
+    }
+
+    const loadMoreLink = document.querySelector(
+        '.load-more-comments[data-post-id="' + gotoPost + '"]'
+    );
+
+    if (!loadMoreLink) {
+        // Comment is already rendered (within the initial preview set).
+        scrollToComment();
+        return;
+    }
+
+    // Load all comments for this post, then scroll to the target.
+    loadMoreLink.textContent = 'Loading\u2026';
+
+    fetch(
+        baseUrl + '/modules/wall/get_comments.php?post_id=' + encodeURIComponent(gotoPost),
+        { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } }
+    )
+    .then(function (r) { return r.json(); })
+    .then(function (result) {
+        if (!result.ok) {
+            scrollToComment();
+            return;
+        }
+
+        const section = document.getElementById('comments-' + gotoPost);
+        if (section) {
+            section.querySelectorAll('.comment-item').forEach(function (el) { el.remove(); });
+
+            const html = result.comments.map(function (c) {
+                const imageData = c.image_thumb_url
+                    ? { thumb_url: c.image_thumb_url, large_url: c.image_large_url }
+                    : null;
+                return '<div class="comment-item" id="comment-' + parseInt(c.id, 10) + '">' +
+                    '<a href="' + escapeHtml(c.profile_url) + '">' +
+                    '<img src="' + escapeHtml(c.avatar) + '" alt="" ' +
+                    'class="avatar avatar-small" width="28" height="28" loading="lazy">' +
+                    '</a>' +
+                    '<div class="comment-body">' +
+                    buildCommentBodyHtml(c.id, c.profile_url, c.username, c.time_ago,
+                        c.content, c.user_id, !!c.edited, c.content_html,
+                        imageData, c.like_count, !!c.user_liked) +
+                    '</div></div>';
+            }).join('');
+
+            loadMoreLink.insertAdjacentHTML('beforebegin', html);
+            reinitLightboxTriggers();
+            loadMoreLink.remove();
+        }
+
+        scrollToComment();
+    })
+    .catch(function () {
+        scrollToComment();
+    });
+}());
