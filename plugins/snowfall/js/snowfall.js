@@ -20,6 +20,14 @@
 
     var FLAKE_CHAR = '\u2744'; // ❄
 
+    // Fall-speed multiplier: pixels-per-ms factor applied to the document height
+    // so taller pages still produce a natural, linear descent time.
+    var FALL_SPEED_MULTIPLIER = 10;
+
+    // Adds up to this many extra milliseconds of randomised drift to each flake
+    // so consecutive flakes don't all finish at exactly the same time.
+    var DURATION_VARIATION_MS = 5000;
+
     function spawnFlake() {
         var docW = document.documentElement.scrollWidth;
         var docH = document.documentElement.scrollHeight;
@@ -28,7 +36,7 @@
         var startLeft  = Math.random() * docW;
         var startOpacity = 0.5 + Math.random() * 0.5;
         var endLeft    = startLeft - 100 + Math.random() * 200;
-        var duration   = docH * 10 + Math.random() * 5000;
+        var duration   = docH * FALL_SPEED_MULTIPLIER + Math.random() * DURATION_VARIATION_MS;
 
         var flake = document.createElement('div');
         flake.textContent = FLAKE_CHAR;
@@ -66,7 +74,12 @@
     }
 
     function start() {
-        setInterval(spawnFlake, opts.newOn);
+        var intervalId = setInterval(function () {
+            // Pause spawning when the tab is not visible to save CPU.
+            if (!document.hidden) {
+                spawnFlake();
+            }
+        }, opts.newOn);
     }
 
     if (document.readyState === 'loading') {
