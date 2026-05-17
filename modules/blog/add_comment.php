@@ -57,8 +57,8 @@ $commentId = db_insert(
 try {
     // ref_id = blog_post_id, secondary_ref_id = comment_id so the renderer
     // can link directly to the post without an extra JOIN.
-    notify_user((int)$blogPost['user_id'], 'blog_comment', (int)$user['id'], $blogPostId, (int)$commentId);
-    notify_mentions($content, (int)$user['id'], $blogPostId, 'mention_comment_blog');
+    notify_user((int)$blogPost['user_id'], 'blog_comment', (int)$user['id'], (int)$blogPostId, (int)$commentId);
+    notify_mentions($content, (int)$user['id'], (int)$blogPostId, 'mention_comment_blog');
 } catch (\Throwable $e) {
     error_log('blog add_comment notify failed: ' . $e->getMessage());
 }
