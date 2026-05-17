@@ -58,8 +58,10 @@ db_exec('UPDATE posts SET bumped_at = NOW() WHERE id = ?', [$postId]);
 // Wrapped in try/catch so a notification failure does not prevent the JSON
 // response from being returned (which would leave the comment input un-cleared).
 try {
-    notify_user((int)$post['user_id'], 'comment', (int)$user['id'], (int)$commentId);
-    notify_mentions($content, (int)$user['id'], (int)$commentId, 'mention_comment');
+    // ref_id = post_id, secondary_ref_id = comment_id so the renderer can link
+    // directly to the post+comment without an extra JOIN on the comments table.
+    notify_user((int)$post['user_id'], 'comment', (int)$user['id'], (int)$postId, (int)$commentId);
+    notify_mentions($content, (int)$user['id'], (int)$postId, 'mention_comment', (int)$commentId);
 } catch (\Throwable $e) {
     error_log('add_comment notify failed: ' . $e->getMessage());
 }

@@ -55,8 +55,10 @@ $commentId = db_insert(
 // Wrapped in try/catch so a notification failure does not prevent the JSON
 // response from being returned (which would leave the comment input un-cleared).
 try {
-    notify_user((int)$blogPost['user_id'], 'blog_comment', (int)$user['id'], (int)$commentId);
-    notify_mentions($content, (int)$user['id'], (int)$blogPostId);
+    // ref_id = blog_post_id, secondary_ref_id = comment_id so the renderer
+    // can link directly to the post without an extra JOIN.
+    notify_user((int)$blogPost['user_id'], 'blog_comment', (int)$user['id'], $blogPostId, (int)$commentId);
+    notify_mentions($content, (int)$user['id'], $blogPostId, 'mention_comment_blog');
 } catch (\Throwable $e) {
     error_log('blog add_comment notify failed: ' . $e->getMessage());
 }

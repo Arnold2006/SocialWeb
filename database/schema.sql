@@ -172,13 +172,17 @@ CREATE TABLE IF NOT EXISTS `message_attachments` (
 -- Table: notifications
 -- --------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `notifications` (
-  `id`          INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `user_id`     INT UNSIGNED NOT NULL,               -- recipient
-  `type`        ENUM('like','comment','message','blog_comment','photo_like','photo_comment','blog_like','friend_request','friend_accept','mention','mention_post','comment_like') NOT NULL,
-  `from_user_id` INT UNSIGNED DEFAULT NULL,          -- who triggered it
-  `ref_id`      INT UNSIGNED DEFAULT NULL,           -- post/comment/message id
-  `is_read`     TINYINT(1) NOT NULL DEFAULT 0,
-  `created_at`  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `id`               INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `user_id`          INT UNSIGNED NOT NULL,               -- recipient
+  `type`             ENUM('like','comment','message','mail_message','blog_comment',
+                          'photo_like','photo_comment','blog_like','friend_request',
+                          'friend_accept','mention','mention_post','comment_like',
+                          'mention_comment','mention_comment_blog','mention_comment_photo') NOT NULL,
+  `from_user_id`     INT UNSIGNED DEFAULT NULL,           -- who triggered it
+  `ref_id`           INT UNSIGNED DEFAULT NULL,           -- primary ref (post/blog-post/media/message id)
+  `secondary_ref_id` INT UNSIGNED DEFAULT NULL,           -- secondary ref (e.g. comment id when ref_id is parent)
+  `is_read`          TINYINT(1) NOT NULL DEFAULT 0,
+  `created_at`       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `idx_user_id` (`user_id`),
   KEY `idx_is_read` (`is_read`),
@@ -410,6 +414,90 @@ CREATE TABLE IF NOT EXISTS `banner_images` (
   `uploaded_at` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `idx_path` (`path`(255))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+-- Table: forum_categories
+-- --------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `forum_categories` (
+  `id`          INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `title`       VARCHAR(100) NOT NULL,
+  `description` TEXT DEFAULT NULL,
+  `sort_order`  INT NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `idx_sort_order` (`sort_order`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+-- Table: forum_forums
+-- --------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `forum_forums` (
+  `id`          INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `category_id` INT UNSIGNED NOT NULL,
+  `title`       VARCHAR(100) NOT NULL,
+  `description` TEXT DEFAULT NULL,
+  `sort_order`  INT NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `idx_category_id` (`category_id`),
+  KEY `idx_sort_order` (`sort_order`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+-- Table: forum_threads
+-- --------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `forum_threads` (
+  `id`           INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `forum_id`     INT UNSIGNED NOT NULL,
+  `user_id`      INT UNSIGNED NOT NULL,
+  `title`        VARCHAR(200) NOT NULL,
+  `is_locked`    TINYINT(1) NOT NULL DEFAULT 0,
+  `is_deleted`   TINYINT(1) NOT NULL DEFAULT 0,
+  `created_at`   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `last_post_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `reply_count`  INT UNSIGNED NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `idx_forum_id`     (`forum_id`),
+  KEY `idx_user_id`      (`user_id`),
+  KEY `idx_last_post_at` (`last_post_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+-- Table: forum_posts
+-- --------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `forum_posts` (
+  `id`         INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `thread_id`  INT UNSIGNED NOT NULL,
+  `user_id`    INT UNSIGNED NOT NULL,
+  `content`    TEXT NOT NULL,
+  `media_id`   INT UNSIGNED DEFAULT NULL,
+  `is_deleted` TINYINT(1) NOT NULL DEFAULT 0,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_thread_id`          (`thread_id`),
+  KEY `idx_user_id`            (`user_id`),
+  KEY `idx_created_at`         (`created_at`),
+  KEY `idx_forum_post_media_id` (`media_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+-- Table: forum_reads (per-user thread read tracking)
+-- --------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `forum_reads` (
+  `user_id`   INT UNSIGNED NOT NULL,
+  `thread_id` INT UNSIGNED NOT NULL,
+  `read_at`   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`user_id`, `thread_id`),
+  KEY `idx_fr_thread_id` (`thread_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+-- Table: chat_activity (suppress notifications for active chat windows)
+-- --------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `chat_activity` (
+  `user_id`         INT UNSIGNED NOT NULL,
+  `conversation_id` INT UNSIGNED NOT NULL,
+  `last_active_at`  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`user_id`, `conversation_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 SET FOREIGN_KEY_CHECKS = 1;

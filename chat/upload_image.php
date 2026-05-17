@@ -135,10 +135,8 @@ db_exec(
     [$convId]
 );
 
-// Notify the receiver only if they do not have this conversation open right now
-if (!is_user_active_in_chat($receiverId, $convId)) {
-    notify_user($receiverId, 'message', $uid, $convId);
-}
+// Chat unread state is tracked via chat_messages.is_read and surfaced by the
+// chat badge counter; no notification-bell entry is needed here.
 
 // Return the newly created message
 $msg = db_row(
