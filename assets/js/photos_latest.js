@@ -2,13 +2,8 @@
  * Private Community Website Software
  * Copyright (c) 2026 Ole Rasmussen
  *
- * Free to use, copy, modify, fork, and distribute.
- *
- * NOT allowed:
- * - Selling this software
- * - Redistributing it for profit
- *
- * Provided "AS IS" without warranty.
+ * Licensed under the MIT License.
+ * See the LICENSE file for details.
  */
 /**
  * photos_latest.js — Load More handler for the Photos hub latest-images masonry.
