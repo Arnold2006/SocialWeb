@@ -230,6 +230,14 @@ $_footerUser = current_user();
 <?php if (!empty($pageScript ?? '')): ?>
 <script src="<?= e($pageScript) ?>"></script>
 <?php endif; ?>
+<?php
+$pluginRegistry = plugins_load();
+foreach ($pluginRegistry['footer_scripts'] ?? [] as $scriptFn) {
+    if (is_callable($scriptFn)) {
+        $scriptFn();
+    }
+}
+?>
 
 </body>
 </html>

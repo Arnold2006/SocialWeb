@@ -20,6 +20,7 @@
  *   $registry['wall_widgets'][]     = callable
  *   $registry['menu_items'][]       = ['label' => ..., 'url' => ...]
  *   $registry['profile_extensions'][] = callable($userId)
+ *   $registry['footer_scripts'][]   = callable
  */
 
 declare(strict_types=1);
@@ -31,20 +32,28 @@ declare(strict_types=1);
  *   sidebar_widgets: callable[],
  *   wall_widgets: callable[],
  *   menu_items: array[],
- *   profile_extensions: callable[]
+ *   profile_extensions: callable[],
+ *   footer_scripts: callable[]
  * }
  */
 function plugins_load(): array
 {
+    static $cachedRegistry = null;
+    if (is_array($cachedRegistry)) {
+        return $cachedRegistry;
+    }
+
     $registry = [
         'sidebar_widgets'    => [],
         'wall_widgets'       => [],
         'menu_items'         => [],
         'profile_extensions' => [],
+        'footer_scripts'     => [],
     ];
 
     if (!is_dir(PLUGINS_DIR)) {
-        return $registry;
+        $cachedRegistry = $registry;
+        return $cachedRegistry;
     }
 
     // Fetch enabled plugins from DB
@@ -74,5 +83,6 @@ function plugins_load(): array
         }
     }
 
-    return $registry;
+    $cachedRegistry = $registry;
+    return $cachedRegistry;
 }
