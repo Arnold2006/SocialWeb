@@ -56,15 +56,15 @@ function plugins_load(): array
         return $cachedRegistry;
     }
 
-    // Fetch enabled plugins from DB
-    $enabledPlugins = db_query('SELECT slug FROM plugins WHERE is_enabled = 1');
-    $enabledSlugs   = array_column($enabledPlugins, 'slug');
+    // Fetch all registered plugins and their enabled status from DB
+    $allPlugins   = db_query('SELECT slug, is_enabled FROM plugins');
+    $pluginStatus = array_column($allPlugins, 'is_enabled', 'slug');
 
     foreach (glob(PLUGINS_DIR . '/*/plugin.php') as $pluginFile) {
         $slug = basename(dirname($pluginFile));
 
-        // Only load if enabled in DB (or no DB entry yet — first run)
-        if (!empty($enabledSlugs) && !in_array($slug, $enabledSlugs, true)) {
+        // Skip if registered in DB but not enabled; load if not yet registered (first run)
+        if (isset($pluginStatus[$slug]) && (int)$pluginStatus[$slug] !== 1) {
             continue;
         }
 
