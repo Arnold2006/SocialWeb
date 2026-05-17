@@ -121,7 +121,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if ($action === 'send' && $newMsgId > 0 && $receiverId > 0) {
-            notify_user($receiverId, 'message', $uid, $newMsgId);
+            notify_user($receiverId, 'mail_message', $uid, $newMsgId);
             flash_set('success', 'Message sent.');
             redirect(SITE_URL . '/pages/messages.php?folder=sent');
         } else {

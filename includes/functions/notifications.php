@@ -128,19 +128,20 @@ function is_user_active_in_chat(int $userId, int $convId, int $thresholdSeconds 
 /**
  * Create a notification for a user, skipping self-notifications.
  *
- * @param int    $recipientId  User to notify
- * @param string $type         Notification type (e.g. 'like', 'comment', 'message')
- * @param int    $fromUserId   ID of the user performing the action
- * @param int    $refId        Reference ID (post, comment, conversation, etc.)
+ * @param int      $recipientId     User to notify
+ * @param string   $type            Notification type (e.g. 'like', 'comment', 'mail_message')
+ * @param int      $fromUserId      ID of the user performing the action
+ * @param int      $refId           Primary reference ID (parent post / blog-post / media / message id)
+ * @param int|null $secondaryRefId  Optional secondary reference (e.g. comment id when ref_id is the parent)
  */
-function notify_user(int $recipientId, string $type, int $fromUserId, int $refId): void
+function notify_user(int $recipientId, string $type, int $fromUserId, int $refId, ?int $secondaryRefId = null): void
 {
     if ($recipientId === $fromUserId) {
         return;
     }
     db_insert(
-        'INSERT INTO notifications (user_id, type, from_user_id, ref_id) VALUES (?, ?, ?, ?)',
-        [$recipientId, $type, $fromUserId, $refId]
+        'INSERT INTO notifications (user_id, type, from_user_id, ref_id, secondary_ref_id) VALUES (?, ?, ?, ?, ?)',
+        [$recipientId, $type, $fromUserId, $refId, $secondaryRefId]
     );
 }
 
@@ -148,12 +149,13 @@ function notify_user(int $recipientId, string $type, int $fromUserId, int $refId
  * Parse @username mentions from content and send notifications
  * to each mentioned user (skipping the author themselves).
  *
- * @param string $content     Raw text content
- * @param int    $fromUserId  ID of the user who wrote the content
- * @param int    $refId       Reference ID to include in the notification (e.g. post ID)
- * @param string $type        Notification type ('mention' for comments, 'mention_post' for wall posts)
+ * @param string   $content         Raw text content
+ * @param int      $fromUserId      ID of the user who wrote the content
+ * @param int      $refId           Primary reference ID (parent post / blog-post / media id)
+ * @param string   $type            Notification type ('mention_comment', 'mention_post', etc.)
+ * @param int|null $secondaryRefId  Optional secondary reference (e.g. comment id)
  */
-function notify_mentions(string $content, int $fromUserId, int $refId, string $type = 'mention'): void
+function notify_mentions(string $content, int $fromUserId, int $refId, string $type = 'mention', ?int $secondaryRefId = null): void
 {
     preg_match_all('/@([a-zA-Z0-9_\-]+)/u', $content, $matches);
     if (empty($matches[1])) {
@@ -169,7 +171,7 @@ function notify_mentions(string $content, int $fromUserId, int $refId, string $t
 
     foreach ($rows as $row) {
         if ((int)$row['id'] !== $fromUserId) {
-            notify_user((int)$row['id'], $type, $fromUserId, $refId);
+            notify_user((int)$row['id'], $type, $fromUserId, $refId, $secondaryRefId);
         }
     }
 }
