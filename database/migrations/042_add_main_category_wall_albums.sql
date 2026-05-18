@@ -19,8 +19,7 @@ SET NAMES utf8mb4;
 INSERT INTO `album_categories` (`user_id`, `title`)
   SELECT u.`id`, 'Main'
   FROM `users` u
-  WHERE u.`is_deleted` = 0
-    AND NOT EXISTS (
+  WHERE NOT EXISTS (
       SELECT 1
       FROM `album_categories` c
       WHERE c.`user_id`    = u.`id`
@@ -33,7 +32,6 @@ INSERT INTO `album_categories` (`user_id`, `title`)
 INSERT INTO `albums` (`user_id`, `category_id`, `title`)
   SELECT c.`user_id`, c.`id`, 'Wall Images'
   FROM `album_categories` c
-  JOIN `users` u ON u.`id` = c.`user_id` AND u.`is_deleted` = 0
   WHERE c.`title`      = 'Main'
     AND c.`is_deleted` = 0
     AND NOT EXISTS (
@@ -50,7 +48,6 @@ INSERT INTO `albums` (`user_id`, `category_id`, `title`)
 INSERT INTO `albums` (`user_id`, `category_id`, `title`)
   SELECT c.`user_id`, c.`id`, 'Wall Videos'
   FROM `album_categories` c
-  JOIN `users` u ON u.`id` = c.`user_id` AND u.`is_deleted` = 0
   WHERE c.`title`      = 'Main'
     AND c.`is_deleted` = 0
     AND NOT EXISTS (
