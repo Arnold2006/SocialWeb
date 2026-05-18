@@ -40,6 +40,7 @@ INSERT INTO `albums` (`user_id`, `category_id`, `title`)
       SELECT 1
       FROM `albums` a
       WHERE a.`user_id`    = c.`user_id`
+        AND a.`category_id` = c.`id`
         AND a.`title`      = 'Wall Images'
         AND a.`is_deleted` = 0
     );
@@ -56,6 +57,7 @@ INSERT INTO `albums` (`user_id`, `category_id`, `title`)
       SELECT 1
       FROM `albums` a
       WHERE a.`user_id`    = c.`user_id`
+        AND a.`category_id` = c.`id`
         AND a.`title`      = 'Wall Videos'
         AND a.`is_deleted` = 0
     );
