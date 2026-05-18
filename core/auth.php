@@ -12,6 +12,10 @@
 
 declare(strict_types=1);
 
+/** Album titles used for wall media uploaded by a user. */
+const WALL_IMAGES_ALBUM = 'Wall Images';
+const WALL_VIDEOS_ALBUM = 'Wall Videos';
+
 /**
  * Return current logged-in user row or null.
  */
@@ -197,6 +201,37 @@ function register_user(string $username, string $full_name, string $email, strin
          SELECT ?, id, NOW() FROM forum_threads WHERE is_deleted = 0',
         [(int) $userId]
     );
+
+    // Create default gallery structure for the new user:
+    //   "Main" category  →  WALL_IMAGES_ALBUM album
+    //                    →  WALL_VIDEOS_ALBUM album
+    // Wrapped in try/catch so a gallery setup failure never prevents registration.
+    try {
+        $mainCatId = (int) db_insert(
+            'INSERT INTO album_categories (user_id, title) VALUES (?, ?)',
+            [(int) $userId, 'Main']
+        );
+        if ($mainCatId > 0) {
+            $imgRows = db_exec(
+                'INSERT INTO albums (user_id, category_id, title) VALUES (?, ?, ?)',
+                [(int) $userId, $mainCatId, WALL_IMAGES_ALBUM]
+            );
+            if ($imgRows === 0) {
+                error_log("register_user: failed to create '" . WALL_IMAGES_ALBUM . "' album for user {$userId}");
+            }
+            $vidRows = db_exec(
+                'INSERT INTO albums (user_id, category_id, title) VALUES (?, ?, ?)',
+                [(int) $userId, $mainCatId, WALL_VIDEOS_ALBUM]
+            );
+            if ($vidRows === 0) {
+                error_log("register_user: failed to create '" . WALL_VIDEOS_ALBUM . "' album for user {$userId}");
+            }
+        } else {
+            error_log("register_user: failed to create 'Main' album category for user {$userId}");
+        }
+    } catch (\Throwable $e) {
+        error_log('register_user: gallery setup failed for user ' . $userId . ': ' . $e->getMessage());
+    }
 
     return ['ok' => true, 'error' => '', 'user_id' => (int) $userId];
 }
