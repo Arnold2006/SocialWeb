@@ -198,5 +198,21 @@ function register_user(string $username, string $full_name, string $email, strin
         [(int) $userId]
     );
 
+    // Create default gallery structure for the new user:
+    //   "Main" category  →  "Wall Images" album
+    //                    →  "Wall Videos" album
+    $mainCatId = (int) db_insert(
+        'INSERT INTO album_categories (user_id, title) VALUES (?, ?)',
+        [(int) $userId, 'Main']
+    );
+    db_exec(
+        'INSERT INTO albums (user_id, category_id, title) VALUES (?, ?, ?)',
+        [(int) $userId, $mainCatId, 'Wall Images']
+    );
+    db_exec(
+        'INSERT INTO albums (user_id, category_id, title) VALUES (?, ?, ?)',
+        [(int) $userId, $mainCatId, 'Wall Videos']
+    );
+
     return ['ok' => true, 'error' => '', 'user_id' => (int) $userId];
 }
