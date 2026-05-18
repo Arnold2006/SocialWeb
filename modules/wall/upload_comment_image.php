@@ -45,7 +45,7 @@ if (!in_array($mimeType, ALLOWED_IMAGE_TYPES, true)) {
 // Get or create the "Wall Images" album — identical pattern to create_post.php
 $wallAlbum = db_row(
     'SELECT id FROM albums WHERE user_id = ? AND title = ? AND is_deleted = 0 ORDER BY id ASC LIMIT 1',
-    [(int)$user['id'], 'Wall Images']
+    [(int)$user['id'], WALL_IMAGES_ALBUM]
 );
 
 if ($wallAlbum) {
@@ -65,7 +65,7 @@ if ($wallAlbum) {
     }
     $wallAlbumId = (int)db_insert(
         'INSERT INTO albums (user_id, category_id, title) VALUES (?, ?, ?)',
-        [(int)$user['id'], $mainCatId, 'Wall Images']
+        [(int)$user['id'], $mainCatId, WALL_IMAGES_ALBUM]
     );
 }
 

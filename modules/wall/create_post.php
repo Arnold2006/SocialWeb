@@ -13,8 +13,6 @@
 declare(strict_types=1);
 require_once dirname(dirname(__DIR__)) . '/includes/bootstrap.php';
 
-const WALL_IMAGES_ALBUM = 'Wall Images';
-
 require_login();
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
