@@ -21,6 +21,7 @@ $galleryOwner = sanitise_int($_GET['user_id'] ?? (int)$currentUser['id']);
 $categoryId   = sanitise_int($_GET['cat'] ?? 0);
 $albumId      = sanitise_int($_GET['album'] ?? 0);
 $openPhotoId  = sanitise_int($_GET['photo'] ?? 0);
+$gotoCommentId = sanitise_int($_GET['goto_comment'] ?? 0);
 $isOwn        = ((int)$currentUser['id'] === $galleryOwner);
 
 $owner = db_row('SELECT id, username, avatar_path FROM users WHERE id = ? AND is_banned = 0', [$galleryOwner]);
@@ -705,7 +706,8 @@ include SITE_ROOT . '/includes/header.php';
              data-user-id="<?= $galleryOwner ?>"
              data-offset="<?= count($mediaItems) ?>"
              data-has-more="<?= $hasMoreMedia ? '1' : '0' ?>"
-             <?php if ($openPhotoId > 0): ?>data-open-photo="<?= $openPhotoId ?>"<?php endif; ?>>
+             <?php if ($openPhotoId > 0): ?>data-open-photo="<?= $openPhotoId ?>"<?php endif; ?>
+             <?php if ($gotoCommentId > 0): ?>data-goto-comment="<?= $gotoCommentId ?>"<?php endif; ?>>
             <?php if (empty($mediaItems)): ?>
             <p class="empty-state">No media in this album yet.</p>
             <?php else: ?>
