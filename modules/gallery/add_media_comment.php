@@ -50,8 +50,8 @@ $commentId = db_insert(
 // Wrapped in try/catch so a notification failure does not prevent the comment
 // response from being returned to the caller.
 try {
-    notify_user((int)$media['user_id'], 'photo_comment', (int)$user['id'], $mediaId);
-    notify_mentions($content, (int)$user['id'], $mediaId, 'mention_comment_photo');
+    notify_user((int)$media['user_id'], 'photo_comment', (int)$user['id'], $mediaId, (int)$commentId);
+    notify_mentions($content, (int)$user['id'], $mediaId, 'mention_comment_photo', (int)$commentId);
 } catch (\Throwable $e) {
     error_log('notify_user photo_comment failed: ' . $e->getMessage());
 }
