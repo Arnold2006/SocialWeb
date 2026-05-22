@@ -32,6 +32,7 @@
     let commentsList = null;
     let commentForm  = null;
     let commentInput = null;
+    let autoOpened   = false;  // true when the lightbox was opened automatically from a notification link
 
     /** Return the base site URL from the meta tag */
     function baseUrl() {
@@ -225,6 +226,17 @@
     function closeLightbox() {
         if (!overlay) return;
         stopVideo();
+        if (autoOpened) {
+            // The page was reached via a notification link that auto-opened the
+            // lightbox. Navigate back so the user returns to where they were
+            // (e.g. the Wall) instead of being left on the gallery page.
+            // Reset the flag before navigating so that if the page is later
+            // restored from bfcache and the user opens a photo manually,
+            // closing it does not trigger another unwanted back-navigation.
+            autoOpened = false;
+            history.back();
+            return;
+        }
         overlay.style.display = 'none';
         document.body.style.overflow = '';
     }
@@ -673,6 +685,7 @@
         if (!trigger) return;
         const idx = triggers.indexOf(trigger);
         if (idx !== -1) {
+            autoOpened = true;
             openLightbox(idx);
         }
         // If idx === -1 the trigger wasn't registered by bindTriggers (unexpected);
