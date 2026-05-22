@@ -514,9 +514,16 @@
         if (!commentsList || !commentId) return;
         const target = commentsList.querySelector('[data-comment-id="' + CSS.escape(String(commentId)) + '"]');
         if (!target) return;
-        target.scrollIntoView({ block: 'nearest' });
-        target.classList.add('comment-highlight');
-        setTimeout(() => target.classList.remove('comment-highlight'), 2000);
+        // Scroll within the panel's comments list directly; scrollIntoView() is
+        // unreliable inside the lightbox overlay where the page body scroll is locked.
+        requestAnimationFrame(function () {
+            const listRect   = commentsList.getBoundingClientRect();
+            const targetRect = target.getBoundingClientRect();
+            commentsList.scrollTop += (targetRect.top - listRect.top) -
+                ((commentsList.clientHeight - target.clientHeight) / 2);
+            target.classList.add('comment-highlight');
+            setTimeout(() => target.classList.remove('comment-highlight'), 2000);
+        });
     }
 
     /** Toggle like on the currently displayed media item */
