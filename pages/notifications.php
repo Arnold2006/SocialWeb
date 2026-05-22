@@ -182,7 +182,7 @@ include SITE_ROOT . '/includes/header.php';
                     if ($photoCommentRow && $photoCommentRow['album_id'] !== null):
                         $photoCommentUrl = SITE_URL . '/pages/gallery.php?user_id=' . (int)$photoCommentRow['user_id'] . '&album=' . (int)$photoCommentRow['album_id'] . '&photo=' . (int)$n['ref_id'];
                         if ($secondaryRefId !== null) {
-                            $photoCommentUrl .= '&goto_comment=' . $secondaryRefId;
+                            $photoCommentUrl .= '&goto_comment=' . (int)$secondaryRefId;
                         }
                 ?>
                 <a href="<?= e($photoCommentUrl) ?>">View comment</a>
@@ -265,7 +265,7 @@ include SITE_ROOT . '/includes/header.php';
                     if ($mentionPhotoMedia && $mentionPhotoMedia['album_id'] !== null):
                         $mentionPhotoUrl = SITE_URL . '/pages/gallery.php?user_id=' . (int)$mentionPhotoMedia['user_id'] . '&album=' . (int)$mentionPhotoMedia['album_id'] . '&photo=' . (int)$n['ref_id'];
                         if ($secondaryRefId !== null) {
-                            $mentionPhotoUrl .= '&goto_comment=' . $secondaryRefId;
+                            $mentionPhotoUrl .= '&goto_comment=' . (int)$secondaryRefId;
                         }
                 ?>
                 <a href="<?= e($mentionPhotoUrl) ?>">View comment</a>

@@ -904,10 +904,7 @@ textarea { resize: vertical; min-height: 80px; }
 
 .comment-text { margin-top: 3px; }
 
-.comment-item--highlight {
-    animation: comment-highlight-fade 2s ease-out forwards;
-}
-
+.comment-item--highlight,
 .comment-highlight {
     animation: comment-highlight-fade 2s ease-out forwards;
 }
