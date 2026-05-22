@@ -2920,21 +2920,27 @@ function clearCommentImagePreview(form) {
 
     const baseUrl = document.querySelector('meta[name="site-url"]')?.content || '';
 
-    /** Scroll to the comment (if requested) or to the post itself. */
+    /** Scroll to the comment (if requested) or to the post itself.
+     *  Uses a double requestAnimationFrame so the browser has finished laying
+     *  out any just-inserted (AJAX) content before we measure scroll position. */
     function scrollToTarget() {
-        if (gotoComment) {
-            const commentEl = document.getElementById('comment-' + gotoComment);
-            if (commentEl) {
-                commentEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                commentEl.classList.add('comment-item--highlight');
-                return;
-            }
-        }
-        const postEl = document.getElementById('post-' + gotoPost);
-        if (postEl) {
-            postEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            postEl.classList.add('post-item--highlight');
-        }
+        requestAnimationFrame(function () {
+            requestAnimationFrame(function () {
+                if (gotoComment) {
+                    const commentEl = document.getElementById('comment-' + gotoComment);
+                    if (commentEl) {
+                        commentEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        commentEl.classList.add('comment-item--highlight');
+                        return;
+                    }
+                }
+                const postEl = document.getElementById('post-' + gotoPost);
+                if (postEl) {
+                    postEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    postEl.classList.add('post-item--highlight');
+                }
+            });
+        });
     }
 
     /**
