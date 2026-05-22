@@ -35,7 +35,7 @@ if ($imageMediaId > 0) {
     }
 }
 
-$post = db_row('SELECT id, user_id FROM posts WHERE id = ? AND is_deleted = 0', [$postId]);
+$post = db_row('SELECT id, user_id, media_id FROM posts WHERE id = ? AND is_deleted = 0', [$postId]);
 if ($post === null) {
     echo json_encode(['ok' => false, 'error' => 'Post not found']);
     exit;
@@ -53,10 +53,18 @@ db_exec('UPDATE posts SET bumped_at = NOW() WHERE id = ?', [$postId]);
 // Wrapped in try/catch so a notification failure does not prevent the JSON
 // response from being returned (which would leave the comment input un-cleared).
 try {
-    // ref_id = post_id, secondary_ref_id = comment_id so the renderer can link
-    // directly to the post+comment without an extra JOIN on the comments table.
-    notify_user((int)$post['user_id'], 'comment', (int)$user['id'], (int)$postId, (int)$commentId);
-    notify_mentions($content, (int)$user['id'], (int)$postId, 'mention_comment', (int)$commentId);
+    $postMediaId = !empty($post['media_id']) ? (int)$post['media_id'] : null;
+    if ($postMediaId !== null) {
+        // Wall post has an attached photo/video (stored in the Wall Images/Videos
+        // album).  Emit a photo_comment notification so the link in Notifications
+        // opens the gallery modal, exactly like a comment made inside an album.
+        notify_user((int)$post['user_id'], 'photo_comment', (int)$user['id'], $postMediaId, (int)$commentId);
+        notify_mentions($content, (int)$user['id'], $postMediaId, 'mention_comment_photo', (int)$commentId);
+    } else {
+        // Plain text post — link back to the wall feed entry.
+        notify_user((int)$post['user_id'], 'comment', (int)$user['id'], (int)$postId, (int)$commentId);
+        notify_mentions($content, (int)$user['id'], (int)$postId, 'mention_comment', (int)$commentId);
+    }
 } catch (\Throwable $e) {
     error_log('add_comment notify failed: ' . $e->getMessage());
 }
