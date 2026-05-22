@@ -119,11 +119,24 @@ include SITE_ROOT . '/includes/header.php';
                                 'SELECT user_id, album_id FROM media WHERE id = ? AND is_deleted = 0',
                                 [(int)$likedCommentRow['media_id']]
                             );
-                            if ($likedCommentMedia && $likedCommentMedia['album_id'] !== null):
-                                $likedCommentMediaUrl = SITE_URL . '/pages/gallery.php?user_id=' . (int)$likedCommentMedia['user_id'] . '&album=' . (int)$likedCommentMedia['album_id'] . '&photo=' . (int)$likedCommentRow['media_id'] . '&goto_comment=' . (int)$n['ref_id'];
+                            if ($likedCommentMedia):
+                                $likedCommentMediaUrl = null;
+                                if ($likedCommentMedia['album_id'] !== null):
+                                    $likedCommentMediaUrl = SITE_URL . '/pages/gallery.php?user_id=' . (int)$likedCommentMedia['user_id'] . '&album=' . (int)$likedCommentMedia['album_id'] . '&photo=' . (int)$likedCommentRow['media_id'] . '&goto_comment=' . (int)$n['ref_id'];
+                                else:
+                                    $wallPostRowCL = db_row(
+                                        'SELECT id FROM posts WHERE media_id = ? AND is_deleted = 0 LIMIT 1',
+                                        [(int)$likedCommentRow['media_id']]
+                                    );
+                                    if ($wallPostRowCL):
+                                        $likedCommentMediaUrl = SITE_URL . '/pages/index.php?goto_post=' . (int)$wallPostRowCL['id'] . '&goto_comment=' . (int)$n['ref_id'];
+                                    endif;
+                                endif;
+                                if (!empty($likedCommentMediaUrl)):
                             ?>
                 <a href="<?= e($likedCommentMediaUrl) ?>">View comment</a>
-                <?php       endif;
+                <?php               endif;
+                            endif;
                         endif;
                     endif;
                 endif; ?>
@@ -136,10 +149,21 @@ include SITE_ROOT . '/includes/header.php';
                         'SELECT user_id, album_id FROM media WHERE id = ? AND is_deleted = 0',
                         [(int)$n['ref_id']]
                     );
-                    if ($photoRow && $photoRow['album_id'] !== null):
+                    if ($photoRow):
+                        if ($photoRow['album_id'] !== null):
                 ?>
                 <a href="<?= e(SITE_URL . '/pages/gallery.php?user_id=' . (int)$photoRow['user_id'] . '&album=' . (int)$photoRow['album_id'] . '&photo=' . (int)$n['ref_id']) ?>">View photo</a>
-                <?php   endif;
+                <?php       else:
+                            $wallPostRowLike = db_row(
+                                'SELECT id FROM posts WHERE media_id = ? AND is_deleted = 0 LIMIT 1',
+                                [(int)$n['ref_id']]
+                            );
+                            if ($wallPostRowLike):
+                ?>
+                <a href="<?= e(SITE_URL . '/pages/index.php?goto_post=' . (int)$wallPostRowLike['id']) ?>">View photo</a>
+                <?php       endif;
+                        endif;
+                    endif;
                 endif; ?>
                 <?php break;
 
@@ -174,19 +198,36 @@ include SITE_ROOT . '/includes/header.php';
 
                 case 'photo_comment': ?>
                 <p><strong><?= e($n['from_username'] ?? 'Someone') ?></strong> commented on your photo.</p>
-                <?php if ($n['ref_id']):
+                <?php
+                $photoCommentUrl = null;
+                if ($n['ref_id']):
                     $photoCommentRow = db_row(
                         'SELECT user_id, album_id FROM media WHERE id = ? AND is_deleted = 0',
                         [(int)$n['ref_id']]
                     );
-                    if ($photoCommentRow && $photoCommentRow['album_id'] !== null):
-                        $photoCommentUrl = SITE_URL . '/pages/gallery.php?user_id=' . (int)$photoCommentRow['user_id'] . '&album=' . (int)$photoCommentRow['album_id'] . '&photo=' . (int)$n['ref_id'];
-                        if ($secondaryRefId !== null) {
-                            $photoCommentUrl .= '&goto_comment=' . (int)$secondaryRefId;
-                        }
+                    if ($photoCommentRow):
+                        if ($photoCommentRow['album_id'] !== null):
+                            $photoCommentUrl = SITE_URL . '/pages/gallery.php?user_id=' . (int)$photoCommentRow['user_id'] . '&album=' . (int)$photoCommentRow['album_id'] . '&photo=' . (int)$n['ref_id'];
+                            if ($secondaryRefId !== null):
+                                $photoCommentUrl .= '&goto_comment=' . (int)$secondaryRefId;
+                            endif;
+                        else:
+                            $wallPostRow = db_row(
+                                'SELECT id FROM posts WHERE media_id = ? AND is_deleted = 0 LIMIT 1',
+                                [(int)$n['ref_id']]
+                            );
+                            if ($wallPostRow):
+                                $photoCommentUrl = SITE_URL . '/pages/index.php?goto_post=' . (int)$wallPostRow['id'];
+                                if ($secondaryRefId !== null):
+                                    $photoCommentUrl .= '&goto_comment=' . (int)$secondaryRefId;
+                                endif;
+                            endif;
+                        endif;
+                        if (!empty($photoCommentUrl)):
                 ?>
                 <a href="<?= e($photoCommentUrl) ?>">View comment</a>
-                <?php   endif;
+                <?php       endif;
+                    endif;
                 endif; ?>
                 <?php break;
 
@@ -257,19 +298,36 @@ include SITE_ROOT . '/includes/header.php';
 
                 case 'mention_comment_photo': ?>
                 <p><strong><?= e($n['from_username'] ?? 'Someone') ?></strong> mentioned you in a photo comment.</p>
-                <?php if ($n['ref_id']):
+                <?php
+                $mentionPhotoUrl = null;
+                if ($n['ref_id']):
                     $mentionPhotoMedia = db_row(
                         'SELECT user_id, album_id FROM media WHERE id = ? AND is_deleted = 0',
                         [(int)$n['ref_id']]
                     );
-                    if ($mentionPhotoMedia && $mentionPhotoMedia['album_id'] !== null):
-                        $mentionPhotoUrl = SITE_URL . '/pages/gallery.php?user_id=' . (int)$mentionPhotoMedia['user_id'] . '&album=' . (int)$mentionPhotoMedia['album_id'] . '&photo=' . (int)$n['ref_id'];
-                        if ($secondaryRefId !== null) {
-                            $mentionPhotoUrl .= '&goto_comment=' . (int)$secondaryRefId;
-                        }
+                    if ($mentionPhotoMedia):
+                        if ($mentionPhotoMedia['album_id'] !== null):
+                            $mentionPhotoUrl = SITE_URL . '/pages/gallery.php?user_id=' . (int)$mentionPhotoMedia['user_id'] . '&album=' . (int)$mentionPhotoMedia['album_id'] . '&photo=' . (int)$n['ref_id'];
+                            if ($secondaryRefId !== null):
+                                $mentionPhotoUrl .= '&goto_comment=' . (int)$secondaryRefId;
+                            endif;
+                        else:
+                            $wallPostRowMP = db_row(
+                                'SELECT id FROM posts WHERE media_id = ? AND is_deleted = 0 LIMIT 1',
+                                [(int)$n['ref_id']]
+                            );
+                            if ($wallPostRowMP):
+                                $mentionPhotoUrl = SITE_URL . '/pages/index.php?goto_post=' . (int)$wallPostRowMP['id'];
+                                if ($secondaryRefId !== null):
+                                    $mentionPhotoUrl .= '&goto_comment=' . (int)$secondaryRefId;
+                                endif;
+                            endif;
+                        endif;
+                        if (!empty($mentionPhotoUrl)):
                 ?>
                 <a href="<?= e($mentionPhotoUrl) ?>">View comment</a>
-                <?php   endif;
+                <?php       endif;
+                    endif;
                 endif; ?>
                 <?php break;
 
