@@ -124,12 +124,12 @@ include SITE_ROOT . '/includes/header.php';
                                 if ($likedCommentMedia['album_id'] !== null):
                                     $likedCommentMediaUrl = SITE_URL . '/pages/gallery.php?user_id=' . (int)$likedCommentMedia['user_id'] . '&album=' . (int)$likedCommentMedia['album_id'] . '&photo=' . (int)$likedCommentRow['media_id'] . '&goto_comment=' . (int)$n['ref_id'];
                                 else:
-                                    $wallPostRowCL = db_row(
+                                    $wallPostRowCommentLike = db_row(
                                         'SELECT id FROM posts WHERE media_id = ? AND is_deleted = 0 LIMIT 1',
                                         [(int)$likedCommentRow['media_id']]
                                     );
-                                    if ($wallPostRowCL):
-                                        $likedCommentMediaUrl = SITE_URL . '/pages/index.php?goto_post=' . (int)$wallPostRowCL['id'] . '&goto_comment=' . (int)$n['ref_id'];
+                                    if ($wallPostRowCommentLike):
+                                        $likedCommentMediaUrl = SITE_URL . '/pages/index.php?goto_post=' . (int)$wallPostRowCommentLike['id'] . '&goto_comment=' . (int)$n['ref_id'];
                                     endif;
                                 endif;
                                 if (!empty($likedCommentMediaUrl)):
@@ -312,12 +312,12 @@ include SITE_ROOT . '/includes/header.php';
                                 $mentionPhotoUrl .= '&goto_comment=' . (int)$secondaryRefId;
                             endif;
                         else:
-                            $wallPostRowMP = db_row(
+                            $wallPostRowMention = db_row(
                                 'SELECT id FROM posts WHERE media_id = ? AND is_deleted = 0 LIMIT 1',
                                 [(int)$n['ref_id']]
                             );
-                            if ($wallPostRowMP):
-                                $mentionPhotoUrl = SITE_URL . '/pages/index.php?goto_post=' . (int)$wallPostRowMP['id'];
+                            if ($wallPostRowMention):
+                                $mentionPhotoUrl = SITE_URL . '/pages/index.php?goto_post=' . (int)$wallPostRowMention['id'];
                                 if ($secondaryRefId !== null):
                                     $mentionPhotoUrl .= '&goto_comment=' . (int)$secondaryRefId;
                                 endif;
