@@ -42,12 +42,14 @@ if (!empty($_FILES['media']['name'])) {
     $isVideo = in_array($mimeType, ALLOWED_VIDEO_TYPES, true);
 
     if ($isImage || $isVideo) {
-        // Get or create the "Wall Images" album for this user.
+        // Get or create the appropriate wall album for this user.
+        // Images go to "Wall Images", videos go to "Wall Videos".
         // Use SELECT then INSERT; in the unlikely event of a concurrent duplicate
         // insert the oldest matching album is always used on subsequent requests.
+        $targetAlbumTitle = $isVideo ? WALL_VIDEOS_ALBUM : WALL_IMAGES_ALBUM;
         $wallAlbum = db_row(
             'SELECT id FROM albums WHERE user_id = ? AND title = ? AND is_deleted = 0 ORDER BY id ASC LIMIT 1',
-            [(int)$user['id'], WALL_IMAGES_ALBUM]
+            [(int)$user['id'], $targetAlbumTitle]
         );
         if ($wallAlbum) {
             $wallAlbumId = (int)$wallAlbum['id'];
@@ -69,7 +71,7 @@ if (!empty($_FILES['media']['name'])) {
 
             $wallAlbumId = (int)db_insert(
                 'INSERT INTO albums (user_id, category_id, title) VALUES (?, ?, ?)',
-                [(int)$user['id'], $mainCatId, WALL_IMAGES_ALBUM]
+                [(int)$user['id'], $mainCatId, $targetAlbumTitle]
             );
         }
 
