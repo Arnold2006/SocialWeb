@@ -908,6 +908,10 @@ textarea { resize: vertical; min-height: 80px; }
     animation: comment-highlight-fade 2s ease-out forwards;
 }
 
+.comment-highlight {
+    animation: comment-highlight-fade 2s ease-out forwards;
+}
+
 @keyframes comment-highlight-fade {
     0%   { background-color: var(--color-accent-light, #fff3cd); }
     100% { background-color: transparent; }

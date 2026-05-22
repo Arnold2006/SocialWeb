@@ -33,6 +33,7 @@
     let commentForm  = null;
     let commentInput = null;
     let autoOpened   = false;  // true when the lightbox was opened automatically from a notification link
+    let autoCommentId = '';    // comment id to scroll to after auto-opening (from ?goto_comment=)
 
     /** Return the base site URL from the meta tag */
     function baseUrl() {
@@ -320,6 +321,10 @@
             likeBtn.classList.toggle('liked', data.user_liked);
             updateCommentCountText(data.comments.length);
             renderComments(data.comments);
+            if (autoCommentId) {
+                scrollToComment(autoCommentId);
+                autoCommentId = '';
+            }
         })
         .catch(() => {
             commentsList.innerHTML = '<p class="lightbox-empty-comments">Could not load comments.</p>';
@@ -499,6 +504,19 @@
     function updateCommentCountText(count) {
         const el = panel ? panel.querySelector('.lightbox-comment-count-text') : null;
         if (el) el.textContent = count + ' comment' + (count !== 1 ? 's' : '');
+    }
+
+    /**
+     * Scroll the comments list to the comment with the given id and briefly
+     * highlight it so the user can see which comment was linked to.
+     */
+    function scrollToComment(commentId) {
+        if (!commentsList || !commentId) return;
+        const target = commentsList.querySelector('[data-comment-id="' + CSS.escape(String(commentId)) + '"]');
+        if (!target) return;
+        target.scrollIntoView({ block: 'nearest' });
+        target.classList.add('comment-highlight');
+        setTimeout(() => target.classList.remove('comment-highlight'), 2000);
     }
 
     /** Toggle like on the currently displayed media item */
@@ -686,6 +704,9 @@
         const idx = triggers.indexOf(trigger);
         if (idx !== -1) {
             autoOpened = true;
+            // If a target comment was specified (e.g. ?goto_comment=123), store
+            // it so that loadMediaPanel can scroll to it after loading comments.
+            autoCommentId = gallery.dataset.gotoComment || '';
             openLightbox(idx);
         }
         // If idx === -1 the trigger wasn't registered by bindTriggers (unexpected);
