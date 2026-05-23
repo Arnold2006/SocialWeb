@@ -5411,3 +5411,291 @@ a.mention {
     text-decoration: none;
 }
 a.mention:hover { text-decoration: underline; }
+
+
+/* ── File Share ───────────────────────────────────────────────────────────── */
+.fileshare-layout {
+    display: flex;
+    gap: 1.5rem;
+    align-items: flex-start;
+    max-width: var(--container-w);
+    margin: 1.5rem auto;
+    padding: 0 1rem;
+}
+
+/* Sidebar */
+.fileshare-sidebar {
+    flex-shrink: 0;
+    width: 220px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: 1rem;
+}
+
+.fileshare-sidebar-title {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--color-text-muted);
+    margin: 0 0 0.75rem;
+}
+
+.fileshare-folder-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.fileshare-folder-link {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.4rem 0.6rem;
+    border-radius: var(--radius-sm);
+    color: var(--color-text);
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: background var(--transition);
+    gap: 0.4rem;
+}
+.fileshare-folder-link:hover { background: var(--color-surface2); }
+.fileshare-folder-link.active {
+    background: var(--color-accent);
+    color: #fff;
+}
+
+.fileshare-folder-count {
+    font-size: 0.75rem;
+    color: inherit;
+    opacity: 0.7;
+    margin-left: auto;
+}
+
+.fileshare-no-folders {
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+    padding: 0.25rem 0.6rem;
+}
+
+/* Main area */
+.fileshare-main {
+    flex: 1;
+    min-width: 0;
+}
+
+.fileshare-header h1 {
+    margin: 0 0 1rem;
+}
+
+/* Upload section */
+.fileshare-upload-section {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+}
+
+.fileshare-upload-section h2 {
+    margin: 0 0 1rem;
+    font-size: 1rem;
+}
+
+.fileshare-upload-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: flex-end;
+}
+
+.fileshare-upload-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+.fileshare-upload-field label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.fileshare-hint {
+    font-weight: 400;
+    color: var(--color-text-muted);
+    font-size: 0.78rem;
+}
+
+.fileshare-file-input {
+    color: var(--color-text);
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    padding: 0.3rem 0.5rem;
+    font-size: 0.875rem;
+}
+
+.fileshare-select {
+    background: var(--color-bg);
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    padding: 0.4rem 0.6rem;
+    font-size: 0.875rem;
+}
+
+/* Files section */
+.fileshare-files-section {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: 1.25rem;
+}
+
+.fileshare-files-section h2 {
+    margin: 0 0 1rem;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.fileshare-total {
+    font-size: 0.8rem;
+    font-weight: 400;
+    color: var(--color-text-muted);
+}
+
+.fileshare-empty {
+    color: var(--color-text-muted);
+    font-style: italic;
+}
+
+.fileshare-table-wrap {
+    overflow-x: auto;
+}
+
+.fileshare-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+.fileshare-table th,
+.fileshare-table td {
+    padding: 0.5rem 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.fileshare-table th {
+    color: var(--color-text-muted);
+    font-weight: 600;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    background: var(--color-bg);
+}
+
+.fileshare-table tbody tr:hover {
+    background: var(--color-surface2);
+}
+
+.fileshare-filename {
+    word-break: break-all;
+    max-width: 280px;
+}
+
+.fileshare-size {
+    white-space: nowrap;
+    color: var(--color-text-muted);
+}
+
+.fileshare-date {
+    white-space: nowrap;
+    color: var(--color-text-muted);
+    font-size: 0.82rem;
+}
+
+.fileshare-no-folder {
+    color: var(--color-text-muted);
+}
+
+.fileshare-download-btn {
+    white-space: nowrap;
+}
+
+/* Admin file share */
+.fileshare-admin-create-form {
+    display: inline-block;
+}
+
+.fileshare-admin-create-row {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+}
+
+.fileshare-admin-folder-input {
+    background: var(--color-bg);
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    padding: 0.4rem 0.75rem;
+    font-size: 0.9rem;
+    min-width: 220px;
+}
+
+.fileshare-admin-count {
+    font-weight: 400;
+    color: var(--color-text-muted);
+    font-size: 0.85rem;
+}
+
+.fileshare-admin-table-wrap {
+    overflow-x: auto;
+}
+
+.fileshare-admin-filename {
+    word-break: break-all;
+    max-width: 260px;
+}
+
+.fileshare-admin-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.fileshare-admin-move-form {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.fileshare-admin-move-select {
+    background: var(--color-bg);
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    padding: 0.25rem 0.4rem;
+    font-size: 0.8rem;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+    .fileshare-layout {
+        flex-direction: column;
+    }
+    .fileshare-sidebar {
+        width: 100%;
+    }
+    .fileshare-upload-row {
+        flex-direction: column;
+    }
+}
