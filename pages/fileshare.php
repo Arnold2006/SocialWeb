@@ -143,10 +143,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $safeOriginalName = 'file.' . $ext;
         }
 
+        $description = sanitise_string($_POST['description'] ?? '', 1000);
+        $description = $description !== '' ? $description : null;
+
         db_insert(
-            'INSERT INTO file_share_files (folder_id, user_id, filename, original_name, size)
-             VALUES (?, ?, ?, ?, ?)',
-            [$folderId, (int) $currentUser['id'], $storedName, $safeOriginalName, (int) $upload['size']]
+            'INSERT INTO file_share_files (folder_id, user_id, filename, original_name, description, size)
+             VALUES (?, ?, ?, ?, ?, ?)',
+            [$folderId, (int) $currentUser['id'], $storedName, $safeOriginalName, $description, (int) $upload['size']]
         );
 
         flash_set('success', 'File uploaded successfully.');
@@ -198,7 +201,7 @@ try {
             [$currentFolderId]
         );
         $files = db_query(
-            'SELECT f.id, f.folder_id, f.original_name, f.size, f.created_at,
+            'SELECT f.id, f.folder_id, f.original_name, f.description, f.size, f.created_at,
                     u.id AS uploader_id, u.username AS uploader
              FROM file_share_files f
              JOIN users u ON u.id = f.user_id
@@ -211,7 +214,7 @@ try {
         // Show all files (no folder filter)
         $total = (int) db_val('SELECT COUNT(*) FROM file_share_files');
         $files = db_query(
-            'SELECT f.id, f.folder_id, f.original_name, f.size, f.created_at,
+            'SELECT f.id, f.folder_id, f.original_name, f.description, f.size, f.created_at,
                     u.id AS uploader_id, u.username AS uploader,
                     fo.name AS folder_name
              FROM file_share_files f
@@ -294,6 +297,13 @@ include SITE_ROOT . '/includes/header.php';
                                accept=".zip,.rar,.7z,.safetensors,.json,.png,.pth"
                                required class="fileshare-file-input">
                     </div>
+                    <div class="fileshare-upload-field fileshare-upload-field--description">
+                        <label for="fileshare-description">Description <span class="fileshare-hint">(optional)</span></label>
+                        <textarea id="fileshare-description" name="description"
+                                  maxlength="1000" rows="2"
+                                  class="fileshare-description-input"
+                                  placeholder="Briefly describe the file…"></textarea>
+                    </div>
                     <?php if (!empty($folders)): ?>
                     <div class="fileshare-upload-field">
                         <label for="fileshare-folder">Folder <span class="fileshare-hint">(optional)</span></label>
@@ -336,6 +346,7 @@ include SITE_ROOT . '/includes/header.php';
                             <tr>
                                 <th>Filename</th>
                                 <?php if ($currentFolderId === null): ?><th>Folder</th><?php endif; ?>
+                                <th>Description</th>
                                 <th>Size</th>
                                 <th>Uploaded by</th>
                                 <th>Date</th>
@@ -368,6 +379,9 @@ include SITE_ROOT . '/includes/header.php';
                                     <?php endif; ?>
                                 </td>
                                 <?php endif; ?>
+                                <td class="fileshare-description">
+                                    <?= !empty($file['description']) ? e($file['description']) : '<span class="fileshare-no-folder">—</span>' ?>
+                                </td>
                                 <td class="fileshare-size"><?= e(format_file_size((int)$file['size'])) ?></td>
                                 <td>
                                     <a href="<?= SITE_URL ?>/pages/profile.php?id=<?= (int)$file['uploader_id'] ?>">
