@@ -2801,7 +2801,7 @@ function clearCommentImagePreview(form) {
         const btn = e.target.closest('.comment-attach-image-btn');
         if (!btn) return;
         e.preventDefault();
-        const form = btn.closest('.comment-form, .blog-comment-form');
+        const form = btn.closest('.comment-form, .blog-comment-form, .lightbox-comment-form');
         if (form) openPicker(form);
     });
 
@@ -2810,7 +2810,7 @@ function clearCommentImagePreview(form) {
     document.addEventListener('click', (e) => {
         const removeBtn = e.target.closest('.comment-attachment-remove');
         if (!removeBtn) return;
-        const form = removeBtn.closest('.comment-form, .blog-comment-form');
+        const form = removeBtn.closest('.comment-form, .blog-comment-form, .lightbox-comment-form');
         if (form) clearCommentImagePreview(form);
     });
 
@@ -2818,21 +2818,21 @@ function clearCommentImagePreview(form) {
 
     document.addEventListener('dragenter', (e) => {
         if (!e.dataTransfer.types.includes('Files')) return;
-        const form = e.target.closest('.comment-form, .blog-comment-form');
+        const form = e.target.closest('.comment-form, .blog-comment-form, .lightbox-comment-form');
         if (!form) return;
         e.preventDefault();
         form.classList.add('comment-form-drag-over');
     }, true);
 
     document.addEventListener('dragover', (e) => {
-        const form = e.target.closest('.comment-form, .blog-comment-form');
+        const form = e.target.closest('.comment-form, .blog-comment-form, .lightbox-comment-form');
         if (!form) return;
         if (!e.dataTransfer.types.includes('Files')) return;
         e.preventDefault();
     }, true);
 
     document.addEventListener('dragleave', (e) => {
-        const form = e.target.closest('.comment-form, .blog-comment-form');
+        const form = e.target.closest('.comment-form, .blog-comment-form, .lightbox-comment-form');
         if (!form) return;
         if (!form.contains(e.relatedTarget)) {
             form.classList.remove('comment-form-drag-over');
@@ -2840,7 +2840,7 @@ function clearCommentImagePreview(form) {
     }, true);
 
     document.addEventListener('drop', async (e) => {
-        const form = e.target.closest('.comment-form, .blog-comment-form');
+        const form = e.target.closest('.comment-form, .blog-comment-form, .lightbox-comment-form');
         if (!form) return;
         e.preventDefault();
         form.classList.remove('comment-form-drag-over');
