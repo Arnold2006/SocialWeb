@@ -149,23 +149,6 @@ try {
 }
 
 include SITE_ROOT . '/includes/header.php';
-
-/**
- * Format a byte count as a human-readable string.
- */
-function fileshare_admin_format_size(int $bytes): string
-{
-    if ($bytes >= 1073741824) {
-        return number_format($bytes / 1073741824, 2) . ' GB';
-    }
-    if ($bytes >= 1048576) {
-        return number_format($bytes / 1048576, 2) . ' MB';
-    }
-    if ($bytes >= 1024) {
-        return number_format($bytes / 1024, 1) . ' KB';
-    }
-    return $bytes . ' B';
-}
 ?>
 
 <div class="admin-layout">
@@ -267,7 +250,7 @@ function fileshare_admin_format_size(int $bytes): string
                             <tr>
                                 <td class="fileshare-admin-filename"><?= e($file['original_name']) ?></td>
                                 <td><?= $file['folder_name'] !== null ? e($file['folder_name']) : '<em>Root</em>' ?></td>
-                                <td><?= e(fileshare_admin_format_size((int)$file['size'])) ?></td>
+                                <td><?= e(format_file_size((int)$file['size'])) ?></td>
                                 <td><?= e($file['uploader']) ?></td>
                                 <td><?= e(date('Y-m-d', strtotime($file['created_at']))) ?></td>
                                 <td class="fileshare-admin-actions">

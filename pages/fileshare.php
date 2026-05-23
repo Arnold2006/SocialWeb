@@ -41,23 +41,6 @@ const FILESHARE_ALLOWED = [
 ];
 
 /**
- * Format a byte count as a human-readable string.
- */
-function fileshare_format_size(int $bytes): string
-{
-    if ($bytes >= 1073741824) {
-        return number_format($bytes / 1073741824, 2) . ' GB';
-    }
-    if ($bytes >= 1048576) {
-        return number_format($bytes / 1048576, 2) . ' MB';
-    }
-    if ($bytes >= 1024) {
-        return number_format($bytes / 1024, 1) . ' KB';
-    }
-    return $bytes . ' B';
-}
-
-/**
  * Ensure the uploads/files directory exists.
  */
 function ensure_files_dir(): bool
@@ -385,7 +368,7 @@ include SITE_ROOT . '/includes/header.php';
                                     <?php endif; ?>
                                 </td>
                                 <?php endif; ?>
-                                <td class="fileshare-size"><?= e(fileshare_format_size((int)$file['size'])) ?></td>
+                                <td class="fileshare-size"><?= e(format_file_size((int)$file['size'])) ?></td>
                                 <td>
                                     <a href="<?= SITE_URL ?>/pages/profile.php?id=<?= (int)$file['uploader_id'] ?>">
                                         <?= e($file['uploader']) ?>
