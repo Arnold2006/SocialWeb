@@ -173,6 +173,7 @@ include SITE_ROOT . '/includes/header.php';
             <li><a href="<?= SITE_URL ?>/admin/invites.php">Invites</a></li>
             <li><a href="<?= SITE_URL ?>/admin/moderation.php">Moderation</a></li>
             <li><a href="<?= SITE_URL ?>/admin/media.php" class="active">Media</a></li>
+            <li><a href="<?= SITE_URL ?>/admin/fileshare.php">File Share</a></li>
             <li><a href="<?= SITE_URL ?>/admin/plugins.php">Plugins</a></li>
             <li><a href="<?= SITE_URL ?>/admin/settings.php">Site Settings</a></li>
             <li><a href="<?= SITE_URL ?>/admin/orphans.php">Orphan Cleanup</a></li>

@@ -133,6 +133,8 @@ $navIs = static function (string ...$paths): string {
                    class="<?= $navIs('photos.php') ?>">Photos</a></li>
             <li><a href="<?= SITE_URL ?>/pages/video.php"
                    class="<?= $navIs('video.php', 'video_play.php') ?>">Videos</a></li>
+            <li><a href="<?= SITE_URL ?>/pages/fileshare.php"
+                   class="<?= $navIs('fileshare.php') ?>">Files</a></li>
             <li><a href="<?= SITE_URL ?>/forum/index.php"
                    class="<?= $navIs('/forum/') ?>">Forum<?= $forumCount > 0 ? ' <span class="badge">' . $forumCount . '</span>' : '' ?></a></li>
             <li>
