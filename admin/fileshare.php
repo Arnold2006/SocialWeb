@@ -136,7 +136,7 @@ try {
 
 try {
     $files = db_query(
-        'SELECT ff.id, ff.folder_id, ff.original_name, ff.size, ff.created_at,
+        'SELECT ff.id, ff.folder_id, ff.original_name, ff.description, ff.size, ff.created_at,
                 u.username AS uploader,
                 fo.name AS folder_name
          FROM file_share_files ff
@@ -238,6 +238,7 @@ include SITE_ROOT . '/includes/header.php';
                         <thead>
                             <tr>
                                 <th>Filename</th>
+                                <th>Description</th>
                                 <th>Folder</th>
                                 <th>Size</th>
                                 <th>Uploaded by</th>
@@ -249,6 +250,9 @@ include SITE_ROOT . '/includes/header.php';
                             <?php foreach ($files as $file): ?>
                             <tr>
                                 <td class="fileshare-admin-filename"><?= e($file['original_name']) ?></td>
+                                <td class="fileshare-admin-description">
+                                    <?= !empty($file['description']) ? e($file['description']) : '<span class="fileshare-empty">—</span>' ?>
+                                </td>
                                 <td><?= $file['folder_name'] !== null ? e($file['folder_name']) : '<em>Root</em>' ?></td>
                                 <td><?= e(format_file_size((int)$file['size'])) ?></td>
                                 <td><?= e($file['uploader']) ?></td>
