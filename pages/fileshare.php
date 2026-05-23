@@ -145,7 +145,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $description = sanitise_string($_POST['description'] ?? '', 1000);
         $description = $description !== '' ? $description : null;
-
         db_insert(
             'INSERT INTO file_share_files (folder_id, user_id, filename, original_name, description, size)
              VALUES (?, ?, ?, ?, ?, ?)',
@@ -380,7 +379,7 @@ include SITE_ROOT . '/includes/header.php';
                                 </td>
                                 <?php endif; ?>
                                 <td class="fileshare-description">
-                                    <?= !empty($file['description']) ? e($file['description']) : '<span class="fileshare-no-folder">—</span>' ?>
+                                    <?= !empty($file['description']) ? e($file['description']) : '<span class="fileshare-empty">—</span>' ?>
                                 </td>
                                 <td class="fileshare-size"><?= e(format_file_size((int)$file['size'])) ?></td>
                                 <td>

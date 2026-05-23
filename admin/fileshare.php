@@ -251,7 +251,7 @@ include SITE_ROOT . '/includes/header.php';
                             <tr>
                                 <td class="fileshare-admin-filename"><?= e($file['original_name']) ?></td>
                                 <td class="fileshare-admin-description">
-                                    <?= !empty($file['description']) ? e($file['description']) : '<em>—</em>' ?>
+                                    <?= !empty($file['description']) ? e($file['description']) : '<span class="fileshare-empty">—</span>' ?>
                                 </td>
                                 <td><?= $file['folder_name'] !== null ? e($file['folder_name']) : '<em>Root</em>' ?></td>
                                 <td><?= e(format_file_size((int)$file['size'])) ?></td>
