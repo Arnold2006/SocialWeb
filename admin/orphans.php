@@ -11,7 +11,8 @@
  *
  * Scans the uploads directory for files that are no longer referenced
  * by any database record (media, users avatars, album covers, chat images,
- * the site banner, the banner image library, or custom fonts) and lets the admin delete them.
+ * the site banner, the banner image library, custom fonts, message_attachments,
+ * or file_share_files) and lets the admin delete them.
  */
 
 declare(strict_types=1);
@@ -31,7 +32,8 @@ $pageTitle = 'Admin – Orphan Cleanup';
  * memory exhaustion.
  *
  * Sources: media, users (avatars), albums (covers), chat_messages, site_settings (banner),
- *          banner_images (banner library), site_fonts (custom fonts), message_attachments.
+ *          banner_images (banner library), site_fonts (custom fonts), message_attachments,
+ *          file_share_files.
  */
 function collect_referenced_paths(): array
 {
@@ -116,6 +118,21 @@ function collect_referenced_paths(): array
         while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
             if (!empty($row['file_path'])) {
                 $abs = SITE_ROOT . '/' . $row['file_path'];
+                $refs[realpath($abs) ?: $abs] = true;
+            }
+        }
+    } catch (PDOException $e) {
+        // Table does not exist yet — skip silently
+    }
+
+    // ── file_share_files.filename  (stored as bare filename in uploads/files/)
+    // Wrapped in try/catch: the table was added in migration 043 and may not
+    // exist on older deployments that have not yet run all migrations.
+    try {
+        $stmt = $pdo->query('SELECT filename FROM file_share_files');
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            if (!empty($row['filename'])) {
+                $abs = UPLOADS_DIR . '/files/' . $row['filename'];
                 $refs[realpath($abs) ?: $abs] = true;
             }
         }
@@ -274,7 +291,7 @@ include SITE_ROOT . '/includes/header.php';
         <p class="muted">
             Orphan files are upload files that exist on disk but are no longer referenced
             by any database record (media, avatars, album covers, chat images, message attachments,
-            the site banner, the banner image library, or custom fonts). They may accumulate when users or admins delete content without
+            the site banner, the banner image library, custom fonts, or file share files). They may accumulate when users or admins delete content without
             the corresponding filesystem cleanup completing.
         </p>
 
