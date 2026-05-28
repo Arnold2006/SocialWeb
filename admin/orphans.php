@@ -291,7 +291,7 @@ include SITE_ROOT . '/includes/header.php';
         <p class="muted">
             Orphan files are upload files that exist on disk but are no longer referenced
             by any database record (media, avatars, album covers, chat images, message attachments,
-            the site banner, the banner image library, custom fonts, or file-share files). They may accumulate when users or admins delete content without
+            the site banner, the banner image library, custom fonts, or file share files). They may accumulate when users or admins delete content without
             the corresponding filesystem cleanup completing.
         </p>
 
