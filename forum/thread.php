@@ -38,7 +38,7 @@ if (!$thread) {
     exit;
 }
 
-$pageTitle = e($thread['title']) . ' — Forum';
+$pageTitle = $thread['title'] . ' — Forum';
 $user      = current_user();
 
 // Mark this thread as read for the current user
