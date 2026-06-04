@@ -138,6 +138,7 @@ if ($profilePostsHasMore) {
 $plugins = plugins_load();
 
 $pageTitle = $profileUser['username'] . "'s Profile";
+?>
 
 <div class="profile-layout">
 
