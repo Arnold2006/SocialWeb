@@ -102,16 +102,18 @@ if ($profileUser === null) {
     redirect(SITE_URL . '/pages/members.php');
 }
 
+$pageTitle = $profileUser['username'] . "'s Profile";
+include SITE_ROOT . '/includes/header.php';
+
 // Privacy gate — view_profile
 if (!$isOwnProfile && !PrivacyService::canView((int) $currentUser['id'], $profileId, 'view_profile')) {
-    $pageTitle = $profileUser['username'] . "'s Profile";
     echo '<div class="profile-layout">';
     echo '<aside class="profile-sidebar">';
     echo '<img src="' . e(avatar_url($profileUser, 'large')) . '" alt="' . e($profileUser['username']) . '" class="profile-avatar" width="200" height="200">';
     echo '<h1 class="profile-username">' . e($profileUser['username']) . '</h1>';
     echo '</aside>';
     echo '<main class="profile-posts"><div class="alert alert-error">This profile is private.</div></main>';
-    echo '</div></div></main></div>';
+    echo '</div>';
     include SITE_ROOT . '/includes/footer.php';
     exit;
 }
@@ -137,7 +139,6 @@ if ($profilePostsHasMore) {
 // Plugin profile extensions
 $plugins = plugins_load();
 
-$pageTitle = $profileUser['username'] . "'s Profile";
 ?>
 
 <div class="profile-layout">
