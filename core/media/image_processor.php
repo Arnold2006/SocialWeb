@@ -253,18 +253,30 @@ function image_create_from_upload(string $path, string $mimeType): \GdImage|fals
                 if (!class_exists('Imagick')) {
                     return false;
                 }
+                $im  = null;
+                $tmp = '';
                 try {
+                    $tmpBase = tempnam(sys_get_temp_dir(), 'sw_cmyk_');
+                    if ($tmpBase === false) {
+                        return false;
+                    }
+                    $tmp = $tmpBase . '.jpg';
+                    @unlink($tmpBase);
+
                     $im = new \Imagick($path);
                     $im->transformImageColorspace(\Imagick::COLORSPACE_SRGB);
-                    $tmp = tempnam(sys_get_temp_dir(), 'sw_cmyk_') . '.jpg';
                     $im->setImageFormat('jpeg');
                     $im->writeImage($tmp);
-                    $im->clear();
-                    $gd = @imagecreatefromjpeg($tmp);
-                    @unlink($tmp);
-                    return $gd;
+                    return @imagecreatefromjpeg($tmp);
                 } catch (\Throwable) {
                     return false;
+                } finally {
+                    if ($im instanceof \Imagick) {
+                        $im->clear();
+                    }
+                    if ($tmp !== '' && file_exists($tmp)) {
+                        @unlink($tmp);
+                    }
                 }
             }
             return @imagecreatefromjpeg($path);
