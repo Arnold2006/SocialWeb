@@ -895,13 +895,20 @@ function showPostImagePreview(file) {
 }
 
 if (postImageInput && imagePreview) {
+    const wallAiLabel = document.getElementById('wall-ai-generated-label');
     postImageInput.addEventListener('change', () => {
         const file = postImageInput.files[0];
         if (!file) {
             imagePreview.innerHTML = '';
+            if (wallAiLabel) wallAiLabel.style.display = 'none';
             return;
         }
         showPostImagePreview(file);
+        if (wallAiLabel && file.type.startsWith('image/')) {
+            wallAiLabel.style.display = '';
+        } else if (wallAiLabel) {
+            wallAiLabel.style.display = 'none';
+        }
     });
 }
 
@@ -958,6 +965,11 @@ if (postComposer && postImageInput) {
         postImageInput.files = dt.files;
 
         showPostImagePreview(file);
+
+        const wallAiLabel = document.getElementById('wall-ai-generated-label');
+        if (wallAiLabel) {
+            wallAiLabel.style.display = file.type.startsWith('image/') ? '' : 'none';
+        }
     });
 }
 

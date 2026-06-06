@@ -41,6 +41,8 @@ if (!empty($_FILES['media']['name'])) {
     $isImage = in_array($mimeType, ALLOWED_IMAGE_TYPES, true);
     $isVideo = in_array($mimeType, ALLOWED_VIDEO_TYPES, true);
 
+    $isAiGenerated = !empty($_POST['is_ai_generated']);
+
     if ($isImage || $isVideo) {
         // Get or create the appropriate wall album for this user.
         // Images go to "Wall Images", videos go to "Wall Videos".
@@ -76,7 +78,7 @@ if (!empty($_FILES['media']['name'])) {
         }
 
         $result = $isImage
-            ? process_image_upload($file, (int)$user['id'], $wallAlbumId)
+            ? process_image_upload($file, (int)$user['id'], $wallAlbumId, $isAiGenerated)
             : process_video_upload($file, (int)$user['id'], $wallAlbumId);
 
         if ($result['ok']) {
