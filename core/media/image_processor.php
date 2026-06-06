@@ -23,9 +23,10 @@ declare(strict_types=1);
  * @param array $file     $_FILES['field'] entry
  * @param int   $userId
  * @param int   $albumId
+ * @param bool  $isAiGenerated  Whether the image is AI-generated
  * @return array{ok: bool, error: string, media_id: int}
  */
-function process_image_upload(array $file, int $userId, int $albumId = 0): array
+function process_image_upload(array $file, int $userId, int $albumId = 0, bool $isAiGenerated = false): array
 {
     // Basic validation
     if ($file['error'] !== UPLOAD_ERR_OK) {
@@ -52,8 +53,8 @@ function process_image_upload(array $file, int $userId, int $albumId = 0): array
         // Reference existing record instead of re-storing file
         $newId = db_insert(
             'INSERT INTO media (user_id, album_id, type, file_hash, storage_path, large_path, medium_path,
-                                thumb_path, size, mime_type, original_name, width, height)
-             VALUES (?, ?, "image", ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                                thumb_path, size, mime_type, original_name, width, height, is_ai_generated)
+             VALUES (?, ?, "image", ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
             [
                 $userId,
                 $albumId ?: null,
@@ -67,6 +68,7 @@ function process_image_upload(array $file, int $userId, int $albumId = 0): array
                 $file['name'] ?? null,
                 $dupe['width'],
                 $dupe['height'],
+                $isAiGenerated ? 1 : 0,
             ]
         );
         return ['ok' => true, 'error' => '', 'media_id' => (int) $newId];
@@ -126,8 +128,8 @@ function process_image_upload(array $file, int $userId, int $albumId = 0): array
     $size   = filesize($paths['original']);
     $mediaId = db_insert(
         'INSERT INTO media (user_id, album_id, type, file_hash, storage_path, large_path, medium_path,
-                            thumb_path, size, mime_type, original_name, width, height)
-         VALUES (?, ?, "image", ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                            thumb_path, size, mime_type, original_name, width, height, is_ai_generated)
+         VALUES (?, ?, "image", ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
         [
             $userId,
             $albumId ?: null,
@@ -141,6 +143,7 @@ function process_image_upload(array $file, int $userId, int $albumId = 0): array
             $file['name'] ?? null,
             $origW,
             $origH,
+            $isAiGenerated ? 1 : 0,
         ]
     );
 

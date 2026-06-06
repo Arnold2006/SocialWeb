@@ -48,7 +48,7 @@ try {
     $mediaRows = db_query(
         "SELECT m.id, m.user_id, m.type, m.width, m.height,
                 m.thumb_path, m.medium_path, m.large_path, m.storage_path,
-                m.created_at,
+                m.created_at, m.is_ai_generated,
                 u.username, u.avatar_path
          FROM media m
          JOIN albums a   ON a.id  = m.album_id  AND a.is_deleted = 0

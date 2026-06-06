@@ -1167,11 +1167,14 @@ if (avatarInput && cropContainer && cropCanvas) {
     function updateUploadButton() {
         if (!uploadBtn) return;
         const count = selectedFiles.length;
+        const aiLabel = document.getElementById('ai-generated-label');
         if (count > 0) {
             uploadBtn.style.display = 'inline-block';
             uploadBtn.textContent   = 'Upload ' + count + ' file' + (count !== 1 ? 's' : '');
+            if (aiLabel) aiLabel.style.display = '';
         } else {
             uploadBtn.style.display = 'none';
+            if (aiLabel) aiLabel.style.display = 'none';
         }
     }
 
