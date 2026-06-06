@@ -154,10 +154,35 @@ function image_check_memory(string $path): array
     if ($pixels > MAX_IMAGE_PIXELS) {
         return [
             'ok'    => false,
-            'error' => 'Image is too large (' . $width . '×' . $height . '). Maximum resolution is ~' . (int)(MAX_IMAGE_PIXELS / 1000000) . ' megapixels.',
-            'width' => $width,
+            'error' => 'Image is too large (' . $width . '×' . $height . '). Maximum ~' . (int)(MAX_IMAGE_PIXELS / 1_000_000) . ' MP.',
+            'width'  => $width,
             'height' => $height,
         ];
+    }
+
+    // GD needs 4 bytes/pixel (RGBA). Multiply ×2 to account for the source canvas
+    // plus one resized copy existing simultaneously, then ×1.75 safety margin for
+    // PHP overhead and GD internal structures.
+    $required = (int)($width * $height * 4 * 2 * 1.75);
+
+    $limitRaw = trim(ini_get('memory_limit'));
+    if ($limitRaw !== '-1') {
+        $unit  = strtolower($limitRaw[-1]);
+        $limit = (int)$limitRaw * match($unit) {
+            'g'     => 1024 ** 3,
+            'm'     => 1024 ** 2,
+            'k'     => 1024,
+            default => 1,
+        };
+        $available = $limit - memory_get_usage(true);
+        if ($required > $available) {
+            return [
+                'ok'    => false,
+                'error' => 'Image dimensions too large to process safely (' . $width . '×' . $height . ').',
+                'width'  => $width,
+                'height' => $height,
+            ];
+        }
     }
 
     return ['ok' => true, 'error' => '', 'width' => $width, 'height' => $height];
@@ -196,6 +221,9 @@ function image_resize_and_save(\GdImage $gd, int $origW, int $origH, string $des
     $newH   = max(1, (int) round($origH * $ratio));
 
     $resized = imagecreatetruecolor($newW, $newH);
+    if ($resized === false) {
+        return false;
+    }
 
     // Preserve transparency for PNG-sourced content
     imagealphablending($resized, false);
