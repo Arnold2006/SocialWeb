@@ -155,7 +155,8 @@ function image_check_memory(string $path): array
         return [
             'ok'    => false,
             'error' => 'Image is too large (' . $width . '×' . $height . '). Maximum ~' . (int)(MAX_IMAGE_PIXELS / 1_000_000) . ' MP.',
-            'width' => $width, 'height' => $height,
+            'width'  => $width,
+            'height' => $height,
         ];
     }
 
@@ -178,7 +179,8 @@ function image_check_memory(string $path): array
             return [
                 'ok'    => false,
                 'error' => 'Image dimensions too large to process safely (' . $width . '×' . $height . ').',
-                'width' => $width, 'height' => $height,
+                'width'  => $width,
+                'height' => $height,
             ];
         }
     }
