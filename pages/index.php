@@ -53,6 +53,10 @@ include SITE_ROOT . '/includes/header.php';
                     <input type="file" id="post-image" name="media"
                            accept="image/*,video/mp4,video/webm" class="sr-only">
                     <div id="image-preview" class="image-preview"></div>
+                    <label class="ai-generated-checkbox" id="wall-ai-generated-label" style="display:none">
+                        <input type="checkbox" name="is_ai_generated" value="1" id="wall-ai-generated-input">
+                        <span class="ai-badge-mini">AI</span> AI generated
+                    </label>
                     <button type="submit" class="btn btn-primary">Post</button>
                 </div>
             </form>
