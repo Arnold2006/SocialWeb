@@ -596,6 +596,7 @@ include SITE_ROOT . '/includes/header.php';
                 <!-- Bulk AI badge -->
                 <button type="button" class="btn btn-secondary btn-sm bulk-ai-toggle-btn"
                         data-album-id="<?= (int)$currentAlbum['id'] ?>"
+                        data-value="1"
                         title="Mark all images as AI generated">
                     <span class="ai-badge-mini">AI</span> Mark All as AI
                 </button>

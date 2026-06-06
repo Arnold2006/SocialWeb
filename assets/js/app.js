@@ -1414,7 +1414,8 @@ if (avatarInput && cropContainer && cropCanvas) {
             const albumId = btn.dataset.albumId;
             const value   = btn.dataset.value !== undefined ? btn.dataset.value : '1';
             const label   = value === '0' ? 'remove the AI label from' : 'mark';
-            if (!confirm('Are you sure you want to ' + label + ' ALL images in this album as AI generated?')) return;
+            const suffix  = value === '0' ? '?' : ' as AI generated?';
+            if (!confirm('Are you sure you want to ' + label + ' ALL images in this album' + suffix)) return;
 
             btn.disabled = true;
             const origText = btn.innerHTML;
