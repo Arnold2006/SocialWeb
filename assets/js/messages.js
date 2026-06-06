@@ -75,7 +75,7 @@
     }
 
     async function uploadAttachment(file) {
-        const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+        const allowed = ['image/jpeg', 'image/pjpeg', 'image/png', 'image/webp', 'image/gif'];
         if (!allowed.includes(file.type)) {
             alert('Only JPG, PNG, WEBP and GIF images are allowed.');
             return;

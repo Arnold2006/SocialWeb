@@ -43,16 +43,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $finfo    = new finfo(FILEINFO_MIME_TYPE);
                 $mimeType = $finfo->file($file['tmp_name']);
 
-                if (!in_array($mimeType, ['image/jpeg', 'image/png', 'image/gif', 'image/webp'], true)) {
+                if (!in_array($mimeType, ['image/jpeg', 'image/pjpeg', 'image/png', 'image/gif', 'image/webp'], true)) {
                     $error = 'Invalid file type. Allowed types: JPEG, PNG, GIF, WebP.';
                 } else {
                     // Load via GD to strip EXIF metadata and re-encode
-                    $src = match ($mimeType) {
-                        'image/png'  => @imagecreatefrompng($file['tmp_name']),
-                        'image/gif'  => @imagecreatefromgif($file['tmp_name']),
-                        'image/webp' => @imagecreatefromwebp($file['tmp_name']),
-                        default      => @imagecreatefromjpeg($file['tmp_name']),
-                    };
+                    $src = image_create_from_upload($file['tmp_name'], $mimeType);
 
                     if ($src === false) {
                         $error = 'Could not process image. Please try a different file.';

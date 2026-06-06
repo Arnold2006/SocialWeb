@@ -72,6 +72,18 @@ function process_image_upload(array $file, int $userId, int $albumId = 0): array
         return ['ok' => true, 'error' => '', 'media_id' => (int) $newId];
     }
 
+    // CMYK JPEGs require the Imagick extension for colour-space conversion.
+    // Provide a clear error rather than the generic "Could not process image" message.
+    if (in_array($mimeType, ['image/jpeg', 'image/pjpeg'], true)
+        && jpeg_is_cmyk($file['tmp_name'])
+        && !class_exists('Imagick')) {
+        return [
+            'ok'       => false,
+            'error'    => 'This JPEG uses CMYK colour (a print format). In Photoshop go to Image → Mode → RGB Color and save again.',
+            'media_id' => 0,
+        ];
+    }
+
     // Check image dimensions before loading into memory
     $memCheck = image_check_memory($file['tmp_name']);
     if (!$memCheck['ok']) {
@@ -189,17 +201,77 @@ function image_check_memory(string $path): array
 }
 
 /**
+ * Detect whether a JPEG file uses CMYK colour space by inspecting its SOF marker.
+ * GD cannot decode CMYK JPEGs; Imagick is required to convert them to sRGB first.
+ */
+function jpeg_is_cmyk(string $path): bool
+{
+    $fh = @fopen($path, 'rb');
+    if (!$fh) return false;
+    $soi = fread($fh, 2);
+    if ($soi !== "\xFF\xD8") {
+        fclose($fh);
+        return false;
+    }
+    while (!feof($fh)) {
+        $marker = fread($fh, 2);
+        if (strlen($marker) < 2 || $marker[0] !== "\xFF") break;
+        $type = ord($marker[1]);
+        // SOF markers 0xC0–0xCF identify frame type; skip DHT(C4), JPG(C8), DAC(CC)
+        if ($type >= 0xC0 && $type <= 0xCF && !in_array($type, [0xC4, 0xC8, 0xCC], true)) {
+            $lenRaw = @unpack('n', fread($fh, 2));
+            if (!$lenRaw) {
+                fclose($fh);
+                return false;
+            }
+            $sof = fread($fh, $lenRaw[1] - 2);
+            fclose($fh);
+            // Byte index 5 of the SOF payload = number of colour components; 4 = CMYK
+            return isset($sof[5]) && ord($sof[5]) === 4;
+        }
+        if (in_array($type, [0xD8, 0xD9, 0xDA, 0x01], true)) continue;
+        $lenRaw = @unpack('n', fread($fh, 2));
+        if (!$lenRaw || $lenRaw[1] < 2) break;
+        fseek($fh, $lenRaw[1] - 2, SEEK_CUR);
+    }
+    fclose($fh);
+    return false;
+}
+
+/**
  * Load GD image from various source types.
+ * Handles CMYK JPEGs via Imagick (converts to sRGB) and progressive JPEGs
+ * reported as image/pjpeg by some versions of libmagic.
  *
  * @return \GdImage|false
  */
 function image_create_from_upload(string $path, string $mimeType): \GdImage|false
 {
     return match ($mimeType) {
-        'image/jpeg' => imagecreatefromjpeg($path),
-        'image/png'  => imagecreatefrompng($path),
-        'image/gif'  => imagecreatefromgif($path),
-        'image/webp' => imagecreatefromwebp($path),
+        'image/jpeg', 'image/pjpeg' => (static function () use ($path): \GdImage|false {
+            if (jpeg_is_cmyk($path)) {
+                if (!class_exists('Imagick')) {
+                    return false;
+                }
+                try {
+                    $im = new \Imagick($path);
+                    $im->transformImageColorspace(\Imagick::COLORSPACE_SRGB);
+                    $tmp = tempnam(sys_get_temp_dir(), 'sw_cmyk_') . '.jpg';
+                    $im->setImageFormat('jpeg');
+                    $im->writeImage($tmp);
+                    $im->clear();
+                    $gd = @imagecreatefromjpeg($tmp);
+                    @unlink($tmp);
+                    return $gd;
+                } catch (\Throwable) {
+                    return false;
+                }
+            }
+            return @imagecreatefromjpeg($path);
+        })(),
+        'image/png'  => @imagecreatefrompng($path),
+        'image/gif'  => @imagecreatefromgif($path),
+        'image/webp' => @imagecreatefromwebp($path),
         default      => false,
     };
 }
@@ -260,6 +332,16 @@ function process_avatar_upload(array $file, int $userId, array $crop = []): arra
 
     if (!in_array($mimeType, ALLOWED_IMAGE_TYPES, true)) {
         return ['ok' => false, 'error' => 'Invalid image type.', 'paths' => []];
+    }
+
+    if (in_array($mimeType, ['image/jpeg', 'image/pjpeg'], true)
+        && jpeg_is_cmyk($file['tmp_name'])
+        && !class_exists('Imagick')) {
+        return [
+            'ok'    => false,
+            'error' => 'This JPEG uses CMYK colour (a print format). In Photoshop go to Image → Mode → RGB Color and save again.',
+            'paths' => [],
+        ];
     }
 
     // Check image dimensions before loading into memory
