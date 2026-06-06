@@ -623,12 +623,12 @@
         .finally(() => { if (aiToggle) aiToggle.disabled = false; });
     }
 
-    /** Update the AI badge on the masonry grid item */
+    /** Update the AI badge on the masonry grid item or wall post */
     function updateMasonryAiBadge(mediaId, isAi) {
         const trigger = document.querySelector('.lightbox-trigger[data-media-id="' + mediaId + '"]');
         if (!trigger) return;
         trigger.dataset.aiGenerated = isAi ? '1' : '0';
-        const item = trigger.closest('.media-item');
+        const item = trigger.closest('.media-item') || trigger.closest('.post-media') || trigger.closest('.post-album-thumb-wrap');
         if (!item) return;
         let badge = item.querySelector('.ai-badge');
         if (isAi && !badge) {

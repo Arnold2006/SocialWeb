@@ -760,6 +760,7 @@ textarea { resize: vertical; min-height: 80px; }
     border-radius: var(--radius-md);
     overflow: hidden;
     max-width: 75%;
+    position: relative;
 }
 
 .post-img {
@@ -814,6 +815,17 @@ textarea { resize: vertical; min-height: 80px; }
     width: 1.75rem;
     height: 1.75rem;
     font-size: 0.7rem;
+}
+
+.post-album-thumb-wrap {
+    position: relative;
+    display: inline-block;
+}
+
+.post-album-thumb-wrap .ai-badge-mini {
+    position: absolute;
+    bottom: 2px;
+    left: 2px;
 }
 
 .post-footer {
