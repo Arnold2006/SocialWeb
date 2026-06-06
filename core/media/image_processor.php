@@ -72,6 +72,12 @@ function process_image_upload(array $file, int $userId, int $albumId = 0): array
         return ['ok' => true, 'error' => '', 'media_id' => (int) $newId];
     }
 
+    // Check image dimensions before loading into memory
+    $memCheck = image_check_memory($file['tmp_name']);
+    if (!$memCheck['ok']) {
+        return ['ok' => false, 'error' => $memCheck['error'], 'media_id' => 0];
+    }
+
     // Load image via GD (strips EXIF automatically)
     $gd = image_create_from_upload($file['tmp_name'], $mimeType);
     if ($gd === false) {
@@ -127,6 +133,34 @@ function process_image_upload(array $file, int $userId, int $albumId = 0): array
     );
 
     return ['ok' => true, 'error' => '', 'media_id' => (int) $mediaId];
+}
+
+/**
+ * Check whether loading an image into GD would exceed available memory.
+ *
+ * @return array{ok: bool, error: string, width: int, height: int}
+ */
+function image_check_memory(string $path): array
+{
+    $info = @getimagesize($path);
+    if ($info === false) {
+        return ['ok' => false, 'error' => 'Could not read image dimensions.', 'width' => 0, 'height' => 0];
+    }
+
+    $width   = (int) $info[0];
+    $height  = (int) $info[1];
+    $pixels  = $width * $height;
+
+    if ($pixels > MAX_IMAGE_PIXELS) {
+        return [
+            'ok'    => false,
+            'error' => 'Image is too large (' . $width . '×' . $height . '). Maximum resolution is ~' . (int)(MAX_IMAGE_PIXELS / 1000000) . ' megapixels.',
+            'width' => $width,
+            'height' => $height,
+        ];
+    }
+
+    return ['ok' => true, 'error' => '', 'width' => $width, 'height' => $height];
 }
 
 /**
@@ -198,6 +232,12 @@ function process_avatar_upload(array $file, int $userId, array $crop = []): arra
 
     if (!in_array($mimeType, ALLOWED_IMAGE_TYPES, true)) {
         return ['ok' => false, 'error' => 'Invalid image type.', 'paths' => []];
+    }
+
+    // Check image dimensions before loading into memory
+    $memCheck = image_check_memory($file['tmp_name']);
+    if (!$memCheck['ok']) {
+        return ['ok' => false, 'error' => $memCheck['error'], 'paths' => []];
     }
 
     $gd = image_create_from_upload($file['tmp_name'], $mimeType);
@@ -299,6 +339,12 @@ function process_cover_crop(array $media, array $crop): array
 
     $finfo    = new finfo(FILEINFO_MIME_TYPE);
     $mimeType = $finfo->file($srcPath);
+
+    // Check image dimensions before loading into memory
+    $memCheck = image_check_memory($srcPath);
+    if (!$memCheck['ok']) {
+        return ['ok' => false, 'error' => $memCheck['error'], 'cover_path' => ''];
+    }
 
     $gd = image_create_from_upload($srcPath, $mimeType);
     if ($gd === false) {
