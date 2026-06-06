@@ -593,6 +593,19 @@ include SITE_ROOT . '/includes/header.php';
                 <!-- Move album -->
                 <button type="button" class="btn btn-secondary btn-sm"
                         data-toggle="move-album-form-<?= (int)$currentAlbum['id'] ?>">Move to Category</button>
+                <!-- Bulk AI badge -->
+                <button type="button" class="btn btn-secondary btn-sm bulk-ai-toggle-btn"
+                        data-album-id="<?= (int)$currentAlbum['id'] ?>"
+                        data-value="1"
+                        title="Mark all images as AI generated">
+                    <span class="ai-badge-mini">AI</span> Mark All as AI
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm bulk-ai-toggle-btn"
+                        data-album-id="<?= (int)$currentAlbum['id'] ?>"
+                        data-value="0"
+                        title="Remove AI label from all images">
+                    <span class="ai-badge-mini">AI</span> Remove All AI
+                </button>
             </div>
 
             <div id="rename-album-form-<?= (int)$currentAlbum['id'] ?>" class="hidden inline-form-row">
