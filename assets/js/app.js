@@ -1406,6 +1406,61 @@ if (avatarInput && cropContainer && cropCanvas) {
     });
 })();
 
+// ── Bulk AI badge toggle ─────────────────────────────────────────────────────
+
+(function initBulkAiToggle() {
+    document.querySelectorAll('.bulk-ai-toggle-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            const albumId = btn.dataset.albumId;
+            const value   = btn.dataset.value !== undefined ? btn.dataset.value : '1';
+            const label   = value === '0' ? 'remove the AI label from' : 'mark';
+            if (!confirm('Are you sure you want to ' + label + ' ALL images in this album as AI generated?')) return;
+
+            btn.disabled = true;
+            const origText = btn.innerHTML;
+            btn.innerHTML = '<span class="ai-badge-mini">AI</span> Working…';
+
+            const baseUrl   = document.querySelector('meta[name="site-url"]')?.content || '';
+            const csrfToken = document.querySelector('input[name="csrf_token"]')?.value || '';
+
+            fetch(baseUrl + '/modules/gallery/bulk_toggle_ai_generated.php', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({ csrf_token: csrfToken, album_id: albumId, value: value }),
+            })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (!data.ok) {
+                    alert(data.error || 'Something went wrong.');
+                    return;
+                }
+                var isAi = data.is_ai_generated;
+                // Update all media items in the grid
+                document.querySelectorAll('.media-item .lightbox-trigger[data-media-id]').forEach(function (trigger) {
+                    trigger.dataset.aiGenerated = isAi ? '1' : '0';
+                    var item  = trigger.closest('.media-item');
+                    if (!item) return;
+                    var badge = item.querySelector('.ai-badge');
+                    if (isAi && !badge) {
+                        badge = document.createElement('span');
+                        badge.className = 'ai-badge';
+                        badge.textContent = 'AI';
+                        item.appendChild(badge);
+                    } else if (!isAi && badge) {
+                        badge.remove();
+                    }
+                });
+            })
+            .catch(function () { alert('Network error. Please try again.'); })
+            .finally(function () {
+                btn.disabled  = false;
+                btn.innerHTML = origText;
+            });
+        });
+    });
+})();
+
 // ── Cover crop modal ──────────────────────────────────────────────────────────
 
 (function initCoverCropModal() {
