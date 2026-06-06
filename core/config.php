@@ -42,6 +42,7 @@ if (!defined('PLUGINS_DIR')) define('PLUGINS_DIR', SITE_ROOT . '/plugins');
 if (!defined('ASSETS_URL'))  define('ASSETS_URL',  SITE_URL  . '/assets');
 
 // ── Upload limits ───────────────────────────────────────────────────────────
+if (!defined('MAX_IMAGE_PIXELS'))   define('MAX_IMAGE_PIXELS',   25000000);          // ~25 MP (safe for 128 MB memory_limit)
 if (!defined('MAX_UPLOAD_BYTES'))   define('MAX_UPLOAD_BYTES',   10 * 1024 * 1024);  // 10 MB images
 if (!defined('MAX_VIDEO_BYTES'))    define('MAX_VIDEO_BYTES',    250 * 1024 * 1024);  // 250 MB videos
 if (!defined('MAX_VIDEO_DURATION')) define('MAX_VIDEO_DURATION', 5400);               // 1:30:00 (5400 seconds)
