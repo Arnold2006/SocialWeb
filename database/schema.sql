@@ -259,6 +259,7 @@ CREATE TABLE IF NOT EXISTS `media` (
   `duration`         INT UNSIGNED DEFAULT NULL,        -- video duration in seconds
   `created_at`       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `is_deleted`       TINYINT(1) NOT NULL DEFAULT 0,
+  `is_ai_generated`  TINYINT(1) NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`),
   KEY `idx_user_id` (`user_id`),
   KEY `idx_album_id` (`album_id`),

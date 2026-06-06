@@ -1845,6 +1845,73 @@ textarea { resize: vertical; min-height: 80px; }
     border-color: var(--color-accent);
 }
 
+/* ── AI Generated badge ─────────────────────────────────────── */
+.ai-badge {
+    position: absolute;
+    bottom: 5px;
+    left: 5px;
+    background: linear-gradient(135deg, #7c3aed, #6366f1);
+    color: #fff;
+    font-size: 0.6rem;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: var(--radius-full);
+    pointer-events: none;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    z-index: 2;
+}
+
+.ai-badge-lightbox {
+    display: inline-block;
+    background: linear-gradient(135deg, #7c3aed, #6366f1);
+    color: #fff;
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: var(--radius-full);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    margin-left: auto;
+}
+
+.ai-toggle-btn {
+    margin-left: 6px;
+    font-size: 0.7rem;
+}
+.ai-toggle-btn.active {
+    background: linear-gradient(135deg, #7c3aed, #6366f1);
+    color: #fff;
+    border-color: #7c3aed;
+}
+
+.ai-generated-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 0;
+    font-size: 0.85rem;
+    cursor: pointer;
+    user-select: none;
+}
+.ai-generated-checkbox input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+.ai-badge-mini {
+    display: inline-block;
+    background: linear-gradient(135deg, #7c3aed, #6366f1);
+    color: #fff;
+    font-size: 0.55rem;
+    font-weight: 700;
+    padding: 1px 5px;
+    border-radius: var(--radius-full);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
 /* ── Cover / Avatar crop modal ───────────────────────────────── */
 /* ── Info modals (Welcome & How it Works) ────────────────── */
 .info-modal {

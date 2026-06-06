@@ -194,6 +194,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwn) {
             $aId        = sanitise_int($_POST['album_id'] ?? 0);
             // When JS sends multiple batches, only create the wall post on the last one
             $createPost = ($_POST['create_post'] ?? '1') !== '0';
+            $isAiGenerated = !empty($_POST['is_ai_generated']);
             $uploaded = 0;
             $errors   = [];
             $uploadedMediaIds = [];
@@ -218,7 +219,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwn) {
                     $mimeType = $finfo->file($file['tmp_name']);
                     try {
                         if (in_array($mimeType, ALLOWED_IMAGE_TYPES, true)) {
-                            $res = process_image_upload($file, (int)$currentUser['id'], $aId);
+                            $res = process_image_upload($file, (int)$currentUser['id'], $aId, $isAiGenerated);
                         } elseif (in_array($mimeType, ALLOWED_VIDEO_TYPES, true)) {
                             $res = process_video_upload($file, (int)$currentUser['id'], $aId);
                         } else {
@@ -693,6 +694,10 @@ include SITE_ROOT . '/includes/header.php';
                 <input type="hidden" name="album_id" value="<?= $albumId ?>">
                 <input type="file" id="gallery-file-input" name="media[]"
                        accept="image/*,video/mp4,video/webm" class="sr-only" multiple>
+                <label class="ai-generated-checkbox" id="ai-generated-label" style="display:none">
+                    <input type="checkbox" name="is_ai_generated" value="1" id="ai-generated-input">
+                    <span class="ai-badge-mini">AI</span> These images are AI generated
+                </label>
                 <button type="submit" id="gallery-upload-btn" class="btn btn-primary" style="display:none">
                     Upload Selected Files
                 </button>

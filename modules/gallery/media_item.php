@@ -24,7 +24,8 @@ declare(strict_types=1);
     <a href="<?= e(get_media_url($media, 'original')) ?>"
        class="lightbox-trigger"
        data-src="<?= e(get_media_url($media, 'large')) ?>"
-       data-media-id="<?= (int)$media['id'] ?>">
+       data-media-id="<?= (int)$media['id'] ?>"
+       data-ai-generated="<?= !empty($media['is_ai_generated']) ? '1' : '0' ?>">
         <img src="<?= e(get_media_url($media, 'thumb')) ?>"
              data-src="<?= e(get_media_url($media, 'medium')) ?>"
              alt="" class="lazy-image" loading="lazy"
@@ -33,6 +34,9 @@ declare(strict_types=1);
              style="aspect-ratio: <?= (int)$media['width'] ?>/<?= (int)$media['height'] ?>"
              <?php endif; ?>>
     </a>
+    <?php if (!empty($media['is_ai_generated'])): ?>
+    <span class="ai-badge">AI</span>
+    <?php endif; ?>
     <?php if ($isCover): ?>
     <span class="cover-badge">★ Cover</span>
     <?php endif; ?>

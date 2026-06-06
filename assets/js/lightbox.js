@@ -104,8 +104,29 @@
         const commentCountText = document.createElement('span');
         commentCountText.className = 'lightbox-comment-count-text';
 
+        // AI generated badge (shown when media is AI-generated)
+        const aiBadgeEl = document.createElement('span');
+        aiBadgeEl.className = 'ai-badge-lightbox';
+        aiBadgeEl.textContent = 'AI';
+        aiBadgeEl.title = 'AI Generated';
+        aiBadgeEl.style.display = 'none';
+
+        // Toggle AI button (shown only for the media owner)
+        const aiToggleBtn = document.createElement('button');
+        aiToggleBtn.className = 'btn btn-xs btn-secondary ai-toggle-btn';
+        aiToggleBtn.setAttribute('type', 'button');
+        aiToggleBtn.title = 'Mark as AI generated';
+        aiToggleBtn.textContent = '\uD83E\uDD16 AI';
+        aiToggleBtn.style.display = 'none';
+        aiToggleBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleAiGenerated();
+        });
+
         panelHeader.appendChild(likeBtn);
         panelHeader.appendChild(commentCountText);
+        panelHeader.appendChild(aiBadgeEl);
+        panelHeader.appendChild(aiToggleBtn);
 
         // Comments list
         commentsList = document.createElement('div');
@@ -311,6 +332,12 @@
         likeBtn.classList.remove('liked');
         likeBtn.dataset.mediaId = mediaId;
 
+        // Reset AI indicators
+        const aiBadge = overlay.querySelector('.ai-badge-lightbox');
+        const aiToggle = overlay.querySelector('.ai-toggle-btn');
+        if (aiBadge) aiBadge.style.display = 'none';
+        if (aiToggle) aiToggle.style.display = 'none';
+
         fetch(baseUrl() + '/modules/gallery/get_media_comments.php?media_id=' + encodeURIComponent(mediaId), {
             credentials: 'same-origin',
         })
@@ -321,6 +348,17 @@
             likeBtn.classList.toggle('liked', data.user_liked);
             updateCommentCountText(data.comments.length);
             renderComments(data.comments);
+
+            // AI generated indicators
+            if (aiBadge) {
+                aiBadge.style.display = data.is_ai_generated ? '' : 'none';
+            }
+            if (aiToggle && data.is_own) {
+                aiToggle.style.display = '';
+                aiToggle.classList.toggle('active', data.is_ai_generated);
+                aiToggle.title = data.is_ai_generated ? 'Remove AI label' : 'Mark as AI generated';
+            }
+
             if (autoCommentId) {
                 scrollToComment(autoCommentId);
                 autoCommentId = '';
@@ -550,6 +588,57 @@
         })
         .catch(() => {})
         .finally(() => { likeBtn.disabled = false; });
+    }
+
+    /** Toggle the AI-generated flag on the current media item */
+    function toggleAiGenerated() {
+        const mediaId = panel ? panel.dataset.mediaId : '';
+        if (!mediaId) return;
+
+        const aiToggle = overlay.querySelector('.ai-toggle-btn');
+        const aiBadge  = overlay.querySelector('.ai-badge-lightbox');
+        if (aiToggle) aiToggle.disabled = true;
+
+        const csrfEl    = commentForm ? commentForm.querySelector('input[name="csrf_token"]') : null;
+        const csrfToken = csrfEl ? csrfEl.value : (document.querySelector('input[name="csrf_token"]')?.value || '');
+
+        fetch(baseUrl() + '/modules/gallery/toggle_ai_generated.php', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({ csrf_token: csrfToken, media_id: mediaId }),
+        })
+        .then((r) => r.json())
+        .then((data) => {
+            if (!data.ok) return;
+            if (aiBadge) aiBadge.style.display = data.is_ai_generated ? '' : 'none';
+            if (aiToggle) {
+                aiToggle.classList.toggle('active', data.is_ai_generated);
+                aiToggle.title = data.is_ai_generated ? 'Remove AI label' : 'Mark as AI generated';
+            }
+            // Update the gallery grid badge
+            updateMasonryAiBadge(mediaId, data.is_ai_generated);
+        })
+        .catch(() => {})
+        .finally(() => { if (aiToggle) aiToggle.disabled = false; });
+    }
+
+    /** Update the AI badge on the masonry grid item */
+    function updateMasonryAiBadge(mediaId, isAi) {
+        const trigger = document.querySelector('.lightbox-trigger[data-media-id="' + mediaId + '"]');
+        if (!trigger) return;
+        trigger.dataset.aiGenerated = isAi ? '1' : '0';
+        const item = trigger.closest('.media-item');
+        if (!item) return;
+        let badge = item.querySelector('.ai-badge');
+        if (isAi && !badge) {
+            badge = document.createElement('span');
+            badge.className = 'ai-badge';
+            badge.textContent = 'AI';
+            item.appendChild(badge);
+        } else if (!isAi && badge) {
+            badge.remove();
+        }
     }
 
     /** Submit a new comment on the currently displayed media item */
