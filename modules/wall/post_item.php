@@ -29,7 +29,7 @@ if (($post['post_type'] ?? 'user') === 'album_upload' && !empty($post['media_ids
         $previewIds = array_slice(array_map('intval', $previewIds), 0, 4);
         $placeholders = implode(',', array_fill(0, count($previewIds), '?'));
         $albumPreviewMedia = db_query(
-            "SELECT id, type, storage_path, large_path, medium_path, thumb_path, thumbnail_path
+            "SELECT id, type, storage_path, large_path, medium_path, thumb_path, thumbnail_path, is_ai_generated
              FROM media WHERE id IN ($placeholders) AND is_deleted = 0 ORDER BY id ASC",
             $previewIds
         );
@@ -149,10 +149,12 @@ $moreComments = (int)$post['comment_count'] > 3;
                 <span class="video-play-icon" aria-hidden="true">&#9654;</span>
             </a>
             <?php else: ?>
+            <span class="post-album-thumb-wrap">
             <a href="<?= e(get_media_url($previewItem, 'original')) ?>"
                class="lightbox-trigger"
                data-src="<?= e(get_media_url($previewItem, 'large')) ?>"
                data-media-id="<?= (int)$previewItem['id'] ?>"
+               data-ai-generated="<?= !empty($previewItem['is_ai_generated']) ? '1' : '0' ?>"
                data-caption="<?= e($post['username']) ?>">
                 <img src="<?= e(get_media_url($previewItem, 'thumb')) ?>"
                      alt="<?= e($post['username']) ?>"
@@ -160,6 +162,10 @@ $moreComments = (int)$post['comment_count'] > 3;
                      width="70" height="70"
                      loading="lazy">
             </a>
+            <?php if (!empty($previewItem['is_ai_generated'])): ?>
+            <span class="ai-badge ai-badge-mini">AI</span>
+            <?php endif; ?>
+            </span>
             <?php endif; ?>
         <?php endforeach; ?>
         </div>
@@ -176,6 +182,7 @@ $moreComments = (int)$post['comment_count'] > 3;
         <a href="<?= e(get_media_url($postMedia, 'original')) ?>" class="lightbox-trigger"
            data-src="<?= e(get_media_url($postMedia, 'large')) ?>"
            data-media-id="<?= (int)$postMedia['id'] ?>"
+           data-ai-generated="<?= !empty($postMedia['is_ai_generated']) ? '1' : '0' ?>"
            data-caption="<?= e($post['username']) ?>">
             <img src="<?= e(get_media_url($postMedia, 'thumb')) ?>"
                  data-src="<?= e(get_media_url($postMedia, 'medium')) ?>"
@@ -183,6 +190,9 @@ $moreComments = (int)$post['comment_count'] > 3;
                  class="post-img lazy-image"
                  loading="lazy">
         </a>
+        <?php if (!empty($postMedia['is_ai_generated'])): ?>
+        <span class="ai-badge">AI</span>
+        <?php endif; ?>
         <?php elseif ($postMedia['type'] === 'video'): ?>
         <video controls class="post-video" preload="metadata">
             <source src="<?= e(get_media_url($postMedia, 'original')) ?>" type="video/mp4">
