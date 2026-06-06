@@ -22,7 +22,7 @@ An invite-only social network platform built with PHP 8.3, MySQL/MariaDB, and va
 - **Plugin System** — Drop-in plugins can add sidebar widgets, wall widgets, menu items, and profile extensions
 - **Multiple colour themes** — Six built-in dark themes (blue-red, gray-orange, purple-red, green-teal, dark-gold, navy-cyan), selectable from the admin panel; per-user light/dark mode toggle
 - **Security** — CSRF tokens, prepared statements, session hardening, rate limiting, security headers, whitelist HTML sanitiser with smart internal/external link handling
-- **Media Processing** — EXIF stripping, multi-size image generation, video thumbnail generation, SHA256 deduplication, deduplication-safe file deletion
+- **Media Processing** — EXIF stripping, multi-size image generation, CMYK-to-sRGB conversion (via Imagick), video thumbnail generation, SHA256 deduplication, deduplication-safe file deletion
 - **Performance** — File-based HTML cache, progressive image loading, IntersectionObserver lazy loading
 - **Modular architecture** — Security, media, and utility helpers are split into focused sub-modules; centralised type-safe request validation via `RequestValidator`
 
@@ -53,6 +53,7 @@ An invite-only social network platform built with PHP 8.3, MySQL/MariaDB, and va
 | Extension | Purpose |
 |-----------|---------|
 | `iconv` | Fallback multibyte helpers when `mbstring` is unavailable (usually bundled) |
+| `imagick` | CMYK JPEG colour-space conversion — required to upload Photoshop CMYK JPEGs without manually converting to RGB first in Photoshop |
 | `opcache` | Bytecode cache for better performance |
 
 ### Optional external tools
@@ -64,7 +65,7 @@ An invite-only social network platform built with PHP 8.3, MySQL/MariaDB, and va
 ### Installing extensions (Debian / Ubuntu)
 
 ```bash
-sudo apt install php8.3-pdo php8.3-mysql php8.3-gd php8.3-mbstring php8.3-fileinfo
+sudo apt install php8.3-pdo php8.3-mysql php8.3-gd php8.3-mbstring php8.3-fileinfo php8.3-imagick
 # Restart your web server after installing:
 sudo systemctl restart apache2   # or nginx
 ```
@@ -72,7 +73,7 @@ sudo systemctl restart apache2   # or nginx
 ### Installing extensions (RHEL / CentOS / AlmaLinux)
 
 ```bash
-sudo dnf install php-pdo php-mysqlnd php-gd php-mbstring php-fileinfo
+sudo dnf install php-pdo php-mysqlnd php-gd php-mbstring php-fileinfo php-pecl-imagick
 sudo systemctl restart php-fpm
 ```
 
@@ -241,7 +242,7 @@ location ^~ /uploads/ {
 - Session fixation protection (`session_regenerate_id()`)
 - Security headers: CSP, X-Frame-Options, X-Content-Type-Options
 - Rate limiting on login and registration
-- Media: MIME type validated with `finfo`, EXIF stripped via GD re-encoding
+- Media: MIME type validated with `finfo` (including `image/pjpeg` progressive JPEG variant), EXIF stripped via GD re-encoding, CMYK converted to sRGB via Imagick when available
 - Uploads directory protected by `.htaccess` — all requests to `uploads/` are routed through `serve_upload.php`, which enforces login before serving any file; direct access is also blocked by a deny-all `uploads/.htaccess` as defence-in-depth
 - HTML sanitiser (`sanitise_html()`) uses a DOM-based whitelist approach; distinguishes internal links (relative paths and same-host absolute URLs) from external links — only external links receive `target="_blank"` and `rel="noopener noreferrer nofollow"`
 - `linkify()` applies the same internal/external distinction when converting plain-text URLs to clickable links

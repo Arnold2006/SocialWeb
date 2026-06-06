@@ -16,7 +16,7 @@
  *   receiver_id — ID of the message recipient
  *   image       — The uploaded image file
  *
- * Allowed MIME types : image/jpeg, image/png, image/webp, image/gif
+ * Allowed MIME types : image/jpeg, image/pjpeg, image/png, image/webp, image/gif
  * Maximum size       : 10 MB
  * Storage            : /uploads/chat/<random-hex>.<ext>
  *
@@ -53,7 +53,7 @@ if (!isset($_FILES['image']) || $_FILES['image']['error'] !== UPLOAD_ERR_OK) {
 $file = $_FILES['image'];
 
 // Validate MIME type using finfo (not the browser-supplied type, which can be spoofed)
-$allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+$allowed = ['image/jpeg', 'image/pjpeg', 'image/png', 'image/webp', 'image/gif'];
 $finfo    = new finfo(FILEINFO_MIME_TYPE);
 $mimeType = $finfo->file($file['tmp_name']);
 
@@ -80,7 +80,7 @@ if (!$receiver) {
 
 // Generate a unique filename to prevent overwrites
 $ext = match ($mimeType) {
-    'image/jpeg' => 'jpg',
+    'image/jpeg', 'image/pjpeg' => 'jpg',
     'image/png'  => 'png',
     'image/webp' => 'webp',
     'image/gif'  => 'gif',

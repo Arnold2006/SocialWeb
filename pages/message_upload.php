@@ -15,7 +15,7 @@
  *   csrf_token  — CSRF token
  *   attachment  — The uploaded image file
  *
- * Allowed MIME types : image/jpeg, image/png, image/webp, image/gif
+ * Allowed MIME types : image/jpeg, image/pjpeg, image/png, image/webp, image/gif
  * Maximum size       : 10 MB
  * Storage            : /uploads/msg_attachments/<year>/<month>/<random16hex>.<ext>
  *
@@ -53,7 +53,7 @@ if ($file['size'] > 10 * 1024 * 1024) {
 $finfo    = new finfo(FILEINFO_MIME_TYPE);
 $mimeType = $finfo->file($file['tmp_name']);
 
-$allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+$allowed = ['image/jpeg', 'image/pjpeg', 'image/png', 'image/webp', 'image/gif'];
 if (!in_array($mimeType, $allowed, true)) {
     echo json_encode(['ok' => false, 'error' => 'Only JPG, PNG, WEBP and GIF images are allowed.']);
     exit;
@@ -61,7 +61,7 @@ if (!in_array($mimeType, $allowed, true)) {
 
 // ── Build storage path ────────────────────────────────────────────────────────
 $ext = match ($mimeType) {
-    'image/jpeg' => 'jpg',
+    'image/jpeg', 'image/pjpeg' => 'jpg',
     'image/png'  => 'png',
     'image/webp' => 'webp',
     'image/gif'  => 'gif',

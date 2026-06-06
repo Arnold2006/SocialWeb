@@ -192,7 +192,7 @@
             + ' 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66L9.41 17.41a2 2'
             + ' 0 0 1-2.83-2.83l8.49-8.48"/></svg>'
             + '<input type="file" class="chat-image-input"'
-            + ' accept="image/jpeg,image/png,image/webp,image/gif"'
+            + ' accept="image/jpeg,image/pjpeg,image/png,image/webp,image/gif"'
             + ' style="display:none" aria-hidden="true">'
             + '</label>'
             + '</div>';
@@ -490,7 +490,7 @@
     }
 
     async function uploadImage(ws, file) {
-        const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+        const allowed = ['image/jpeg', 'image/pjpeg', 'image/png', 'image/webp', 'image/gif'];
         if (!allowed.includes(file.type)) {
             alert('Only JPG, PNG, WEBP and GIF images are allowed.');
             return;

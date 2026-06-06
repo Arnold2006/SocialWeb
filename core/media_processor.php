@@ -21,7 +21,7 @@
 declare(strict_types=1);
 
 // Allowed image MIME types
-const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/pjpeg', 'image/png', 'image/gif', 'image/webp'];
 // Allowed video MIME types
 const ALLOWED_VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/ogg'];
 
