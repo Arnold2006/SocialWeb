@@ -123,8 +123,19 @@
             toggleAiGenerated();
         });
 
+        // Album link button (shown when media belongs to an album)
+        const albumLinkBtn = document.createElement('a');
+        albumLinkBtn.className = 'btn-album-link';
+        albumLinkBtn.setAttribute('aria-label', 'Go to album');
+        albumLinkBtn.title = 'Go to album';
+        albumLinkBtn.textContent = '🔗';
+        albumLinkBtn.style.display = 'none';
+        albumLinkBtn.target = '_blank';
+        albumLinkBtn.rel = 'noopener noreferrer';
+
         panelHeader.appendChild(likeBtn);
         panelHeader.appendChild(commentCountText);
+        panelHeader.appendChild(albumLinkBtn);
         panelHeader.appendChild(aiBadgeEl);
         panelHeader.appendChild(aiToggleBtn);
 
@@ -335,8 +346,10 @@
         // Reset AI indicators
         const aiBadge = overlay.querySelector('.ai-badge-lightbox');
         const aiToggle = overlay.querySelector('.ai-toggle-btn');
+        const albumLink = overlay.querySelector('.btn-album-link');
         if (aiBadge) aiBadge.style.display = 'none';
         if (aiToggle) aiToggle.style.display = 'none';
+        if (albumLink) albumLink.style.display = 'none';
 
         fetch(baseUrl() + '/modules/gallery/get_media_comments.php?media_id=' + encodeURIComponent(mediaId), {
             credentials: 'same-origin',
@@ -357,6 +370,12 @@
                 aiToggle.style.display = '';
                 aiToggle.classList.toggle('active', data.is_ai_generated);
                 aiToggle.title = data.is_ai_generated ? 'Remove AI label' : 'Mark as AI generated';
+            }
+
+            // Album link
+            if (albumLink && data.album_id) {
+                albumLink.href = baseUrl() + '/pages/gallery.php?user_id=' + data.album_user_id + '&album=' + data.album_id;
+                albumLink.style.display = '';
             }
 
             if (autoCommentId) {
