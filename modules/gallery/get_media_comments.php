@@ -141,5 +141,5 @@ echo json_encode([
     'is_ai_generated' => !empty($media['is_ai_generated']),
     'is_own'          => (int)$media['user_id'] === (int)$user['id'],
     'album_id'        => $media['album_id'] ? (int)$media['album_id'] : null,
-    'album_user_id'   => (int)$media['user_id'],
+    'album_user_id'   => $media['album_id'] ? (int)$media['user_id'] : null,
 ]);
