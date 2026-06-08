@@ -3162,6 +3162,18 @@ textarea { resize: vertical; min-height: 80px; }
 }
 .btn-like-media:disabled { opacity: 0.6; cursor: default; }
 
+.btn-album-link {
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+    text-decoration: none;
+    padding: 0.2rem 0.4rem;
+    border-radius: var(--radius-sm);
+    transition: color var(--transition);
+}
+.btn-album-link:hover {
+    color: var(--color-primary);
+}
+
 .lightbox-comment-count-text {
     color: var(--color-text-muted);
     font-size: 0.82rem;

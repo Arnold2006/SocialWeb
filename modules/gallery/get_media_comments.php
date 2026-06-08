@@ -21,7 +21,7 @@ if ($mediaId < 1) {
     exit;
 }
 
-$media = db_row('SELECT id, user_id, is_ai_generated FROM media WHERE id = ? AND is_deleted = 0', [$mediaId]);
+$media = db_row('SELECT id, user_id, album_id, is_ai_generated FROM media WHERE id = ? AND is_deleted = 0', [$mediaId]);
 if ($media === null) {
     echo json_encode(['ok' => false, 'error' => 'Media not found']);
     exit;
@@ -140,4 +140,6 @@ echo json_encode([
     'user_liked'      => $userLiked,
     'is_ai_generated' => !empty($media['is_ai_generated']),
     'is_own'          => (int)$media['user_id'] === (int)$user['id'],
+    'album_id'        => $media['album_id'] ? (int)$media['album_id'] : null,
+    'album_user_id'   => $media['album_id'] ? (int)$media['user_id'] : null,
 ]);
